@@ -64,10 +64,11 @@ mvnw.cmd package
 ## Contribution
 
 Pour développer et faire des push :
-
-SUR L'ONGLET GIT DE VSCODE CLIQUER SUR LE LOGO DE BRANCHE ET FAIRE : CREER BRANCH
+IL FAUT CREER UNE BRANCHE DEPUIS UNE ISSUE PUIS
+SUR L'ONGLET GIT DE VSCODE CLIQUER SUR LE LOGO DE BRANCHE ET SELECTIONNER LA BRANCHE
 <img width="530" height="65" alt="image" src="https://github.com/user-attachments/assets/77c5a6d3-66b0-42fb-90d6-577de112a77e" />
-IL SUFFIT DE PUSH ET POUR MERGE IL FAUT ALLER SUR GITHUB
+
+IL SUFFIT DE PUSH, ET POUR MERGE IL FAUT ALLER SUR GITHUB
 
 1. Créer une branche : `git checkout -b feature/ma-feature`
 2. Faire vos modifications
