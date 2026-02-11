@@ -82,4 +82,4 @@ IL SUFFIT DE PUSH ET POUR MERGE IL FAUT ALLER SUR GITHUB
 - Les natives LWJGL sont téléchargées automatiquement et cachées localement
 
 ## AVANT DE PUSH UNE FEATURE
-Il faut créer une issue avec le label feature, c'est comme une todo list en gros, pour savoir ce que l'on fait et qui le fait
+Il faut créer une issue avec le label feature et le bon milestone, c'est comme une todo list en gros, pour savoir ce que l'on fait et qui le fait
