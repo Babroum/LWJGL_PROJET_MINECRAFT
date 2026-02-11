@@ -1,0 +1,25 @@
+package demo;
+
+public class Object3D extends Node3D{
+
+    private Color4i color = new Color4i(0);
+    public Mesh mesh = new Mesh();
+
+    public void setColor(Color4i color){
+        this.color = color;
+    }
+
+    public Color4i getColor(){
+        return this.color;
+    }
+
+    /**
+     * Dessin spécifique.
+     */
+    @OpenGLThread
+    @Override
+    public void drawSpecific(){
+        this.color.apply();
+        this.mesh.drawMesh();
+    }
+}
