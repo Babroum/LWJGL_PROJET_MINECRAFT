@@ -1,7 +1,8 @@
-package demo;
+package demo.Types;
 
 import org.lwjgl.opengl.GL11;
 
+import demo.OpenGLThread;
 import demo.Exceptions.IncorrectColorValue;
 
 /**

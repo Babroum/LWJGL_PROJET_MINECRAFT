@@ -1,5 +1,7 @@
 package demo;
 
+import demo.Types.Color4i;
+
 public class Object3D extends Node3D{
 
     private Color4i color = new Color4i(0);

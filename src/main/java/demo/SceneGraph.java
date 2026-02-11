@@ -2,6 +2,8 @@ package demo;
 
 import org.lwjgl.opengl.GL11;
 
+import demo.Types.Color4i;
+
 /**
  * Graph de la scène.
  */

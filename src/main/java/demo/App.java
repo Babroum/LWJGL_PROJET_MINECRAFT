@@ -1,6 +1,6 @@
 package demo;
 
-// test branche
+import demo.Types.Color4i;
 
 public class App 
 {
@@ -34,7 +34,7 @@ public class App
     }
 
     /*
-    cd "e:\Cloud\Projet Java\LW JGL\maven-demo"
+    cd "...\LWJGL_PROJET_MINECRAFT"
     mvn clean                                                                                   
     mvn package
     mvn exec:java
