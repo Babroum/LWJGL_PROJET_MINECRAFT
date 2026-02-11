@@ -80,3 +80,6 @@ IL SUFFIT DE PUSH ET POUR MERGE IL FAUT ALLER SUR GITHUB
 - Le fichier `dependency-reduced-pom.xml` est généré automatiquement par Maven - ne pas le modifier
 - Le répertoire `target/` est généré à la compilation - il est ignoré par Git
 - Les natives LWJGL sont téléchargées automatiquement et cachées localement
+
+## AVANT DE PUSH UNE FEATURE
+Il faut créer une issue avec le label feature, c'est comme une todo list en gros, pour savoir ce que l'on fait et qui le fait
