@@ -15,7 +15,7 @@ public class App
 
     public static void draw(SceneGraph scene){        
         Cube cube1 = new Cube();
-        Cube cube2 = new Cube();       
+        Clone3D cube2 = new Clone3D(cube1); // replaced Cube cube2 = new Cube(); everything else works the same
         
         scene.root.addChild(cube1);
         scene.root.addChild(cube2);
