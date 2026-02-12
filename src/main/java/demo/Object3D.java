@@ -1,17 +1,17 @@
 package demo;
 
-import demo.Types.Color4i;
+import demo.Types.Color4f;
 
 public class Object3D extends Node3D{
 
-    private Color4i color = new Color4i(0);
+    private Color4f color = new Color4f(0);
     public Mesh mesh = new Mesh();
 
-    public void setColor(Color4i color){
+    public void setColor(Color4f color){
         this.color = color;
     }
 
-    public Color4i getColor(){
+    public Color4f getColor(){
         return this.color;
     }
 

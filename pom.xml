@@ -18,6 +18,8 @@
     <maven.compiler.target>21</maven.compiler.target>
     <lwjgl.version>3.4.0</lwjgl.version>
 	  <lwjgl.natives>natives-windows</lwjgl.natives>
+    <joml.version>1.10.8</joml.version>
+	  <joml-primitives.version>1.10.0</joml-primitives.version>
   </properties>
   
   <dependencyManagement>
@@ -123,6 +125,16 @@
       <artifactId>junit</artifactId>
       <version>4.11</version>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.joml</groupId>
+      <artifactId>joml</artifactId>
+      <version>${joml.version}</version>
+    </dependency>
+      <dependency>
+      <groupId>org.joml</groupId>
+      <artifactId>joml-primitives</artifactId>
+      <version>${joml-primitives.version}</version>
     </dependency>
   </dependencies>
 

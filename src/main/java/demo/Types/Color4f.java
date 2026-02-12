@@ -8,20 +8,20 @@ import demo.Exceptions.IncorrectColorValue;
 /**
  * Définit une couleur RGBA
  */
-public class Color4i {
+public class Color4f {
 
     // Couleur simple préfaite
-    public static final Color4i WHITE = new Color4i(255);
-    public static final Color4i BLACK = new Color4i(0);
+    public static final Color4f WHITE = new Color4f(255);
+    public static final Color4f BLACK = new Color4f(0);
 
-    public static final Color4i RED = new Color4i(255,0,0);
-    public static final Color4i GREEN = new Color4i(0,255,0);
-    public static final Color4i BLUE = new Color4i(0,0,255);
+    public static final Color4f RED = new Color4f(255,0,0);
+    public static final Color4f GREEN = new Color4f(0,255,0);
+    public static final Color4f BLUE = new Color4f(0,0,255);
 
     
-    public static final Color4i CYAN = new Color4i(0,255,255);
-    public static final Color4i PURPLE = new Color4i(255,0,255);
-    public static final Color4i YELLOW = new Color4i(255,255,0);
+    public static final Color4f CYAN = new Color4f(0,255,255);
+    public static final Color4f PURPLE = new Color4f(255,0,255);
+    public static final Color4f YELLOW = new Color4f(255,255,0);
 
     /**
      * Intensité de rouge (0 à 255)
@@ -48,7 +48,7 @@ public class Color4i {
      * @param a alpha
      * @throws IncorrectColorValue
      */
-    public Color4i(int r, int g, int b, int a) throws IncorrectColorValue{
+    public Color4f(int r, int g, int b, int a) throws IncorrectColorValue{
         if ((r < 0 || r > 255) ||
             (g < 0 || g > 255) ||
             (b < 0 || b > 255) ||
@@ -67,7 +67,7 @@ public class Color4i {
      * @param b bleu
      * @throws IncorrectColorValue
      */
-    public Color4i(int r, int g, int b) throws IncorrectColorValue{
+    public Color4f(int r, int g, int b) throws IncorrectColorValue{
         this(r, g, b, 100);
     }
     /**
@@ -76,7 +76,7 @@ public class Color4i {
      * @param a alpha
      * @throws IncorrectColorValue
      */
-    public Color4i(int gray, int a) throws IncorrectColorValue{
+    public Color4f(int gray, int a) throws IncorrectColorValue{
         this(gray, gray, gray, a);
     }
     /**
@@ -84,7 +84,7 @@ public class Color4i {
      * @param gray gris
      * @throws IncorrectColorValue
      */
-    public Color4i(int gray) throws IncorrectColorValue{
+    public Color4f(int gray) throws IncorrectColorValue{
         this(gray, gray, gray,100);
     }
     /**

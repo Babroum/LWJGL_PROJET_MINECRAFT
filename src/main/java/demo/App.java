@@ -1,6 +1,6 @@
 package demo;
 
-import demo.Types.Color4i;
+import demo.Types.Color4f;
 
 public class App 
 {
@@ -20,13 +20,13 @@ public class App
         scene.root.addChild(cube1);
         scene.root.addChild(cube2);
         
-        cube1.setColor(Color4i.BLUE);
+        cube1.setColor(Color4f.BLUE);
         cube1.x = -1f;
         cube1.z = -2f;
         cube1.angleX = 22.5f;
         cube1.angleY = 22.5f;
 
-        cube2.setColor(Color4i.RED);        
+        cube2.setColor(Color4f.RED);        
         cube2.x = 1f;
         cube2.z = -2f;
         cube2.angleX = 22.5f;

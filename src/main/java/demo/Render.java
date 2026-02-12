@@ -1,12 +1,15 @@
 package demo;
 
+import java.nio.FloatBuffer;
+
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
 
 public class Render {
     
-    public SceneGraph sceneGraph = new SceneGraph();
+    public SceneGraph sceneGraph = new SceneGraph();    
+    private Camera camera = new Camera();
 
     /**
      * Gére le rendu de la fenêtre.
@@ -18,18 +21,21 @@ public class Render {
 
         this.initialize3D(window.width, window.height);
 
-        while ( !GLFW.glfwWindowShouldClose(windowRef) ) {
+        while ( !GLFW.glfwWindowShouldClose(windowRef) ) {  
+
 			GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT); // clear the framebuffer
 
+            GL11.glMatrixMode(GL11.GL_MODELVIEW);
+            GL11.glLoadIdentity();
+            GL11.glLoadMatrixf(this.camera.getViewMatrixBuffer()); // charge la viewMatrix de la camera
+
             // draw
-            this.drawScene();
-
+            this.drawScene();     
+                
             // Rend la fenêtre en buffer dessinée visible à l’écran
-            GLFW.glfwSwapBuffers(windowRef);
+            GLFW.glfwSwapBuffers(windowRef);		
 
-			// Poll for window events. The key callback above will only be
-			// invoked during this call.
-			GLFW.glfwPollEvents();
+            GLFW.glfwPollEvents();
 		}
 
         window.exitWidow();
@@ -89,6 +95,14 @@ public class Render {
 
         // Active l’éclairage
         //GL11.glEnable(GL11.GL_LIGHTING);
+    }
+
+    /**
+     * Retourne la camera de la scene
+     * @return Camera
+     */
+    public Camera getCamera(){
+        return this.camera;
     }
 
     @OpenGLThread

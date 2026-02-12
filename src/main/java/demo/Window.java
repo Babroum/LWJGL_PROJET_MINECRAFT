@@ -24,6 +24,7 @@ public class Window {
     private long window;
     private Render render = new Render();
     private WindowCloseEventManager windowCloseEventManager = new WindowCloseEventManager();
+    private MouseInput mouseInput;
 
     public Window(){
         this(300, 300);
@@ -59,6 +60,8 @@ public class Window {
         }
 
         // Listeners clavier souris
+        mouseInput = new MouseInput(this.window);
+
 
         // Management de la fermeture de la fenetre
         GLFW.glfwSetWindowCloseCallback(this.window, this.windowCloseEventManager);
@@ -72,6 +75,10 @@ public class Window {
         GL.createCapabilities(); // Will let lwjgl know we want to use this context as the context to draw with
         
         this.render.rendering(this, this.window);
+    }
+
+    public MouseInput getMouseInput(){
+        return this.mouseInput;
     }
 
     public void exitWidow()
