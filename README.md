@@ -24,7 +24,7 @@ OU CTRL+SHIFT+P et git clone
 
 ```bash
 # Sous Windows (PowerShell ou CMD)
-mvnw.cmd clean install
+.\mvnw.cmd clean install
 
 # Sous Linux/Mac
 ./mvnw clean install
