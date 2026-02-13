@@ -139,7 +139,7 @@ public class Camera {
     }
 
     /**
-     * Définit une position pour le vecteur de position
+     * Définis une position pour le vecteur de position
      * @param x float
      * @param y float 
      * @param z float
@@ -150,7 +150,7 @@ public class Camera {
     }
 
     /**
-     * Définit une rotation pour le vecteur de rotation
+     * Définis une rotation pour le vecteur de rotation
      * @param x float
      * @param y float 
      * @param z float

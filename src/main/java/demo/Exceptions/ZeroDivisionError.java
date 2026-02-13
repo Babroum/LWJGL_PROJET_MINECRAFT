@@ -1,7 +1,7 @@
 package demo.Exceptions;
 
 /**
- * Erreur retourner si il y a une division par 0
+ * Erreur retournée s'il y a une division par 0
  */
 public class ZeroDivisionError extends RuntimeException{
     public ZeroDivisionError(){

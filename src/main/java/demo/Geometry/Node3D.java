@@ -1,62 +1,63 @@
-package demo;
+package demo.Geometry;
 
 import org.lwjgl.opengl.GL11;
 
+import demo.Annotations.OpenGLThread;
 import demo.Exceptions.ArrayFull;
 
 /**
- * Noeud définit par des coordonées, angles et tailles.
- * Le noeud est le parent de chaque enfant, 
- * il permet aux enfants d'avoir des coordonées local.
+ * Un nœud définit par des coordonnées, angles et tailles.
+* Le nœud est le parent de chaque enfant, 
+* il permet aux enfants d'avoir des coordonnées locales.
  */
 public class Node3D {
     /**
-     * Coordonée X du noeud.
+     * Coordonnée X du nœud.
      */
     public float x = 0;
     /**
-     * Coordonée Y du noeud.
+     * Coordonnée Y du nœud.
      */
     public float y = 0;
     /**
-     * Coordonée Z du noeud.
+     * Coordonnée Z du nœud.
      */
     public float z = 0;
 
     /**
-     * Angle X du noeud.
+     * Angle X du nœud.
      */
     public float angleX = 0;
     /**
-     * Angle Y du noeud.
+     * Angle Y du nœud.
      */
     public float angleY = 0;
     /**
-     * Angle Z du noeud.
+     * Angle Z du nœud.
      */
     public float angleZ = 0;
 
     /**
-     * Taille X du noeud.
+     * Taille X du nœud.
      */
     public float scaleX = 1;
     /**
-     * Taille Y du noeud.
+     * Taille Y du nœud.
      */
     public float scaleY = 1;
     /**
-     * Taille Z du noeud.
+     * Taille Z du nœud.
      */
     public float scaleZ = 1;
 
     /**
-     * Tableau de noeud enfant.
+     * Tableau de nœud enfant.
      */
     private Node3D[] children = new Node3D[100];
     private int nbChildren;
 
     /**
-     * Ajoute un noeud au tableau de noeud.
+     * Ajoute un nœud au tableau de nœud.
      * @param node
      * @throws ArrayFull
      */
@@ -72,14 +73,14 @@ public class Node3D {
     }
 
     /**
-     * Dessine le noeud actuel et tous ses enfants.
+     * Dessine le nœud actuel et tous ses enfants.
      */
     @OpenGLThread
     public void drawNode(){
         // On sauvegarde la matrice actuelle
         GL11.glPushMatrix();
 
-        // *** Position du noeud ***
+        // *** Position du nœud ***
         // Position aux coordonnées X, Y, Z
         GL11.glTranslatef(this.x, this.y, this.z);
         // Rotation autour de l'axe X
@@ -94,7 +95,7 @@ public class Node3D {
         // Dessin spécifique
         this.drawSpecific();
 
-        // Placement des noeuds enfants relativement à la position de ce noeud
+        // Placement des nœuds enfants relativement à la position de ce nœud
         synchronized (this.children)
         {
             for (int i = 0; i < this.nbChildren; i++){

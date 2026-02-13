@@ -2,15 +2,15 @@ package demo.Types;
 
 import org.lwjgl.opengl.GL11;
 
-import demo.OpenGLThread;
+import demo.Annotations.OpenGLThread;
 import demo.Exceptions.IncorrectColorValue;
 
 /**
- * Définit une couleur RGBA
+ * Définis une couleur RGBA
  */
 public class Color4f {
 
-    // Couleur simple préfaite
+    // Couleur simple préfètes
     public static final Color4f WHITE = new Color4f(255);
     public static final Color4f BLACK = new Color4f(0);
 
@@ -28,27 +28,27 @@ public class Color4f {
      */
     public float red;
     /*
-    * Intensité de vert (0 à 255)
-    */
+     * Intensité de vert (0 à 255)
+     */
     public float green;
     /*
-    * Intensité de bleu (0 à 255)
-    */
+     * Intensité de bleu (0 à 255)
+     */
     public float blue;
     /*
-    * Niveau d'opacité (0 à 100)
-    */
+     * Niveau d'opacité (0 à 100)
+     */
     public float alpha;
 
     /**
-     * Définit une couleur par intensité de rouge, vert et bleu, et un niveau d'opacité
+     * Définis une couleur par intensité de rouge, vert et bleu, et un niveau d'opacité
      * @param r rouge
      * @param g vert
      * @param b bleu
      * @param a alpha
      * @throws IncorrectColorValue
      */
-    public Color4f(int r, int g, int b, int a) throws IncorrectColorValue{
+    public Color4f(float r, float g, float b, float a) throws IncorrectColorValue{
         if ((r < 0 || r > 255) ||
             (g < 0 || g > 255) ||
             (b < 0 || b > 255) ||
@@ -61,30 +61,30 @@ public class Color4f {
         this.alpha = a / 100;
     }
     /**
-     * Définit une couleur opaque par intensité de rouge, vert et bleu
-     * @param r rouge
-     * @param g vert
-     * @param b bleu
+     * Définis une couleur opaque par intensité de rouge, vert et bleu
+     * @param r float
+     * @param g float
+     * @param b float
      * @throws IncorrectColorValue
      */
-    public Color4f(int r, int g, int b) throws IncorrectColorValue{
+    public Color4f(float r, float g, float b) throws IncorrectColorValue{
         this(r, g, b, 100);
     }
     /**
-     * Définit une couleur par intensité de gris et un niveau d'opacité
-     * @param gray gris
-     * @param a alpha
+     * Définis une couleur par intensité de gris et un niveau d'opacité
+     * @param gray float
+     * @param a float
      * @throws IncorrectColorValue
      */
-    public Color4f(int gray, int a) throws IncorrectColorValue{
+    public Color4f(float gray, float a) throws IncorrectColorValue{
         this(gray, gray, gray, a);
     }
     /**
-     * Définit une couleur opaque par intensité de gris
-     * @param gray gris
+     * Définis une couleur opaque par intensité de gris
+     * @param gray float
      * @throws IncorrectColorValue
      */
-    public Color4f(int gray) throws IncorrectColorValue{
+    public Color4f(float gray) throws IncorrectColorValue{
         this(gray, gray, gray,100);
     }
     /**

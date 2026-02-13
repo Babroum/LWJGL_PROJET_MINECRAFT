@@ -1,11 +1,11 @@
-package demo;
+package demo.Meshing;
 
 import demo.Exceptions.ArrayEmpty;
 import demo.Exceptions.ArrayFull;
 import demo.Exceptions.IncorrectIndex;
 
 /**
- * Une face décrivant un ensemble de 4 Sommets d'un mesh.
+ * Une face décrivant un ensemble de 4 Sommets d'une maille.
  */
 public class Face {
     
@@ -52,7 +52,7 @@ public class Face {
     }
 
     /**
-     * Supprime un sommet du tableau de sommet grâce à ses coordonées X, Y, Z.
+     * Supprime un sommet du tableau de sommet grâce à ses coordonnées X, Y, Z.
      * @param X
      * @param Y
      * @param Z

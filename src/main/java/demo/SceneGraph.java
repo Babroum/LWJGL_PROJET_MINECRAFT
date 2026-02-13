@@ -2,19 +2,21 @@ package demo;
 
 import org.lwjgl.opengl.GL11;
 
+import demo.Annotations.OpenGLThread;
+import demo.Geometry.Node3D;
 import demo.Types.Color4f;
 
 /**
- * Graph de la scène.
+ *La scène.
  */
 public class SceneGraph {
 
-    // gérer couleur background
     public final Node3D root = new Node3D();
-    private Color4f backGroundColor = Color4f.WHITE;
+    private Color4f backGroundColor = Color4f.WHITE;    
+    private Camera camera = new Camera();
 
     /**
-     * Définit la couleur de la scene
+     * Définis la couleur de la scène
      * @param color Color4f
      */
     public void setBackGroundColor(Color4f color){
@@ -22,7 +24,7 @@ public class SceneGraph {
     }
 
     /**
-     * Retourne la couleur de la scene
+     * Retourne la couleur de la scène
      * @return Color4f
      */
     public Color4f getBackGroundColor(){
@@ -30,11 +32,19 @@ public class SceneGraph {
     }
 
     /**
-     * Dessine la scene en appelant le noeud principale
+     * Retourne la camera de la scène
+     * @return Camera
+     */
+    public Camera getCamera(){
+        return this.camera;
+    }
+
+    /**
+     * Dessine la scène en appelant le nœud principale
      */
     @OpenGLThread
     public void drawScene(){
-        // Couleur du background de la scene
+        // Couleur du background de la scène
         GL11.glClearColor(this.backGroundColor.red, this.backGroundColor.green, this.backGroundColor.blue, 1f);
         this.root.drawNode();
     }

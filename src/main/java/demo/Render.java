@@ -1,41 +1,50 @@
 package demo;
 
-import java.nio.FloatBuffer;
-
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
 
+import demo.Annotations.OpenGLThread;
+
 public class Render {
     
     public SceneGraph sceneGraph = new SceneGraph();    
-    private Camera camera = new Camera();
 
     /**
-     * Gére le rendu de la fenêtre.
+     * Gère le rendu de la fenêtre.
      * @param window
      * @param windowRef
      */
     @OpenGLThread
     public void rendering(Window window, long windowRef){
-
+        // Stocke le temps actuel (UNIX)
+        long initialTime = System.currentTimeMillis();
         this.initialize3D(window.width, window.height);
 
         while ( !GLFW.glfwWindowShouldClose(windowRef) ) {  
-
+            // Stocke le temps actuel (UNIX) 
+            long now = System.currentTimeMillis();
 			GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT); // clear the framebuffer
 
+            // Récupère le dernier mouvement de la souris
+            window.getMouseInput().input();
+            // Récupère les inputs clavier/souris
+            App.input(window, this.sceneGraph, now - initialTime);
+
+            // Réglage du modèle de la vue
             GL11.glMatrixMode(GL11.GL_MODELVIEW);
             GL11.glLoadIdentity();
-            GL11.glLoadMatrixf(this.camera.getViewMatrixBuffer()); // charge la viewMatrix de la camera
+            // Donne la ViewMatrix au shader OpenGL
+            GL11.glLoadMatrixf(this.sceneGraph.getCamera().getViewMatrixBuffer());
 
-            // draw
+            // Dessine la scène
             this.drawScene();     
                 
-            // Rend la fenêtre en buffer dessinée visible à l’écran
+            // Rends la fenêtre en buffer dessinée visible à l’écran
             GLFW.glfwSwapBuffers(windowRef);		
 
             GLFW.glfwPollEvents();
+            initialTime = now;
 		}
 
         window.exitWidow();
@@ -44,7 +53,7 @@ public class Render {
     private void initialize3D(final int width, final int height)
     {
         // *** Gestion de la transparence ***
-        // On indique que l’on souhaite activer la  transparence
+        // On indique que l’on souhaite activer la transparence
         GL11.glEnable(GL11.GL_ALPHA_TEST);
         // Spécification de la précision de la transparence
         GL11.glAlphaFunc(GL11.GL_GREATER, 0.01f);
@@ -56,7 +65,7 @@ public class Render {
         GL11.glEnable(GL11.GL_COLOR_MATERIAL);
         // Pour des raisons de performances, on désactive les textures de manière globale, on les activera au cas par cas
         GL11.glDisable(GL11.GL_TEXTURE_2D);
-        // On active la possibilité de combiné des effets
+        // On active la possibilité de combiner des effets
         GL11.glEnable(GL11.GL_BLEND);
 
         // ** Réglage de la perspective  ***
@@ -80,10 +89,10 @@ public class Render {
 
         // Au départ on met un écran rouge
         GL11.glClearColor(1f, 0f, 0f, 1f);
-        //On active le test de profondeur
+        // On active le test de profondeur
         GL11.glEnable(GL11.GL_DEPTH_TEST);
 
-        // Active les face visible que d’un côté (Pour éviter de dessiner des choses qui seront toujours cachés)
+        // Active les face visible que d’un côté (Pour éviter de dessiner des choses qui seront toujours cachées)
         GL11.glEnable(GL11.GL_CULL_FACE);
         GL11.glCullFace(GL11.GL_FRONT);
 
@@ -97,14 +106,7 @@ public class Render {
         //GL11.glEnable(GL11.GL_LIGHTING);
     }
 
-    /**
-     * Retourne la camera de la scene
-     * @return Camera
-     */
-    public Camera getCamera(){
-        return this.camera;
-    }
-
+    
     @OpenGLThread
     private void drawScene(){
         this.sceneGraph.drawScene();

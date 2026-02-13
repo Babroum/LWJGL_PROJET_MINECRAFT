@@ -8,9 +8,16 @@ import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.system.MemoryUtil;
 
+import demo.Annotations.OpenGLThread;
+import demo.Events.KeyboardInput;
+import demo.Events.MouseInput;
+import demo.Events.WindowCloseEventManager;
+
+/**
+ * La fenêtre géré par GLFW
+ */
 public class Window {
     
-    // Dimension de la fenetre
     /**
      * Largeur de la fenêtre.
      */
@@ -20,11 +27,13 @@ public class Window {
      */
     public int height;
 
-    // Référence de la fenetre
+    // Référence de la fenêtre
     private long window;
+
     private Render render = new Render();
     private WindowCloseEventManager windowCloseEventManager = new WindowCloseEventManager();
     private MouseInput mouseInput;
+    private KeyboardInput keyboardInput;
 
     public Window(){
         this(300, 300);
@@ -32,7 +41,7 @@ public class Window {
     public Window(int width, int height){
         this.width = Math.max(150, width);
         this.height = Math.max(150, height);
-        // le :: permet de passé en paramètre la méthode init dans le thread, car this.init() ne fait pas passé la méthode en paramètre mais l'exécuté
+        // le :: permet de passer  en paramètre la méthode init dans le thread, car this.init() ne fait pas passer  la méthode en paramètre mais l'exécuté
         // le :: est comme un raccourci pour un lambda, sinon il faut faire Thread(() -> this.init()) 
         (new Thread(this::init)).start(); // démare le thread
     }
@@ -44,33 +53,33 @@ public class Window {
         GLFWErrorCallback.createPrint(System.err).set();
         if (!GLFW.glfwInit()) {
             GLFW.glfwSetErrorCallback(null).free();
-            throw new IllegalStateException("Unable to initialize GLFW");
+            throw new IllegalStateException("Pas possible d'initialiser GLFW");
         }
 
-        GLFW.glfwDefaultWindowHints(); // Loads GLFW's default window settings
-        GLFW.glfwWindowHint(GLFW.GLFW_VISIBLE, GLFW.GLFW_FALSE); // Sets window to be visible
-        GLFW.glfwWindowHint(GLFW.GLFW_DECORATED, GLFW.GLFW_TRUE); // contour de fenetre
-        GLFW.glfwWindowHint(GLFW.GLFW_RESIZABLE, GLFW.GLFW_FALSE); // Sets the window not resizable
-        GLFW.glfwWindowHint(GLFW.GLFW_MAXIMIZED, GLFW.GLFW_FALSE); // la fenetre est la dimension la plus proche de celle demandé
+        GLFW.glfwDefaultWindowHints(); // Charge les paramètres par défaut de fenêtre de GLFW
+        GLFW.glfwWindowHint(GLFW.GLFW_VISIBLE, GLFW.GLFW_FALSE); // Cache la fenêtre
+        GLFW.glfwWindowHint(GLFW.GLFW_DECORATED, GLFW.GLFW_TRUE); // Contour de fenetre
+        GLFW.glfwWindowHint(GLFW.GLFW_RESIZABLE, GLFW.GLFW_FALSE); // Fenêtre pas redimensionable
+        GLFW.glfwWindowHint(GLFW.GLFW_MAXIMIZED, GLFW.GLFW_FALSE); // La fenêtre essayera d'atteindre la taille demandée
 
-        this.window = GLFW.glfwCreateWindow(this.width, this.height, "test", NULL, NULL); // Does the actual window creation
+        this.window = GLFW.glfwCreateWindow(this.width, this.height, "test", NULL, NULL); // Créer la fenêtre
         if (this.window == MemoryUtil.NULL) {
             this.closeGLFW();
-            throw new RuntimeException("Failed to create window");
+            throw new RuntimeException("Impossible de créer la fenêtre");
         }
 
-        // Listeners clavier souris
+        // Listeners clavier/souris
         mouseInput = new MouseInput(this.window);
+        keyboardInput = new KeyboardInput(this.window);
 
-
-        // Management de la fermeture de la fenetre
+        // Management de la fermeture de la fenêtre
         GLFW.glfwSetWindowCloseCallback(this.window, this.windowCloseEventManager);
 
         GLFW.glfwMakeContextCurrent(this.window); // glfwSwapInterval needs a context on the calling thread, otherwise will cause NO_CURRENT_CONTEXT error    
 
-        GLFW.glfwSwapInterval(1); // How many draws to swap the buffer
+        GLFW.glfwSwapInterval(1); // Le nombre de dessin avant d'échanger les buffers
 
-        GLFW.glfwShowWindow(this.window); // Shows the window
+        GLFW.glfwShowWindow(this.window); // Affiche la fenêtre
 
         GL.createCapabilities(); // Will let lwjgl know we want to use this context as the context to draw with
         
@@ -79,6 +88,9 @@ public class Window {
 
     public MouseInput getMouseInput(){
         return this.mouseInput;
+    }
+    public KeyboardInput getKeyboardInput(){
+        return this.keyboardInput;
     }
 
     public void exitWidow()
@@ -103,6 +115,10 @@ public class Window {
         GLFW.glfwSetErrorCallback(null).free();
     }
 
+    /**
+     * Retourne la scène
+     * @return SceneGraph
+     */
     public SceneGraph getSceneGraph(){
         return this.render.sceneGraph;
     }

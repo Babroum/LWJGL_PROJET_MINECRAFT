@@ -1,4 +1,4 @@
-package demo;
+package demo.Events;
 
 import org.joml.Vector2f;
 
@@ -14,7 +14,7 @@ public class MouseInput {
     private Vector2f previousPos;
 
     /**
-     * Définit les listeners de GLFW
+     * Définis les listeners de GLFW
      * @param windowRef long
      */
     public MouseInput(long windowRef){
@@ -48,13 +48,16 @@ public class MouseInput {
     }
 
     /**
-     * Retourne la position de la souris actuelle
+     * Retourne le vecteur entre l'ancienne et la nouvelle position de la souris
      * @return Vector2f
      */
     public Vector2f getDisplVec() {
         return this.displVec;
     }
 
+    /**
+     * Calcule le vecteur de déplacement de la souris
+     */
     public void input() {
         this.displVec.x = 0;
         this.displVec.y = 0;
@@ -74,10 +77,18 @@ public class MouseInput {
         this.previousPos.y = this.currentPos.y;
     }
 
+    /**
+     * Retourne un boolean en fonction de si le click gauche de la souris est enfoncé
+     * @return boolean
+     */
     public boolean isLeftButtonPressed() {
         return this.leftButtonPressed;
     }
 
+    /**
+     * Retourne un boolean en fonction de si le click droit de la souris est enfoncé
+     * @return boolean
+     */
     public boolean isRightButtonPressed() {
         return this.rightButtonPressed;
     }

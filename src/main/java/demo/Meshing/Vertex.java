@@ -1,8 +1,8 @@
-package demo;
+package demo.Meshing;
 
 
 /**
-* Un Vertex décrivant un sommet d'une face d'un mesh.
+* Un Vertex décrivant un sommet d'une face d'une maille.
 */
 public class Vertex {
 
@@ -20,7 +20,7 @@ public class Vertex {
     public float z;
 
     /**
-     * Créer un sommet grâce à des coordonées X, Y, Z.
+     * Créer un sommet grâce à des coordonnées X, Y, Z.
      * @param X
      * @param Y
      * @param Z
