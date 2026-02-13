@@ -1,13 +1,14 @@
-package demo;
+package demo.Meshing;
 
 import org.lwjgl.opengl.GL11;
 
+import demo.Annotations.OpenGLThread;
 import demo.Exceptions.ArrayEmpty;
 import demo.Exceptions.ArrayFull;
 import demo.Exceptions.IncorrectIndex;
 
 /**
- * Une Maille décrivant un ensemble de faces composées de sommet.
+ * Une Maille décrivant un ensemble de face composées de sommet.
  */
 public class Mesh {
 

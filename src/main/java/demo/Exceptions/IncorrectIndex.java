@@ -1,6 +1,7 @@
 package demo.Exceptions;
+
 /**
- * Erreur retourner si un indice est incorrect
+ * Erreur retournée si un indice est incorrect
  */
 public class IncorrectIndex extends RuntimeException{
     public IncorrectIndex(){

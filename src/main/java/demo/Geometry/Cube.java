@@ -1,4 +1,7 @@
-package demo;
+package demo.Geometry;
+
+import demo.Meshing.Face;
+import demo.Meshing.Vertex;
 
 public class Cube extends Object3D{
     public Cube(){
