@@ -1,20 +1,23 @@
-package demo; 
+package demo.Geometry; 
 
 import java.util.Objects;
 
+import demo.Annotations.OpenGLThread;
+import demo.Types.Color4f;
+
 //clone d'objets 3D ayant la meme maille pour pas avoir 2 copies de listes
 public class Clone3D extends Node3D {
-    private Color4i color;
+    private Color4f color;
     private final Object3D cloned;
     public Clone3D(final Object3D cloned){
         this.cloned = Objects.requireNonNull(cloned, "cloned must not be null");
     }
 
-    public Color4i getColor(){
+    public Color4f getColor(){
         return this.color;
     }
 
-    public void setColor(final Color4i color){
+    public void setColor(final Color4f color){
         this.color = Objects.requireNonNull(color, "color must not be null");
     }
 

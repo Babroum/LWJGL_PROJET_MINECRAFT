@@ -19,6 +19,7 @@ public class Render {
     public void rendering(Window window, long windowRef){
         // Stocke le temps actuel (UNIX)
         long initialTime = System.currentTimeMillis();
+
         this.initialize3D(window.width, window.height);
 
         while ( !GLFW.glfwWindowShouldClose(windowRef) ) {  
@@ -26,10 +27,8 @@ public class Render {
             long now = System.currentTimeMillis();
 			GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT); // clear the framebuffer
 
-            // Récupère le dernier mouvement de la souris
-            window.getMouseInput().input();
-            // Récupère les inputs clavier/souris
-            App.input(window, this.sceneGraph, now - initialTime);
+            // Gère le déplacement de la caméra 
+            window.getInputManager().run(window, sceneGraph, now - initialTime);
 
             // Réglage du modèle de la vue
             GL11.glMatrixMode(GL11.GL_MODELVIEW);
