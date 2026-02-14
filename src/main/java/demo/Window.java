@@ -32,8 +32,7 @@ public class Window {
 
     private Render render = new Render();
     private WindowCloseEventManager windowCloseEventManager = new WindowCloseEventManager();
-    private MouseInput mouseInput;
-    private KeyboardInput keyboardInput;
+    private InputManager inputManager = new InputManager();
 
     public Window(){
         this(300, 300);
@@ -67,10 +66,9 @@ public class Window {
             this.closeGLFW();
             throw new RuntimeException("Impossible de créer la fenêtre");
         }
-
-        // Listeners clavier/souris
-        mouseInput = new MouseInput(this.window);
-        keyboardInput = new KeyboardInput(this.window);
+        
+        // Creer Listeners clavier/souris
+        this.inputManager.create(window);
 
         // Management de la fermeture de la fenêtre
         GLFW.glfwSetWindowCloseCallback(this.window, this.windowCloseEventManager);
@@ -86,11 +84,8 @@ public class Window {
         this.render.rendering(this, this.window);
     }
 
-    public MouseInput getMouseInput(){
-        return this.mouseInput;
-    }
-    public KeyboardInput getKeyboardInput(){
-        return this.keyboardInput;
+    public InputManager getInputManager(){
+        return this.inputManager;
     }
 
     public void exitWidow()
