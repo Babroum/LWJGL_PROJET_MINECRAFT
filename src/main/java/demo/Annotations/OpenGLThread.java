@@ -11,8 +11,8 @@ import java.lang.annotation.Target;
 // Vu que l'annotation est seulement décorative, on s'en fout de la garder à la compilation
 @Retention(RetentionPolicy.SOURCE) 
 
-// Permet de préciser les entités sur lesquelles l'annotation sera utilisable, ici les méthodes
-@Target(ElementType.METHOD) 
+// Permet de préciser les entités sur lesquelles l'annotation sera utilisable, ici les méthodes et constructeurs
+@Target({ElementType.METHOD, ElementType.CONSTRUCTOR}) 
 
 // Permet d'avoir une documentation de l'annotation dans la JavaDoc
 @Documented 

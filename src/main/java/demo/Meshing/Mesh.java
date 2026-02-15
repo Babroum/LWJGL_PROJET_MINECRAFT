@@ -17,6 +17,7 @@ public class Mesh {
      */
     private Face[] faces = new Face[1000];
     public int nbFaces;
+    private int vertexCount;
 
     /**
      * Ajoute une face au tableau de face.
@@ -72,6 +73,14 @@ public class Mesh {
         this.nbFaces--;
     }
 
+    public int getVertexCount(){
+        return this.vertexCount;
+    }
+
+    public void setVertexCountZero(){
+        this.vertexCount = 0;
+    }
+
     @OpenGLThread
     public void drawMesh(){
         synchronized (this.faces)
@@ -80,12 +89,13 @@ public class Mesh {
                 // Annonce à OpenGL le début du polygone
                 GL11.glBegin(GL11.GL_POLYGON);
 
-                for(int j = 0; j < this.faces[i].nbVertexs; j++){
-                    // Dessine chaque sommet de chaque face de la maille
-                    GL11.glVertex3f(this.faces[i].getVertex(j).x,
-                                    this.faces[i].getVertex(j).y,
-                                    this.faces[i].getVertex(j).z); 
-                }
+                    for(int j = 0; j < this.faces[i].nbVertexs; j++){
+                        // Dessine chaque sommet de chaque face de la maille
+                        GL11.glVertex3f(this.faces[i].getVertex(j).x,
+                                        this.faces[i].getVertex(j).y,
+                                        this.faces[i].getVertex(j).z); 
+                        this.vertexCount++;
+                    }
 
                 // Annonce à OpenGL la fin du polygone
                 GL11.glEnd();
