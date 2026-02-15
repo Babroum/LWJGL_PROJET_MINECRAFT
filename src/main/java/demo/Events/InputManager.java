@@ -1,10 +1,12 @@
-package demo;
+package demo.Events;
 
 import org.joml.Vector2f;
-import org.lwjgl.glfw.GLFW;
+import org.lwjgl.opengl.GL11;
 
-import demo.Events.KeyboardInput;
-import demo.Events.MouseInput;
+import demo.Annotations.OpenGLThread;
+import demo.Rendering.Camera;
+import demo.Rendering.SceneGraph;
+import demo.Rendering.Window;
 
 public class InputManager {
 
@@ -20,17 +22,19 @@ public class InputManager {
     private MouseInput mouseInput;
     private KeyboardInput keyboardInput;
 
+    @OpenGLThread
     public void create(long windowRef){
         this.mouseInput = new MouseInput(windowRef);
         this.keyboardInput = new KeyboardInput(windowRef);
     }
 
     /**
-     * Détecte les inputs clavier/souris et effectue les actions en conséquence
+     * Fait les actions en fonction des inputs
      * @param window Window
      * @param sceneGraph SceneGraph
      * @param deltaTime long
      */
+    @OpenGLThread
     public void run(Window window, SceneGraph sceneGraph, long deltaTime){
         // Récupère le dernier mouvement de la souris
         this.mouseInput.input();
@@ -39,25 +43,20 @@ public class InputManager {
         float move = deltaTime * this.MOVEMENTSPEED;
         Camera camera = sceneGraph.getCamera();
 
-        // Mouvement devant, derrière, gauche, droite, haut, bas
-        if (this.keyboardInput.isKeyPressed(GLFW.GLFW_KEY_W)) {
-            camera.moveForward(move);
-        } else if (this.keyboardInput.isKeyPressed(GLFW.GLFW_KEY_S)) {
-            camera.moveBackwards(move);
-        }
-        if (this.keyboardInput.isKeyPressed(GLFW.GLFW_KEY_A)) {
-            camera.moveLeft(move);
-        } else if (this.keyboardInput.isKeyPressed(GLFW.GLFW_KEY_D)) {
-            camera.moveRight(move);
-        }
-        if (this.keyboardInput.isKeyPressed(GLFW.GLFW_KEY_LEFT_SHIFT)) {
-            camera.moveUp(move);
-        } else if (this.keyboardInput.isKeyPressed(GLFW.GLFW_KEY_LEFT_CONTROL)) {
-            camera.moveDown(move);
+        // détecte les appuie continues
+        this.keyboardInput.keyPressedContinue(camera, move);
+
+        // Active/désactive le wireframe/cull face
+        if (this.keyboardInput.isWireFrameMode){
+            GL11.glDisable(GL11.GL_CULL_FACE); 
+            GL11.glPolygonMode(GL11.GL_FRONT_AND_BACK, GL11.GL_LINE); 
+        }else{
+            GL11.glEnable(GL11.GL_CULL_FACE); 
+            GL11.glPolygonMode(GL11.GL_FRONT_AND_BACK, GL11.GL_FILL); 
         }
 
-        // Quitte la fenêtre
-        if (this.keyboardInput.isKeyPressed(GLFW.GLFW_KEY_ESCAPE)){
+        // Ferme la fenêtre
+        if ( this.keyboardInput.isCloseWindow){
             window.closeWindow();
         }
 

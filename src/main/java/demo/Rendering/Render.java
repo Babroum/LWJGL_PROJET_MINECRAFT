@@ -1,4 +1,4 @@
-package demo;
+package demo.Rendering;
 
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL11;
@@ -8,7 +8,12 @@ import demo.Annotations.OpenGLThread;
 
 public class Render {
     
-    public SceneGraph sceneGraph = new SceneGraph();    
+    public SceneGraph sceneGraph = new SceneGraph(); 
+    private double[] fpsHistory = new double[60];
+
+    private int fpsIndex;
+    private int frameCount;
+    private float displayedFps = 0.0f;
 
     /**
      * Gère le rendu de la fenêtre.
@@ -18,32 +23,47 @@ public class Render {
     @OpenGLThread
     public void rendering(Window window, long windowRef){
         // Stocke le temps actuel (UNIX)
-        long initialTime = System.currentTimeMillis();
+        long lastTimeMs = System.currentTimeMillis();
+        long lastTimeNano = System.nanoTime();
 
         this.initialize3D(window.width, window.height);
 
         while ( !GLFW.glfwWindowShouldClose(windowRef) ) {  
-            // Stocke le temps actuel (UNIX) 
-            long now = System.currentTimeMillis();
+            // Stocke le temps actuel (UNIX) en nanosec
+            long nowMs = System.currentTimeMillis();
+            long nowNano = System.nanoTime();
+
 			GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT); // clear the framebuffer
 
-            // Gère le déplacement de la caméra 
-            window.getInputManager().run(window, sceneGraph, now - initialTime);
+            // Modifie le déplacement de la caméra 
+            window.getInputManager().run(window, sceneGraph, nowMs - lastTimeMs);
 
             // Réglage du modèle de la vue
             GL11.glMatrixMode(GL11.GL_MODELVIEW);
             GL11.glLoadIdentity();
-            // Donne la ViewMatrix au shader OpenGL
+            // Affiche la vue de la caméra 
             GL11.glLoadMatrixf(this.sceneGraph.getCamera().getViewMatrixBuffer());
 
             // Dessine la scène
             this.drawScene();     
-                
+
+            // Affiche les fps            
+            double delta = (nowNano - lastTimeNano) / 1_000_000_000.0;
+            this.calculateFPS(delta, window);
+
+            // Affiche le nombre de vertex à l'écran
+            window.getTextRender().drawText(window, "Vertex count : " + this.sceneGraph.getTotalVertexCount(), 0, 20, 20);
+            // Affiche le nombre de nœud à l'écran
+            window.getTextRender().drawText(window, "Node3D count : " + this.sceneGraph.getTotalNodeCount(), 0, 40, 20);
+            // Affiche la touche à appuyer pour toggle le wireframe
+            window.getTextRender().drawText(window, "Toggle WireFrameMode : E", 0, 60, 15);
+
             // Rends la fenêtre en buffer dessinée visible à l’écran
             GLFW.glfwSwapBuffers(windowRef);		
 
             GLFW.glfwPollEvents();
-            initialTime = now;
+            lastTimeMs = nowMs;           
+            lastTimeNano = nowNano; 
 		}
 
         window.exitWidow();
@@ -109,6 +129,23 @@ public class Render {
     @OpenGLThread
     private void drawScene(){
         this.sceneGraph.drawScene();
+    }
+
+    @OpenGLThread
+    private void calculateFPS(double delta, Window window){
+        if (delta > 0){
+            this.fpsHistory[this.fpsIndex] = 1.0 / delta;
+            this.fpsIndex = (this.fpsIndex + 1) % this.fpsHistory.length;
+            if (this.frameCount % 30 == 0){
+                double sum = 0;
+                for (double fps : fpsHistory){
+                    sum += fps;
+                }
+                this.displayedFps = (float)(sum / this.fpsHistory.length);
+            }
+            window.getTextRender().drawText(window, "AVG FPS : " + String.format("%.0f", this.displayedFps) , 0, 0, 20);
+            this.frameCount++;
+        }        
     }
 
     // gluPerspective n'existe plus, http://forum.lwjgl.org/index.php?topic=6566.0

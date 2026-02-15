@@ -1,4 +1,4 @@
-package demo;
+package demo.Rendering;
 
 import static org.lwjgl.system.MemoryUtil.NULL;
 
@@ -9,8 +9,7 @@ import org.lwjgl.opengl.GL;
 import org.lwjgl.system.MemoryUtil;
 
 import demo.Annotations.OpenGLThread;
-import demo.Events.KeyboardInput;
-import demo.Events.MouseInput;
+import demo.Events.InputManager;
 import demo.Events.WindowCloseEventManager;
 
 /**
@@ -33,6 +32,7 @@ public class Window {
     private Render render = new Render();
     private WindowCloseEventManager windowCloseEventManager = new WindowCloseEventManager();
     private InputManager inputManager = new InputManager();
+    private TextRender textRender;  
 
     public Window(){
         this(300, 300);
@@ -61,12 +61,12 @@ public class Window {
         GLFW.glfwWindowHint(GLFW.GLFW_RESIZABLE, GLFW.GLFW_FALSE); // Fenêtre pas redimensionable
         GLFW.glfwWindowHint(GLFW.GLFW_MAXIMIZED, GLFW.GLFW_FALSE); // La fenêtre essayera d'atteindre la taille demandée
 
-        this.window = GLFW.glfwCreateWindow(this.width, this.height, "test", NULL, NULL); // Créer la fenêtre
+        this.window = GLFW.glfwCreateWindow(this.width, this.height, "Wankraft", NULL, NULL); // Créer la fenêtre
         if (this.window == MemoryUtil.NULL) {
             this.closeGLFW();
             throw new RuntimeException("Impossible de créer la fenêtre");
         }
-        
+
         // Creer Listeners clavier/souris
         this.inputManager.create(window);
 
@@ -75,17 +75,23 @@ public class Window {
 
         GLFW.glfwMakeContextCurrent(this.window); // glfwSwapInterval needs a context on the calling thread, otherwise will cause NO_CURRENT_CONTEXT error    
 
-        GLFW.glfwSwapInterval(1); // Le nombre de dessin avant d'échanger les buffers
+        GLFW.glfwSwapInterval(1); // Le nombre de dessin avant d'échanger les buffers (Vsync)
 
         GLFW.glfwShowWindow(this.window); // Affiche la fenêtre
 
         GL.createCapabilities(); // Will let lwjgl know we want to use this context as the context to draw with
         
+        this.textRender = new TextRender("res/Textures/Font.png", 20, 20, 19,
+                                        " !\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"); 
+
         this.render.rendering(this, this.window);
     }
 
     public InputManager getInputManager(){
         return this.inputManager;
+    }
+    public TextRender getTextRender(){
+        return this.textRender;
     }
 
     public void exitWidow()

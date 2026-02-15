@@ -33,6 +33,7 @@ public class Object3D extends Node3D{
     @OpenGLThread
     @Override
     public void drawSpecific(){
+        this.mesh.setVertexCountZero();
         this.color.apply();
         this.mesh.drawMesh();
     }

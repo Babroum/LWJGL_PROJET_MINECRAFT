@@ -1,9 +1,11 @@
-package demo;
+package demo.Rendering;
 
 import java.nio.FloatBuffer;
 
 import org.joml.*;
 import org.lwjgl.BufferUtils;
+
+import demo.Annotations.OpenGLThread;
 
 // source : https://ahbejarano.gitbook.io/lwjglgamedev/chapter-08
 /**
@@ -33,6 +35,7 @@ public class Camera {
      * @param x float
      * @param y float
      */
+    @OpenGLThread
     public void addRotation(float x, float y){
         this.rotation.add(x, y);
         this.recalculate();
@@ -50,6 +53,7 @@ public class Camera {
      * Retourne la viewMatrix
      * @return Matrix4f
      */
+    @OpenGLThread
     public Matrix4f getViewMatrix(){
         return this.viewMatrix;
     }
@@ -58,6 +62,7 @@ public class Camera {
      * Retourne la matrice sous forme de FloatBuffer pour OpenGL
      * @return FloatBuffer
      */
+    @OpenGLThread
     public FloatBuffer getViewMatrixBuffer(){
         this.matrixBuffer.clear();
         this.getViewMatrix().get(matrixBuffer);
@@ -69,6 +74,7 @@ public class Camera {
      * Modifie le vecteur de position qui modifie la viewMatrice
      * @param inc float
      */
+    @OpenGLThread
     public void moveBackwards(float inc){
         this.viewMatrix.positiveZ(this.direction).negate().mul(inc);
         this.position.sub(this.direction);
@@ -80,6 +86,7 @@ public class Camera {
      * Modifie le vecteur up qui modifie la viewMatrice
      * @param inc float
      */
+    @OpenGLThread
     public void moveDown(float inc){
         this.viewMatrix.positiveY(this.up).mul(inc);
         this.position.sub(this.up);
@@ -91,6 +98,7 @@ public class Camera {
      * Modifie le vecteur de position qui modifie la viewMatrice
      * @param inc float
      */
+    @OpenGLThread
     public void moveForward(float inc){
         this.viewMatrix.positiveZ(this.direction).negate().mul(inc);
         this.position.add(this.direction);
@@ -102,6 +110,7 @@ public class Camera {
      * Modifie le vecteur right qui modifie la viewMatrice
      * @param inc float
      */
+    @OpenGLThread
     public void moveLeft(float inc){
         this.viewMatrix.positiveX(this.right).mul(inc);
         this.position.sub(this.right);
@@ -113,6 +122,7 @@ public class Camera {
      * Modifie le vecteur right qui modifie la viewMatrice
      * @param inc float
      */
+    @OpenGLThread
     public void moveRight(float inc){
         this.viewMatrix.positiveX(this.right).mul(inc);
         this.position.add(this.right);
@@ -124,6 +134,7 @@ public class Camera {
      * Modifie le vecteur up qui modifie la viewMatrice
      * @param inc float
      */
+    @OpenGLThread
     public void moveUp(float inc){
         this.viewMatrix.positiveY(this.up).mul(inc);
         this.position.add(this.up);
@@ -134,6 +145,7 @@ public class Camera {
      * Recalcule la viewMatrix
      * @param inc float
      */
+    @OpenGLThread
     private void recalculate(){
         viewMatrix.identity().rotateX(this.rotation.x).rotateY(this.rotation.y).translate(-position.x, -position.y, -position.z);
     }

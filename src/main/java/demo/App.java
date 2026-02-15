@@ -2,6 +2,8 @@ package demo;
 
 import demo.Geometry.Clone3D;
 import demo.Geometry.Cube;
+import demo.Rendering.SceneGraph;
+import demo.Rendering.Window;
 import demo.Types.Color4f;
 
 public class App 

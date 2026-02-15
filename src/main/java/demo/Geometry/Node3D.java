@@ -108,6 +108,14 @@ public class Node3D {
     }
 
     /**
+     * Retourne le tableau d'enfant du nœud
+     * @return
+     */
+    public Node3D[] getChildren(){
+        return this.children;
+    }
+
+    /**
      * Dessin supplémentaire pour le nœud 
      * <p>
      * A surcharger par les classes enfants
