@@ -5,7 +5,10 @@ import static org.lwjgl.system.MemoryUtil.NULL;
 import org.lwjgl.glfw.Callbacks;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWErrorCallback;
+import org.lwjgl.glfw.GLFWFramebufferSizeCallbackI;
+import org.lwjgl.glfw.GLFWWindowRefreshCallbackI;
 import org.lwjgl.opengl.GL;
+import org.lwjgl.opengl.GL11;
 import org.lwjgl.system.MemoryUtil;
 
 import demo.Annotations.OpenGLThread;
@@ -32,7 +35,7 @@ public class Window {
     private Render render = new Render();
     private WindowCloseEventManager windowCloseEventManager = new WindowCloseEventManager();
     private InputManager inputManager = new InputManager();
-    private TextRender textRender;  
+    private TextRender textRender;
 
     public Window(){
         this(300, 300);
@@ -42,7 +45,7 @@ public class Window {
         this.height = Math.max(150, height);
         // le :: permet de passer  en paramètre la méthode init dans le thread, car this.init() ne fait pas passer  la méthode en paramètre mais l'exécuté
         // le :: est comme un raccourci pour un lambda, sinon il faut faire Thread(() -> this.init()) 
-        (new Thread(this::init)).start(); // démare le thread
+        (new Thread(this::init)).start(); // démarre le thread
     }
 
     @OpenGLThread
@@ -58,7 +61,7 @@ public class Window {
         GLFW.glfwDefaultWindowHints(); // Charge les paramètres par défaut de fenêtre de GLFW
         GLFW.glfwWindowHint(GLFW.GLFW_VISIBLE, GLFW.GLFW_FALSE); // Cache la fenêtre
         GLFW.glfwWindowHint(GLFW.GLFW_DECORATED, GLFW.GLFW_TRUE); // Contour de fenetre
-        GLFW.glfwWindowHint(GLFW.GLFW_RESIZABLE, GLFW.GLFW_FALSE); // Fenêtre pas redimensionable
+        GLFW.glfwWindowHint(GLFW.GLFW_RESIZABLE, GLFW.GLFW_TRUE); // Fenêtre redimensionable?
         GLFW.glfwWindowHint(GLFW.GLFW_MAXIMIZED, GLFW.GLFW_FALSE); // La fenêtre essayera d'atteindre la taille demandée
 
         this.window = GLFW.glfwCreateWindow(this.width, this.height, "Wankraft", NULL, NULL); // Créer la fenêtre
@@ -66,6 +69,22 @@ public class Window {
             this.closeGLFW();
             throw new RuntimeException("Impossible de créer la fenêtre");
         }
+
+        /**
+         * callback pour redimension de fenetre en gros quand fenetre est redimensionnee executer ce code
+         * !! ne fonctionne pas encore pour le texte je verrai sa plus tard
+         */
+        GLFW.glfwSetFramebufferSizeCallback(this.window, new GLFWFramebufferSizeCallbackI() {
+            @Override
+            public void invoke(long window, int width, int height) {
+                GL11.glViewport(0, 0, width, height); // Redimensionne le glViewPort
+                GL11.glMatrixMode(GL11.GL_PROJECTION); // Fait pour changer la matrice de projection (pour ne pas etre étiré)
+                GL11.glLoadIdentity(); // recharger
+                final double ratio = (double) width / (double) height; // calculer la nouvelle ratio
+                Render.gluPerspective(45.0, ratio, 0.1, 5000.0); // changer la perpective
+                GL11.glMatrixMode(GL11.GL_MODELVIEW); // remettre la matrice a modelview
+            }
+        });
 
         // Creer Listeners clavier/souris
         this.inputManager.create(window);
@@ -75,16 +94,17 @@ public class Window {
 
         GLFW.glfwMakeContextCurrent(this.window); // glfwSwapInterval needs a context on the calling thread, otherwise will cause NO_CURRENT_CONTEXT error    
 
-        GLFW.glfwSwapInterval(1); // Le nombre de dessin avant d'échanger les buffers (Vsync)
+        GLFW.glfwSwapInterval(0); // Le nombre de dessin avant d'échanger les buffers (Vsync)
 
         GLFW.glfwShowWindow(this.window); // Affiche la fenêtre
 
         GL.createCapabilities(); // Will let lwjgl know we want to use this context as the context to draw with
-        
+
         this.textRender = new TextRender("res/Textures/Font.png", 20, 20, 19,
                                         " !\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"); 
 
         this.render.rendering(this, this.window);
+
     }
 
     public InputManager getInputManager(){

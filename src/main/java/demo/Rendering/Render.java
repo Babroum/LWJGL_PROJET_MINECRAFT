@@ -149,7 +149,7 @@ public class Render {
     }
 
     // gluPerspective n'existe plus, http://forum.lwjgl.org/index.php?topic=6566.0
-    private static void gluPerspective(double fovy, double aspect, double near, double far) {
+    public static void gluPerspective(double fovy, double aspect, double near, double far) {
         double bottom = -near * (double) Math.tan(fovy / 2);
         double top = -bottom;
         double left = aspect * bottom;
