@@ -1,12 +1,16 @@
 package demo.Rendering;
 
 import java.nio.ByteBuffer;
+import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL20;
+import org.lwjgl.opengl.GL30;
 import org.lwjgl.stb.*;
 
+import demo.ShaderManager;
 import demo.Annotations.OpenGLThread;
 import demo.Types.Color4f;
 
@@ -21,7 +25,6 @@ public class TextRender {
     private int height;
     private int textureId;
     private int fontPerRow;
-    private Color4f color = Color4f.BLACK;
     private String chars;
 
     /**
@@ -60,7 +63,7 @@ public class TextRender {
         this.textureId = GL11.glGenTextures();
         if (this.textureId <= 0) { return;}
         // définis la texture
-        GL11.glBindTexture(GL11.GL_TEXTURE_2D, this.textureId);
+        GL11.glBindTexture(GL11.GL_TEXTURE_2D, this.textureId);       
         GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA, this.width, this.height, 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, pixels);
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_NEAREST);
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_NEAREST);
@@ -68,6 +71,8 @@ public class TextRender {
         // libère les mémoires
         STBImage.stbi_image_free(pixels);
         GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
+
+        ShaderManager.createTextShader();
     }
 
     /**
@@ -79,39 +84,51 @@ public class TextRender {
      * @param ftSize int, taille d'un caractère
      */
     @OpenGLThread
-    public void drawText(Window window, String text, int x, int y, int fontSize){   
-        // permet d'afficher le texte que sur X et Y (coller a l'écran)  
-        GL11.glMatrixMode(GL11.GL_PROJECTION);
-        GL11.glPushMatrix();
-        GL11.glLoadIdentity();
-        GL11.glOrtho(0, window.width, window.height, 0, -1, 1);
+    public void drawText(Window window, String text, int x, int y, int fontSize, Color4f color){   
 
-        GL11.glMatrixMode(GL11.GL_MODELVIEW);
-        GL11.glPushMatrix();         
-        GL11.glLoadIdentity();
+        ShaderManager.useTextShader();
+        ShaderManager.runTextOrtho(window.width, window.height);
+        ShaderManager.runTextFragmentColor(color.red, color.green, color.blue, color.alpha);
 
-        // désactive le teste de profondeur car 2D et active les textures2D et récupe notre texture
         GL11.glDisable(GL11.GL_DEPTH_TEST);
-        GL11.glEnable(GL11.GL_TEXTURE_2D);
+        GL20.glActiveTexture(GL20.GL_TEXTURE0);
         GL11.glBindTexture(GL11.GL_TEXTURE_2D, this.textureId);
+        GL20.glUniform1i(GL20.glGetUniformLocation(ShaderManager.getProgramTextId(), "tex"), 0); // 0 = texture unit 0
 
-        //this.color.apply();
-        // dessine chaque lettre
-        GL11.glBegin(GL11.GL_QUADS);  
-            for (int i = 0; i < text.length(); i++){
-                this.drawChar(text.charAt(i), this.chars, x + i * fontSize, y, fontSize);
-            }             
-        GL11.glEnd();
-        
-        // remet comme avant
+        float[] data = new float[text.length() * 16]; // 6 vertices * 4 (x,y,u,v) par caractère
+        for (int i = 0; i < text.length(); i++){
+            float[] charData = this.drawChar(text.charAt(i), this.chars, x + i * fontSize, y, fontSize);
+            System.arraycopy(charData, 0, data, i * 16, 16);
+        }
+
+        int[] indices = new int[text.length() * 6];
+        for(int i = 0; i < text.length(); i++){
+            int v = i * 4;
+            indices[i*6+0] = v;
+            indices[i*6+1] = v+1;
+            indices[i*6+2] = v+2;
+            indices[i*6+3] = v+2;
+            indices[i*6+4] = v+3;
+            indices[i*6+5] = v;
+        }
+
+        FloatBuffer vertexsBuffer = BufferUtils.createFloatBuffer(text.length() * 16);
+        vertexsBuffer.put(data).flip();
+
+        IntBuffer indicesBuffer = BufferUtils.createIntBuffer(text.length() * 6);
+        indicesBuffer.put(indices).flip();
+
+        int[] ids = ShaderManager.createTextVBOVAOEBO(vertexsBuffer, indicesBuffer);
+
+        GL30.glBindVertexArray(ids[0]);
+        GL11.glDrawElements(GL11.GL_TRIANGLES, indices.length, GL11.GL_UNSIGNED_INT, 0);
+        GL30.glBindVertexArray(0);
+
+        ShaderManager.deleteVBOVAOEBO(ids); // a modifier par des vbo dynamique
+
         GL11.glEnable(GL11.GL_DEPTH_TEST);
 
-        GL11.glDisable(GL11.GL_TEXTURE_2D);
-        GL11.glMatrixMode(GL11.GL_PROJECTION);
-        GL11.glPopMatrix(); // restaure la matrice de projection avant modification
-
-        GL11.glMatrixMode(GL11.GL_MODELVIEW);
-        GL11.glPopMatrix();
+        ShaderManager.useShader();      
     }
 
     /**
@@ -122,7 +139,7 @@ public class TextRender {
      * @param y int
      */
     @OpenGLThread
-    private void drawChar(char c, String text, int x, int y, int fontSize){
+    private float[] drawChar(char c, String text, int x, int y, int fontSize){
         float row = 0f;
 
         // pour chaque caractère dans la liste de caractère
@@ -136,21 +153,14 @@ public class TextRender {
                 float column = (i % this.fontPerRow) * this.gridWidth / (float)this.width;
                 row = this.gridHeight * row / (float)this.height;
 
-                // dessine le quad du caractère
-                GL11.glTexCoord2f(column, row);
-                GL11.glVertex2f(x, y);
+                return new float[]{x, y, column, row, 
+                                   x + fontSize, y, column + (float)this.gridWidth / this.width, row,
+                                   x + fontSize, y + fontSize, column + (float)this.gridWidth / this.width, row + (float)this.gridHeight / height,
+                                   x, y + fontSize, column, row + (float)this.gridHeight / height
+                };
 
-                GL11.glTexCoord2f(column + (float)this.gridWidth / this.width, row);
-                GL11.glVertex2f(x + fontSize, y);
-
-                GL11.glTexCoord2f(column + (float)this.gridWidth / this.width, row + (float)this.gridHeight / height);
-                GL11.glVertex2f(x + fontSize, y + fontSize);
-
-                GL11.glTexCoord2f(column, row + (float)this.gridHeight / height);
-                GL11.glVertex2f(x, y + fontSize);                
-
-                return;
             }
         }
+        return null;
     }
 }

@@ -8,7 +8,13 @@ public class Object3D extends Node3D{
 
     private Color4f color = new Color4f(0);
     public Mesh mesh = new Mesh();
-    
+
+    @OpenGLThread
+    public void setupObjectBuffers(){
+        this.mesh.fillFloatBufferVertex();
+        this.mesh.fillIntBufferIndices();
+        this.mesh.setupVBOVAOEBO();
+    }
     /**
      * Définis la couleur de l'objet3D
      * @param color Color4f
@@ -33,7 +39,6 @@ public class Object3D extends Node3D{
     @OpenGLThread
     @Override
     public void drawSpecific(){
-        this.mesh.setVertexCountZero();
         this.color.apply();
         this.mesh.drawMesh();
     }
