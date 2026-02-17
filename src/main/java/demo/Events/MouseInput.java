@@ -31,17 +31,22 @@ public class MouseInput {
         this.inWindow = false;
 
         // Callback quand la souris est bougé
-        GLFW.glfwSetCursorPosCallback(windowRef, (handle, xpos, ypos) -> {
-            currentPos.x = (float) xpos - window.width/2;
-            currentPos.y = (float) ypos - window.height/2;
-            GLFW.glfwSetCursorPos(windowRef, window.width/2, window.height/2);
-        });
+        setCursorPosCallback(windowRef, window);
         // Callback quand la souris est dans la fenêtre ou en dehors
         GLFW.glfwSetCursorEnterCallback(windowRef, (handle, entered) -> inWindow = entered);
         // Callback quand un bouton de la souris est cliqué
         GLFW.glfwSetMouseButtonCallback(windowRef, (handle, button, action, mode) -> {
             leftButtonPressed = button == GLFW.GLFW_MOUSE_BUTTON_1 && action == GLFW.GLFW_PRESS;
             rightButtonPressed = button == GLFW.GLFW_MOUSE_BUTTON_2 && action == GLFW.GLFW_PRESS;
+        });
+    }
+
+    @OpenGLThread
+    public void setCursorPosCallback(long windowRef, Window window){
+        GLFW.glfwSetCursorPosCallback(windowRef, (handle, xpos, ypos) -> {
+            currentPos.x = (float) xpos - window.width/2;
+            currentPos.y = (float) ypos - window.height/2;
+            GLFW.glfwSetCursorPos(windowRef, window.width/2, window.height/2);
         });
     }
 

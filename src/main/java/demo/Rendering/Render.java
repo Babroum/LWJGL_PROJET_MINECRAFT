@@ -66,7 +66,7 @@ public class Render {
             lastTimeNano = nowNano; 
 		}
 
-        window.exitWidow();
+        window.exitWindow();
     }
     @OpenGLThread
     private void initialize3D(final int width, final int height)

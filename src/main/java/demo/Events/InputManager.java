@@ -2,6 +2,8 @@ package demo.Events;
 
 import org.joml.Vector2f;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.system.NativeType;
+import org.lwjgl.glfw.GLFW;
 
 import demo.Annotations.OpenGLThread;
 import demo.Rendering.Camera;
@@ -60,11 +62,28 @@ public class InputManager {
             window.closeWindow();
         }
 
-        // Déplace la caméra avec la souris si le click droit est appuyé
-        if (this.mouseInput.isRightButtonPressed()) {
+        // Déplace la caméra avec la souris et la bloque au milieu, desactive si pas selectionne ou en pause
+        if (GLFW.glfwGetWindowAttrib(window.getWindow(),GLFW.GLFW_FOCUSED)==1 && !this.keyboardInput.isPaused){
+            GLFW.glfwSetCursorPos(window.getWindow(), window.width/2, window.height/2);
             Vector2f displVec = this.mouseInput.getDisplVec();
             camera.addRotation((float) Math.toRadians(displVec.x * this.MOUSESENS),
-                               (float) Math.toRadians(displVec.y * this.MOUSESENS));
+                            (float) Math.toRadians(displVec.y * this.MOUSESENS));
+        }
+        
+        if (this.keyboardInput.isCursorHidden){
+            GLFW.glfwSetInputMode(window.getWindow(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_HIDDEN);
+        }
+        else{
+            GLFW.glfwSetInputMode(window.getWindow(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
+        }
+
+        if (this.keyboardInput.isPaused){
+            GLFW.glfwSetCursorPosCallback(window.getWindow(), null);
+            this.keyboardInput.isCursorHidden=false;
+        }
+        else{
+            mouseInput.setCursorPosCallback(window.getWindow(), window);
+            this.keyboardInput.isCursorHidden=true;
         }
     }
 }

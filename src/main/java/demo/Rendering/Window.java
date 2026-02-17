@@ -6,7 +6,6 @@ import org.lwjgl.glfw.Callbacks;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.glfw.GLFWFramebufferSizeCallbackI;
-import org.lwjgl.glfw.GLFWWindowRefreshCallbackI;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.system.MemoryUtil;
@@ -116,7 +115,7 @@ public class Window {
         return this.textRender;
     }
 
-    public void exitWidow()
+    public void exitWindow()
     {
         // On libère tous les listeners
         Callbacks.glfwFreeCallbacks(this.window);
@@ -144,5 +143,9 @@ public class Window {
      */
     public SceneGraph getSceneGraph(){
         return this.render.sceneGraph;
+    }
+
+    public long getWindow(){
+        return this.window;
     }
 }

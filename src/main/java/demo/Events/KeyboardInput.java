@@ -15,7 +15,8 @@ public class KeyboardInput {
 
     public boolean isWireFrameMode;
     public boolean isCloseWindow;
-    public boolean isCursorHidden;
+    public boolean isCursorHidden=true;
+    public boolean isPaused;
 
     @OpenGLThread
     public KeyboardInput(long windowRef){
@@ -38,8 +39,13 @@ public class KeyboardInput {
                     this.isCloseWindow = true;
                     break;
                 
-                case GLFW.GLFW_KEY_E:
+                case GLFW.GLFW_KEY_C:
                     this.isCursorHidden = !this.isCursorHidden;
+                    break;
+                
+                case GLFW.GLFW_KEY_P:
+                    this.isPaused = !this.isPaused;
+                    break;
 
                 default:
                     break;
