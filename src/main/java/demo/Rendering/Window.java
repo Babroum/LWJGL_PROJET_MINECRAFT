@@ -6,8 +6,10 @@ import org.lwjgl.glfw.Callbacks;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.opengl.GL;
+import org.lwjgl.opengl.GLCapabilities;
 import org.lwjgl.system.MemoryUtil;
 
+import demo.ShaderManager;
 import demo.Annotations.OpenGLThread;
 import demo.Events.InputManager;
 import demo.Events.WindowCloseEventManager;
@@ -33,13 +35,20 @@ public class Window {
     private WindowCloseEventManager windowCloseEventManager = new WindowCloseEventManager();
     private InputManager inputManager = new InputManager();
     private TextRender textRender;  
+    private GLCapabilities openGL;
+    private Runnable onReady;
 
     public Window(){
         this(300, 300);
     }    
     public Window(int width, int height){
         this.width = Math.max(150, width);
-        this.height = Math.max(150, height);
+        this.height = Math.max(150, height);   
+    }
+
+    public void startWindow(Runnable onReady){   
+        // onReady permet juste de verifie que le contexte openGL est créer avant de lancer le dessin      
+        this.onReady = onReady;
         // le :: permet de passer  en paramètre la méthode init dans le thread, car this.init() ne fait pas passer  la méthode en paramètre mais l'exécuté
         // le :: est comme un raccourci pour un lambda, sinon il faut faire Thread(() -> this.init()) 
         (new Thread(this::init)).start(); // démare le thread
@@ -79,10 +88,12 @@ public class Window {
 
         GLFW.glfwShowWindow(this.window); // Affiche la fenêtre
 
-        GL.createCapabilities(); // Will let lwjgl know we want to use this context as the context to draw with
+        this.openGL = GL.createCapabilities(); // Will let lwjgl know we want to use this context as the context to draw with
+
+        if(this.onReady != null) this.onReady.run();
         
         this.textRender = new TextRender("res/Textures/Font.png", 20, 20, 19,
-                                        " !\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"); 
+                                        " !\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~");   
 
         this.render.rendering(this, this.window);
     }
@@ -92,6 +103,9 @@ public class Window {
     }
     public TextRender getTextRender(){
         return this.textRender;
+    }
+    public GLCapabilities getOpenGl(){
+        return this.openGL;
     }
 
     public void exitWidow()
@@ -105,6 +119,7 @@ public class Window {
     }
 
     public void closeWindow(){
+        ShaderManager.close();
         this.windowCloseEventManager.closeWidow(this.window);
     }
 

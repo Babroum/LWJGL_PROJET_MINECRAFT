@@ -1,7 +1,12 @@
 package demo.Geometry;
 
+import java.nio.FloatBuffer;
+
+import org.joml.Matrix4f;
+import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 
+import demo.ShaderManager;
 import demo.Annotations.OpenGLThread;
 import demo.Exceptions.ArrayFull;
 
@@ -77,20 +82,16 @@ public class Node3D {
      */
     @OpenGLThread
     public void drawNode(){
-        // On sauvegarde la matrice actuelle
-        GL11.glPushMatrix();
-
-        // *** Position du nœud ***
-        // Position aux coordonnées X, Y, Z
-        GL11.glTranslatef(this.x, this.y, this.z);
-        // Rotation autour de l'axe X
-        GL11.glRotatef(this.angleX, 1f, 0f, 0f);
-        // Rotation autour de l'axe Y
-        GL11.glRotatef(this.angleY, 0f, 1f, 0f);
-        // Rotation autour de l'axe Z
-        GL11.glRotatef(this.angleZ, 0f, 0f, 1f);
-        // Application des facteurs d'échelle
-        GL11.glScalef(this.scaleX, this.scaleY, this.scaleZ);
+        // Crée la model matrix
+        FloatBuffer buffer = BufferUtils.createFloatBuffer(16);
+        Matrix4f model = new Matrix4f()
+            .translate(this.x, this.y, this.z) // Position aux coordonnées X, Y, Z
+            .rotateX((float) Math.toRadians(this.angleX)) // Rotation autour de l'axe X
+            .rotateY((float) Math.toRadians(this.angleY)) // Rotation autour de l'axe Y
+            .rotateZ((float) Math.toRadians(this.angleZ)) // Rotation autour de l'axe Z
+            .scale(this.scaleX, this.scaleY, this.scaleZ); // Application des facteurs d'échelle
+        model.get(buffer);
+        ShaderManager.runModel(buffer);
 
         // Dessin spécifique
         this.drawSpecific();
@@ -102,9 +103,6 @@ public class Node3D {
                 this.children[i].drawNode();
             }
         }          
-
-        // On restaure la matrice sauvegardée
-        GL11.glPopMatrix();
     }
 
     /**
@@ -124,6 +122,5 @@ public class Node3D {
      */
     @OpenGLThread
     public void drawSpecific(){
-
     }
 }

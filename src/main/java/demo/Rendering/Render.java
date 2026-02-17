@@ -1,10 +1,17 @@
 package demo.Rendering;
 
+import java.nio.FloatBuffer;
+
+import org.joml.Matrix4f;
+import org.lwjgl.BufferUtils;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL11;
-import org.lwjgl.opengl.GL12;
 
+import demo.ShaderManager;
 import demo.Annotations.OpenGLThread;
+import demo.Geometry.Node3D;
+import demo.Geometry.Object3D;
+import demo.Types.Color4f;
 
 public class Render {
     
@@ -28,6 +35,15 @@ public class Render {
 
         this.initialize3D(window.width, window.height);
 
+        for(Node3D obj : window.getSceneGraph().root.getChildren()){
+            if (obj instanceof Object3D){
+                ((Object3D)obj).setupObjectBuffers();
+            }
+        }  
+
+        // positionne la camera
+        this.sceneGraph.getCamera().setPosition(0, 0, 3);
+
         while ( !GLFW.glfwWindowShouldClose(windowRef) ) {  
             // Stocke le temps actuel (UNIX) en nanosec
             long nowMs = System.currentTimeMillis();
@@ -38,12 +54,12 @@ public class Render {
             // Modifie le déplacement de la caméra 
             window.getInputManager().run(window, sceneGraph, nowMs - lastTimeMs);
 
-            // Réglage du modèle de la vue
-            GL11.glMatrixMode(GL11.GL_MODELVIEW);
-            GL11.glLoadIdentity();
-            // Affiche la vue de la caméra 
-            GL11.glLoadMatrixf(this.sceneGraph.getCamera().getViewMatrixBuffer());
-
+            ShaderManager.useShader();
+            
+            // donne les matrices de camera et perspective au shader
+            ShaderManager.runProjection(this.calculateProjection(45.0f, (float) window.width / window.height, 0.1f, 5000.f)); // donne la perspective de l'ecran
+            ShaderManager.runView(this.sceneGraph.getCamera().getViewMatrixBuffer()); // donne la vue de la camera
+                                     
             // Dessine la scène
             this.drawScene();     
 
@@ -52,11 +68,11 @@ public class Render {
             this.calculateFPS(delta, window);
 
             // Affiche le nombre de vertex à l'écran
-            window.getTextRender().drawText(window, "Vertex count : " + this.sceneGraph.getTotalVertexCount(), 0, 20, 20);
+            window.getTextRender().drawText(window, "Vertex count : " + this.sceneGraph.getTotalVertexCount(), 0, 20, 20, Color4f.BLUE);
             // Affiche le nombre de nœud à l'écran
-            window.getTextRender().drawText(window, "Node3D count : " + this.sceneGraph.getTotalNodeCount(), 0, 40, 20);
+            window.getTextRender().drawText(window, "Node3D count : " + this.sceneGraph.getTotalNodeCount(), 0, 40, 20, Color4f.YELLOW);
             // Affiche la touche à appuyer pour toggle le wireframe
-            window.getTextRender().drawText(window, "Toggle WireFrameMode : E", 0, 60, 15);
+            window.getTextRender().drawText(window, "Toggle WireFrameMode : E", 0, 60, 15, Color4f.PURPLE);
 
             // Rends la fenêtre en buffer dessinée visible à l’écran
             GLFW.glfwSwapBuffers(windowRef);		
@@ -80,8 +96,6 @@ public class Render {
         GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
 
         /// *** Apparence globale ***
-        // Les matériaux peuvent être colorés
-        GL11.glEnable(GL11.GL_COLOR_MATERIAL);
         // Pour des raisons de performances, on désactive les textures de manière globale, on les activera au cas par cas
         GL11.glDisable(GL11.GL_TEXTURE_2D);
         // On active la possibilité de combiner des effets
@@ -96,16 +110,6 @@ public class Render {
         // On veut une projection normalisée
         GL11.glEnable(GL11.GL_NORMALIZE);
 
-        // Réglage de la projection
-        GL11.glMatrixMode(GL11.GL_PROJECTION);
-        GL11.glLoadIdentity();
-
-        final double ratio = (double) width / (double) height;
-        Render.gluPerspective(45.0, ratio, 0.1, 5000.0);
-        // Réglage du modèle de la vue
-        GL11.glMatrixMode(GL11.GL_MODELVIEW);
-        GL11.glLoadIdentity();
-
         // Au départ on met un écran rouge
         GL11.glClearColor(1f, 0f, 0f, 1f);
         // On active le test de profondeur
@@ -113,16 +117,9 @@ public class Render {
 
         // Active les face visible que d’un côté (Pour éviter de dessiner des choses qui seront toujours cachées)
         GL11.glEnable(GL11.GL_CULL_FACE);
-        GL11.glCullFace(GL11.GL_FRONT);
+        GL11.glCullFace(GL11.GL_FRONT);        
 
-        // Éclairage de base pour un effet agréable
-        GL11.glLightModeli(GL11.GL_LIGHT_MODEL_LOCAL_VIEWER, GL11.GL_TRUE);
-        GL11.glShadeModel(GL11.GL_SMOOTH);
-        GL11.glLightModeli(GL12.GL_LIGHT_MODEL_COLOR_CONTROL, GL12.GL_SEPARATE_SPECULAR_COLOR);
-        GL11.glLightModeli(GL11.GL_LIGHT_MODEL_TWO_SIDE, 1);
-
-        // Active l’éclairage
-        //GL11.glEnable(GL11.GL_LIGHTING);
+        ShaderManager.createShader();        
     }
 
     
@@ -143,17 +140,15 @@ public class Render {
                 }
                 this.displayedFps = (float)(sum / this.fpsHistory.length);
             }
-            window.getTextRender().drawText(window, "AVG FPS : " + String.format("%.0f", this.displayedFps) , 0, 0, 20);
+            window.getTextRender().drawText(window, "AVG FPS : " + String.format("%.0f", this.displayedFps) , 0, 0, 20, Color4f.RED);
             this.frameCount++;
         }        
     }
 
-    // gluPerspective n'existe plus, http://forum.lwjgl.org/index.php?topic=6566.0
-    private static void gluPerspective(double fovy, double aspect, double near, double far) {
-        double bottom = -near * (double) Math.tan(fovy / 2);
-        double top = -bottom;
-        double left = aspect * bottom;
-        double right = -left;
-        GL11.glFrustum(left, right, bottom, top, near, far);
+    private FloatBuffer calculateProjection(float fov, float aspect, float near, float far) {
+        FloatBuffer matrixBuffer = BufferUtils.createFloatBuffer(16);
+        Matrix4f projection = new Matrix4f().perspective((float) Math.toRadians(fov), aspect, near, far);
+        projection.get(matrixBuffer);
+        return matrixBuffer;
     }
 }
