@@ -87,7 +87,7 @@ public class Window {
         });
 
         // Creer Listeners clavier/souris
-        this.inputManager.create(window);
+        this.inputManager.create(window, this);
 
         // Management de la fermeture de la fenêtre
         GLFW.glfwSetWindowCloseCallback(this.window, this.windowCloseEventManager);
@@ -96,9 +96,10 @@ public class Window {
 
         GLFW.glfwSwapInterval(0); // Le nombre de dessin avant d'échanger les buffers (Vsync)
 
+        GL.createCapabilities(); // Will let lwjgl know we want to use this context as the context to draw with
+
         GLFW.glfwShowWindow(this.window); // Affiche la fenêtre
 
-        GL.createCapabilities(); // Will let lwjgl know we want to use this context as the context to draw with
 
         this.textRender = new TextRender("res/Textures/Font.png", 20, 20, 19,
                                         " !\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"); 

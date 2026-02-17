@@ -13,7 +13,7 @@ public class InputManager {
     /**
      * Vitesse de déplacement de la caméra
      */
-    private final float MOVEMENTSPEED = 0.005f;
+    private final float MOVEMENTSPEED = 0.001f;
     /**
      * Sensibilité de la souris
      */
@@ -23,8 +23,8 @@ public class InputManager {
     private KeyboardInput keyboardInput;
 
     @OpenGLThread
-    public void create(long windowRef){
-        this.mouseInput = new MouseInput(windowRef);
+    public void create(long windowRef, Window window){
+        this.mouseInput = new MouseInput(windowRef, window);
         this.keyboardInput = new KeyboardInput(windowRef);
     }
 
@@ -63,8 +63,8 @@ public class InputManager {
         // Déplace la caméra avec la souris si le click droit est appuyé
         if (this.mouseInput.isRightButtonPressed()) {
             Vector2f displVec = this.mouseInput.getDisplVec();
-            camera.addRotation((float) Math.toRadians(-displVec.x * this.MOUSESENS),
-                               (float) Math.toRadians(-displVec.y * this.MOUSESENS));
+            camera.addRotation((float) Math.toRadians(displVec.x * this.MOUSESENS),
+                               (float) Math.toRadians(displVec.y * this.MOUSESENS));
         }
     }
 }

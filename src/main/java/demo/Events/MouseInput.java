@@ -5,6 +5,7 @@ import org.joml.Vector2f;
 import org.lwjgl.glfw.GLFW;
 
 import demo.Annotations.OpenGLThread;
+import demo.Rendering.Window;
 
 public class MouseInput {
     
@@ -21,7 +22,7 @@ public class MouseInput {
      * @param windowRef long
      */
     @OpenGLThread
-    public MouseInput(long windowRef){
+    public MouseInput(long windowRef, Window window){
         this.previousPos = new Vector2f(-1, -1);
         this.currentPos = new Vector2f();
         this.displVec = new Vector2f();
@@ -31,8 +32,9 @@ public class MouseInput {
 
         // Callback quand la souris est bougé
         GLFW.glfwSetCursorPosCallback(windowRef, (handle, xpos, ypos) -> {
-            currentPos.x = (float) xpos;
-            currentPos.y = (float) ypos;
+            currentPos.x = (float) xpos - window.width/2;
+            currentPos.y = (float) ypos - window.height/2;
+            GLFW.glfwSetCursorPos(windowRef, window.width/2, window.height/2);
         });
         // Callback quand la souris est dans la fenêtre ou en dehors
         GLFW.glfwSetCursorEnterCallback(windowRef, (handle, entered) -> inWindow = entered);
@@ -68,8 +70,8 @@ public class MouseInput {
         this.displVec.x = 0;
         this.displVec.y = 0;
         if (this.previousPos.x > 0 && this.previousPos.y > 0 && this.inWindow) {
-            double deltax = this.currentPos.x - this.previousPos.x;
-            double deltay = this.currentPos.y - this.previousPos.y;
+            //double deltax = this.currentPos.x - this.previousPos.x;
+            //double deltay = this.currentPos.y - this.previousPos.y; à modifier
             boolean rotateX = deltax != 0;
             boolean rotateY = deltay != 0;
             if (rotateX) {
