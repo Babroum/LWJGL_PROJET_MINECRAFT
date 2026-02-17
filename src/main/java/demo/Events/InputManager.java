@@ -37,7 +37,7 @@ public class InputManager {
     @OpenGLThread
     public void run(Window window, SceneGraph sceneGraph, long deltaTime){
         // Récupère le dernier mouvement de la souris
-        this.mouseInput.input();
+        this.mouseInput.input(window);
 
         // Récupère les inputs clavier/souris
         float move = deltaTime * this.MOVEMENTSPEED;

@@ -74,18 +74,19 @@ public class Window {
          * callback pour redimension de fenetre en gros quand fenetre est redimensionnee executer ce code
          * !! ne fonctionne pas encore pour le texte je verrai sa plus tard
          */
-        GLFW.glfwSetFramebufferSizeCallback(this.window, new GLFWFramebufferSizeCallbackI() {
+        GLFW.glfwSetFramebufferSizeCallback(this.window, new GLFWFramebufferSizeCallbackI(){
             @Override
             public void invoke(long window, int width, int height) {
+                Window.this.height = height; // pour modifier la taille de la fenêtre dans la classe
+                Window.this.width = width; // pour modifier la taille de la fenêtre dans la classe
                 GL11.glViewport(0, 0, width, height); // Redimensionne le glViewPort
                 GL11.glMatrixMode(GL11.GL_PROJECTION); // Fait pour changer la matrice de projection (pour ne pas etre étiré)
                 GL11.glLoadIdentity(); // recharger
                 final double ratio = (double) width / (double) height; // calculer la nouvelle ratio
                 Render.gluPerspective(45.0, ratio, 0.1, 5000.0); // changer la perpective
-                GL11.glMatrixMode(GL11.GL_MODELVIEW); // remettre la matrice a modelview
             }
         });
-
+    
         // Creer Listeners clavier/souris
         this.inputManager.create(window, this);
 

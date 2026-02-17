@@ -66,12 +66,15 @@ public class MouseInput {
      * Calcule le vecteur de déplacement de la souris
      */
     @OpenGLThread
-    public void input() {
+    public void input(Window window) {
         this.displVec.x = 0;
         this.displVec.y = 0;
-        if (this.previousPos.x > 0 && this.previousPos.y > 0 && this.inWindow) {
+        if (this.previousPos.x > -window.width/2 && this.previousPos.y > -window.height/2
+            && this.previousPos.x < window.width/2 && this.previousPos.y < window.height/2 && this.inWindow) {
             //double deltax = this.currentPos.x - this.previousPos.x;
             //double deltay = this.currentPos.y - this.previousPos.y; à modifier
+            double deltax = currentPos.x;
+            double deltay = currentPos.y;
             boolean rotateX = deltax != 0;
             boolean rotateY = deltay != 0;
             if (rotateX) {
