@@ -14,7 +14,7 @@ public class InputManager {
     /**
      * Vitesse de déplacement de la caméra
      */
-    private final float MOVEMENTSPEED = 0.001f;
+    private final float MOVEMENTSPEED = 0.005f;
     /**
      * Sensibilité de la souris
      */
@@ -68,7 +68,7 @@ public class InputManager {
             camera.addRotation((float) Math.toRadians(displVec.x * this.MOUSESENS),
                             (float) Math.toRadians(displVec.y * this.MOUSESENS));
         }
-        
+
         if (this.keyboardInput.isCursorHidden){
             GLFW.glfwSetInputMode(window.getWindow(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_HIDDEN);
         }
@@ -77,11 +77,9 @@ public class InputManager {
         }
 
         if (this.keyboardInput.isPaused){
-            GLFW.glfwSetCursorPosCallback(window.getWindow(), null);
             this.keyboardInput.isCursorHidden=false;
         }
         else{
-            mouseInput.setCursorPosCallback(window.getWindow(), window);
             this.keyboardInput.isCursorHidden=true;
         }
     }

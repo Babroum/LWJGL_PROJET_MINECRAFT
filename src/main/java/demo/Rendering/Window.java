@@ -71,7 +71,6 @@ public class Window {
 
         /**
          * callback pour redimension de fenetre en gros quand fenetre est redimensionnee executer ce code
-         * !! ne fonctionne pas encore pour le texte je verrai sa plus tard
          */
         GLFW.glfwSetFramebufferSizeCallback(this.window, new GLFWFramebufferSizeCallbackI(){
             @Override
@@ -94,7 +93,7 @@ public class Window {
 
         GLFW.glfwMakeContextCurrent(this.window); // glfwSwapInterval needs a context on the calling thread, otherwise will cause NO_CURRENT_CONTEXT error    
 
-        GLFW.glfwSwapInterval(0); // Le nombre de dessin avant d'échanger les buffers (Vsync)
+        GLFW.glfwSwapInterval(1); // Le nombre de dessin avant d'échanger les buffers (Vsync)
 
         GL.createCapabilities(); // Will let lwjgl know we want to use this context as the context to draw with
 
@@ -145,6 +144,10 @@ public class Window {
         return this.render.sceneGraph;
     }
 
+    /**
+     * Retourne la ref de la fenêtre
+     * @return Long
+     */
     public long getWindow(){
         return this.window;
     }
