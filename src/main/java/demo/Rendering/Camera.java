@@ -5,8 +5,6 @@ import java.nio.FloatBuffer;
 import org.joml.*;
 import org.lwjgl.BufferUtils;
 
-import demo.Annotations.OpenGLThread;
-
 // source : https://ahbejarano.gitbook.io/lwjglgamedev/chapter-08
 /**
  * Une camera

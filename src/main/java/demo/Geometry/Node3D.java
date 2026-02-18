@@ -4,7 +4,6 @@ import java.nio.FloatBuffer;
 
 import org.joml.Matrix4f;
 import org.lwjgl.BufferUtils;
-import org.lwjgl.opengl.GL11;
 
 import demo.ShaderManager;
 import demo.Annotations.OpenGLThread;

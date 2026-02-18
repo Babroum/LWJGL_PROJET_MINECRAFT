@@ -7,6 +7,7 @@ import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.glfw.GLFWFramebufferSizeCallbackI;
 import org.lwjgl.opengl.GL;
+import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GLCapabilities;
 import org.lwjgl.system.MemoryUtil;
 
@@ -33,7 +34,6 @@ public class Window {
     private long window;
     private Render render = new Render();
     private WindowCloseEventManager windowCloseEventManager = new WindowCloseEventManager();
-    private InputManager inputManager = new InputManager();
     private TextRender textRender;  
     private GLCapabilities openGL;
     private Runnable onReady;
@@ -51,7 +51,8 @@ public class Window {
      */
     public Window(int width, int height){
         this.width = Math.max(150, width);
-        this.height = Math.max(150, height);   
+        this.height = Math.max(150, height); 
+        new InputManager();  
     }
 
     public void startWindow(Runnable onReady){   
@@ -108,14 +109,7 @@ public class Window {
             public void invoke(long window, int width, int height) {
                 Window.this.height = height; // pour modifier la hauteur de la fenêtre dans la classe
                 Window.this.width =  width; // pour modifier la largeur de la fenêtre dans la classe
-                /*
-                   GL11.glViewport(0, 0, width, height); // Redimensionne le glViewPort
-                    GL11.glMatrixMode(GL11.GL_PROJECTION); // Fait pour changer la matrice de projection (pour ne pas etre étiré)
-                    GL11.glLoadIdentity(); // recharger
-                    final double ratio = (double) width / (double) height; // calculer la nouvelle ratio
-                    Render.gluPerspective(45.0, ratio, 0.1, 5000.0); // changer la perpective
-                 */
-                
+                GL11.glViewport(0, 0, width, height); // Redimensionne le glViewPort
             }
         });
 
