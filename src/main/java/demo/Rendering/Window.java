@@ -7,8 +7,10 @@ import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.glfw.GLFWFramebufferSizeCallbackI;
 import org.lwjgl.opengl.GL;
+import org.lwjgl.opengl.GLCapabilities;
 import org.lwjgl.system.MemoryUtil;
 
+import demo.ShaderManager;
 import demo.Annotations.OpenGLThread;
 import demo.Events.InputManager;
 import demo.Events.WindowCloseEventManager;
@@ -29,18 +31,32 @@ public class Window {
 
     // Référence de la fenêtre
     private long window;
-
     private Render render = new Render();
     private WindowCloseEventManager windowCloseEventManager = new WindowCloseEventManager();
-    private TextRender textRender;
+    private InputManager inputManager = new InputManager();
+    private TextRender textRender;  
+    private GLCapabilities openGL;
+    private Runnable onReady;
 
+    /**
+     * Créer une fenêtre de taille 300 x 300
+     */
     public Window(){
         this(300, 300);
     }    
+    /**
+     * Créer une fenêtre de taille données
+     * @param width int
+     * @param height int
+     */
     public Window(int width, int height){
         this.width = Math.max(150, width);
-        this.height = Math.max(150, height);
-        new InputManager();
+        this.height = Math.max(150, height);   
+    }
+
+    public void startWindow(Runnable onReady){   
+        // onReady permet juste de verifie que le contexte openGL est créer avant de lancer le dessin      
+        this.onReady = onReady;
         // le :: permet de passer  en paramètre la méthode init dans le thread, car this.init() ne fait pas passer  la méthode en paramètre mais l'exécuté
         // le :: est comme un raccourci pour un lambda, sinon il faut faire Thread(() -> this.init()) 
         (new Thread(this::init)).start(); // démarre le thread
@@ -82,6 +98,9 @@ public class Window {
 
         GLFW.glfwShowWindow(this.window); // Affiche la fenêtre
 
+        this.openGL = GL.createCapabilities(); // Will let lwjgl know we want to use this context as the context to draw with
+
+        if(this.onReady != null) this.onReady.run(); // attend que le thread est fini de créer opengl avant de lancer le code hors 
         
         //callback pour redimension de fenetre en gros quand fenetre est redimensionnee executer ce code
         GLFW.glfwSetFramebufferSizeCallback(this.window, new GLFWFramebufferSizeCallbackI(){
@@ -101,7 +120,7 @@ public class Window {
         });
 
         this.textRender = new TextRender("res/Textures/Font.png", 20, 20, 19,
-                                        " !\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"); 
+                                        " !\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~");   
 
         this.render.rendering(this, this.window);
 
@@ -109,6 +128,9 @@ public class Window {
 
     public TextRender getTextRender(){
         return this.textRender;
+    }
+    public GLCapabilities getOpenGl(){
+        return this.openGL;
     }
 
     public void exitWindow()
@@ -122,6 +144,7 @@ public class Window {
     }
 
     public void closeWindow(){
+        ShaderManager.closeProgramId();
         this.windowCloseEventManager.closeWidow(this.window);
     }
 

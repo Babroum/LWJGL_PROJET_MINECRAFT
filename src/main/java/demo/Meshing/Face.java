@@ -3,6 +3,7 @@ package demo.Meshing;
 import demo.Exceptions.ArrayEmpty;
 import demo.Exceptions.ArrayFull;
 import demo.Exceptions.IncorrectIndex;
+import demo.Enum.Direction;
 
 /**
  * Une face décrivant un ensemble de 4 Sommets d'une maille.
@@ -12,8 +13,10 @@ public class Face {
     /**
      * Tableau des sommets de la face.
      */
-    private Vertex[] vertexs = new Vertex[4];
-    public int nbVertexs;
+    // {x1, y1, z1, x2, y2, z2, ...}
+    public float[] vertexs = new float[12];
+    public Direction direction;
+    public int nbCoords; // nombre de coordonnées dans la face
 
     /**
      * Ajoute un sommet grâce à ses coordonnées X, Y, Z au tableau des sommets.
@@ -23,75 +26,29 @@ public class Face {
      * @throws ArrayFull
      */
     public void addVertex(float X, float Y, float Z) throws ArrayFull{
-        this.addVertex(new Vertex(X, Y, Z));
-    }
-    /**
-     * Ajoute un sommet au tableau des sommets.
-     * @param vertex
-     * @throws ArrayFull
-     */
-    public void addVertex(Vertex vertex) throws ArrayFull{
-        if (this.nbVertexs == this.vertexs.length){
+        if (this.nbCoords == this.vertexs.length){
             throw new ArrayFull();
         }
-        this.vertexs[this.nbVertexs] = vertex;
-        this.nbVertexs++;
+        this.vertexs[this.nbCoords] = X;
+        this.vertexs[this.nbCoords + 1] = Y;
+        this.vertexs[this.nbCoords + 2] = Z;
+        this.nbCoords += 3;
     }
 
     /**
-     * Retourne un sommet grâce à un indice.
-     * @param index
-     * @return Un sommet
-     * @throws IncorrectIndex
-     */
-    public Vertex getVertex(int index) throws IncorrectIndex{
-        if (index < 0 || index >= this.vertexs.length){
-            throw new IncorrectIndex("L'index doit être compris entre 0 et 3");
-        }
-        return this.vertexs[index];
-    }
-
-    /**
-     * Supprime un sommet du tableau de sommet grâce à ses coordonnées X, Y, Z.
-     * @param X
-     * @param Y
-     * @param Z
+     * Supprime un sommet du tableau de sommet grâce à l'index du x, supprime le y et le z après le x.
+     * @param int
      * @throws IncorrectIndex
      * @throws ArrayEmpty
      */
-    public void delVertex(float X, float Y, float Z) throws IncorrectIndex, ArrayEmpty{
-        this.delVertex(new Vertex(X, Y, Z));
-    }   
-    /**
-     * Supprime un sommet du tableau de sommet.
-     * @param vertex
-     * @throws IncorrectIndex
-     * @throws ArrayEmpty
-     */
-    public void delVertex(Vertex vertex) throws IncorrectIndex, ArrayEmpty{
-        for(int i = 0; i < this.nbVertexs; i++){
-            if (this.vertexs[i].x == vertex.x &&
-                this.vertexs[i].y == vertex.y &&
-                this.vertexs[i].z == vertex.z 
-            ){
-                this.delVertex(i);
-            }
-        }
-    }
-    /**
-     * Supprime un sommet du tableau de sommet grâce à un indice.
-     * @param index
-     * @throws IncorrectIndex
-     * @throws ArrayEmpty
-     */
-    public void delVertex(int index) throws IncorrectIndex, ArrayEmpty{
-        if (index < 0 || index >= this.vertexs.length){
-            throw new IncorrectIndex("L'index doit être compris entre 0 et 3");
-        }else if (this.nbVertexs == 0){
+    public void delVertex(int x) throws IncorrectIndex, ArrayEmpty{
+        if (x < 0 || x > this.vertexs.length - 3){
+            throw new IncorrectIndex("L'index doit être compris entre 0 et 9");
+        }else if (this.nbCoords == 0){
             throw new ArrayEmpty();
         }
-        this.delGap(index);        
-        this.nbVertexs--;      
+        this.delGap(x);        
+        this.nbCoords -= 3;      
     }    
 
     // fait le décalage des valeurs dans le tableau.
@@ -99,8 +56,9 @@ public class Face {
         if (index < 0 || index >= this.vertexs.length){
             throw new IncorrectIndex("L'index doit être compris entre 0 et 3");
         }
-        for (int i = index; i < this.vertexs.length - 1; i++){
-            this.vertexs[i] = this.vertexs[i + 1];
+        // -3 car trois composant x, y, z
+        for (int i = index; i < this.vertexs.length - 3; i++){
+            this.vertexs[i] = this.vertexs[i + 3];
         }
     }
 }

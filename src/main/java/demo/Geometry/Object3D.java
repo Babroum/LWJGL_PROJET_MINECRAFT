@@ -8,7 +8,18 @@ public class Object3D extends Node3D{
 
     private Color4f color = new Color4f(0);
     public Mesh mesh = new Mesh();
-    
+
+    @OpenGLThread
+    /**
+     * Remplit les buffer avec les vertex et indice <br>
+     * Puis créer les vbo vao ebo avec les buffers précédement remplit
+     */
+    public void setupObjectBuffers(){
+        this.mesh.fillFloatBufferVertex();
+        this.mesh.fillIntBufferIndices();
+        this.mesh.setupVBOVAOEBO();
+    }
+
     /**
      * Définis la couleur de l'objet3D
      * @param color Color4f
@@ -26,14 +37,11 @@ public class Object3D extends Node3D{
     }
 
     /**
-     * Application de la couleur,
-     * <br>
-     * et dessin de la maille.
+     * Applique la couleur et dessine la maille
      */
     @OpenGLThread
     @Override
     public void drawSpecific(){
-        this.mesh.setVertexCountZero();
         this.color.apply();
         this.mesh.drawMesh();
     }

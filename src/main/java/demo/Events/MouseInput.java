@@ -6,6 +6,11 @@ import org.lwjgl.glfw.GLFW;
 import demo.Annotations.OpenGLThread;
 import demo.Rendering.Window;
 
+/**
+ * Définis les listeners GLFW
+ * <br>Et détecte les mouvements de souris (quitte l'écran, position, clique)
+ * @param windowRef
+ */
 public class MouseInput {
     
     private static Vector2f currentPos;
