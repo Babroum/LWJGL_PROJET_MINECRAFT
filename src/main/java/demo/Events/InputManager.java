@@ -22,7 +22,6 @@ public class InputManager {
     private MouseInput mouseInput;
     private KeyboardInput keyboardInput;
 
-    @OpenGLThread
     public void create(long windowRef){
         this.mouseInput = new MouseInput(windowRef);
         this.keyboardInput = new KeyboardInput(windowRef);

@@ -124,13 +124,18 @@ public class Render {
 
         ShaderManager.createShader();        
     }
-
+    
     @OpenGLThread
     private void drawScene(){
         this.sceneGraph.drawScene();
     }
 
     @OpenGLThread
+    /**
+     * Calcule les fps 
+     * @param delta double, temps en nano seconde entre 2 frames
+     * @param window Window
+     */
     private void calculateFPS(double delta, Window window){
         if (delta > 0){
             this.fpsHistory[this.fpsIndex] = 1.0 / delta;
@@ -147,6 +152,7 @@ public class Render {
         }        
     }
 
+    // calcule la projection 
     private FloatBuffer calculateProjection(float fov, float aspect, float near, float far) {
         FloatBuffer matrixBuffer = BufferUtils.createFloatBuffer(16);
         Matrix4f projection = new Matrix4f().perspective((float) Math.toRadians(fov), aspect, near, far);

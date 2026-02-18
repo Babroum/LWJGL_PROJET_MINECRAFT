@@ -5,22 +5,48 @@ import java.util.Objects;
 import demo.Annotations.OpenGLThread;
 import demo.Types.Color4f;
 
-//clone d'objets 3D ayant la meme maille pour pas avoir 2 copies de listes
+/**
+ * Classe d'object cloné étant des Object3D
+ */
 public class Clone3D extends Node3D {
     private Color4f color;
     private final Object3D cloned;
+    
+    /**
+     * Créer un clone de l'object passé en paramètre
+     * @param cloned Object3D
+     */
     public Clone3D(final Object3D cloned){
-        this.cloned = Objects.requireNonNull(cloned, "cloned must not be null");
+        this.cloned = Objects.requireNonNull(cloned, "Le clone ne doit pas être null");
     }
 
+    /**
+     * Retourne l'object cloné
+     * @return Object3D
+     */
+    public Object3D getCloned(){
+        return this.cloned;
+    }
+    
+    /**
+     * Retourne la couleur du clone
+     * @return Color4f
+     */
     public Color4f getColor(){
         return this.color;
     }
 
+    /**
+     * Définit la couleur du texte
+     * @param color Color4f
+     */
     public void setColor(final Color4f color){
         this.color = Objects.requireNonNull(color, "color must not be null");
     }
-
+    
+    /**
+     * Applique la couleur et dessine la maille
+     */
     @OpenGLThread
     @Override
     public void drawSpecific(){

@@ -30,7 +30,6 @@ public class Window {
 
     // Référence de la fenêtre
     private long window;
-
     private Render render = new Render();
     private WindowCloseEventManager windowCloseEventManager = new WindowCloseEventManager();
     private InputManager inputManager = new InputManager();

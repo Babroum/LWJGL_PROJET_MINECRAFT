@@ -15,7 +15,7 @@ import org.lwjgl.opengl.GL30;
 import demo.Annotations.OpenGLThread;
 import demo.Exceptions.ShaderManagerError;
 
-public class ShaderManager {
+public abstract class ShaderManager {
 
     private static int programId;
     private static int programTextId;
