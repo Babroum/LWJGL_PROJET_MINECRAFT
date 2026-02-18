@@ -8,7 +8,6 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.stb.*;
 
 import demo.Annotations.OpenGLThread;
-import demo.Types.Color4f;
 
 /**
  * Affichage du texte à l'écran
@@ -21,7 +20,6 @@ public class TextRender {
     private int height;
     private int textureId;
     private int fontPerRow;
-    private Color4f color = Color4f.BLACK;
     private String chars;
 
     /**

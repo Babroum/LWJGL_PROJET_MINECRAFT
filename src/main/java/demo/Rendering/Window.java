@@ -33,7 +33,6 @@ public class Window {
 
     private Render render = new Render();
     private WindowCloseEventManager windowCloseEventManager = new WindowCloseEventManager();
-    private InputManager inputManager = new InputManager();
     private TextRender textRender;
 
     public Window(){
@@ -42,6 +41,7 @@ public class Window {
     public Window(int width, int height){
         this.width = Math.max(150, width);
         this.height = Math.max(150, height);
+        new InputManager();
         // le :: permet de passer  en paramètre la méthode init dans le thread, car this.init() ne fait pas passer  la méthode en paramètre mais l'exécuté
         // le :: est comme un raccourci pour un lambda, sinon il faut faire Thread(() -> this.init()) 
         (new Thread(this::init)).start(); // démarre le thread
@@ -68,25 +68,9 @@ public class Window {
             this.closeGLFW();
             throw new RuntimeException("Impossible de créer la fenêtre");
         }
-
-        /**
-         * callback pour redimension de fenetre en gros quand fenetre est redimensionnee executer ce code
-         */
-        GLFW.glfwSetFramebufferSizeCallback(this.window, new GLFWFramebufferSizeCallbackI(){
-            @Override
-            public void invoke(long window, int width, int height) {
-                Window.this.height = height; // pour modifier la taille de la fenêtre dans la classe
-                Window.this.width = width; // pour modifier la taille de la fenêtre dans la classe
-                GL11.glViewport(0, 0, width, height); // Redimensionne le glViewPort
-                GL11.glMatrixMode(GL11.GL_PROJECTION); // Fait pour changer la matrice de projection (pour ne pas etre étiré)
-                GL11.glLoadIdentity(); // recharger
-                final double ratio = (double) width / (double) height; // calculer la nouvelle ratio
-                Render.gluPerspective(45.0, ratio, 0.1, 5000.0); // changer la perpective
-            }
-        });
     
         // Creer Listeners clavier/souris
-        this.inputManager.create(window, this);
+        InputManager.create(window, this);
 
         // Management de la fermeture de la fenêtre
         GLFW.glfwSetWindowCloseCallback(this.window, this.windowCloseEventManager);
@@ -99,6 +83,23 @@ public class Window {
 
         GLFW.glfwShowWindow(this.window); // Affiche la fenêtre
 
+        
+        //callback pour redimension de fenetre en gros quand fenetre est redimensionnee executer ce code
+        GLFW.glfwSetFramebufferSizeCallback(this.window, new GLFWFramebufferSizeCallbackI(){
+            @Override
+            public void invoke(long window, int width, int height) {
+                Window.this.height = height; // pour modifier la taille de la fenêtre dans la classe
+                Window.this.width =  width; // pour modifier la taille de la fenêtre dans la classe
+                /*
+                   GL11.glViewport(0, 0, width, height); // Redimensionne le glViewPort
+                    GL11.glMatrixMode(GL11.GL_PROJECTION); // Fait pour changer la matrice de projection (pour ne pas etre étiré)
+                    GL11.glLoadIdentity(); // recharger
+                    final double ratio = (double) width / (double) height; // calculer la nouvelle ratio
+                    Render.gluPerspective(45.0, ratio, 0.1, 5000.0); // changer la perpective
+                 */
+                
+            }
+        });
 
         this.textRender = new TextRender("res/Textures/Font.png", 20, 20, 19,
                                         " !\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"); 
@@ -107,9 +108,6 @@ public class Window {
 
     }
 
-    public InputManager getInputManager(){
-        return this.inputManager;
-    }
     public TextRender getTextRender(){
         return this.textRender;
     }
