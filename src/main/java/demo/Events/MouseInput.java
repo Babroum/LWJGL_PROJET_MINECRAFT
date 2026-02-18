@@ -1,10 +1,10 @@
 package demo.Events;
 
 import org.joml.Vector2f;
-
 import org.lwjgl.glfw.GLFW;
 
 import demo.Annotations.OpenGLThread;
+import demo.Rendering.Window;
 
 /**
  * Définis les listeners GLFW
@@ -13,12 +13,12 @@ import demo.Annotations.OpenGLThread;
  */
 public class MouseInput {
     
-    private Vector2f currentPos;
-    private Vector2f displVec;
-    private boolean inWindow;
-    private boolean leftButtonPressed;
-    private boolean rightButtonPressed;
-    private Vector2f previousPos;
+    private static Vector2f currentPos;
+    private static Vector2f displVec;
+    private static boolean inWindow;
+    private static boolean leftButtonPressed;
+    private static boolean rightButtonPressed;
+    private static Vector2f previousPos;
 
     /**
      * Définis les listeners de GLFW
@@ -26,18 +26,24 @@ public class MouseInput {
      * @param windowRef long
      */
     @OpenGLThread
-    public MouseInput(long windowRef){
-        this.previousPos = new Vector2f(-1, -1);
-        this.currentPos = new Vector2f();
-        this.displVec = new Vector2f();
-        this.leftButtonPressed = false;
-        this.rightButtonPressed = false;
-        this.inWindow = false;
+    public MouseInput(long windowRef, Window window){
+        MouseInput.previousPos = new Vector2f(-1, -1);
+        MouseInput.currentPos = new Vector2f();
+        MouseInput.displVec = new Vector2f();
+        MouseInput.leftButtonPressed = false;
+        MouseInput.rightButtonPressed = false;
+        MouseInput.inWindow = false;
 
         // Callback quand la souris est bougé
+        //setCursorPosCallback(windowRef, window);
         GLFW.glfwSetCursorPosCallback(windowRef, (handle, xpos, ypos) -> {
-            currentPos.x = (float) xpos;
-            currentPos.y = (float) ypos;
+            if (KeyboardInput.isMouseLock){
+                MouseInput.currentPos.x = 0;
+                MouseInput.currentPos.y = 0;
+                currentPos.x = (float) xpos - window.width/2;
+                currentPos.y = (float) ypos - window.height/2;
+                GLFW.glfwSetCursorPos(windowRef, window.width/2, window.height/2);
+            }
         });
         // Callback quand la souris est dans la fenêtre ou en dehors
         GLFW.glfwSetCursorEnterCallback(windowRef, (handle, entered) -> inWindow = entered);
@@ -52,53 +58,60 @@ public class MouseInput {
      * Retourne la position de la souris actuelle
      * @return Vector2f
      */
-    public Vector2f getCurrentPos() {
-        return this.currentPos;
+    public static Vector2f getCurrentPos() {
+        return MouseInput.currentPos;
     }
 
     /**
      * Retourne le vecteur entre l'ancienne et la nouvelle position de la souris
      * @return Vector2f
      */
-    public Vector2f getDisplVec() {
-        return this.displVec;
+    @OpenGLThread
+    public static Vector2f getDisplVec() {
+        return MouseInput.displVec;
     }
 
     /**
      * Calcule le vecteur de déplacement de la souris
      */
-    public void input() {
-        this.displVec.x = 0;
-        this.displVec.y = 0;
-        if (this.previousPos.x > 0 && this.previousPos.y > 0 && this.inWindow) {
-            double deltax = this.currentPos.x - this.previousPos.x;
-            double deltay = this.currentPos.y - this.previousPos.y;
+    @OpenGLThread
+    public static void input(Window window) {
+        MouseInput.displVec.x = 0;
+        MouseInput.displVec.y = 0;
+        if (MouseInput.previousPos.x > -window.width/2 && MouseInput.previousPos.y > -window.height/2
+            && MouseInput.previousPos.x < window.width/2 && MouseInput.previousPos.y < window.height/2 && MouseInput.inWindow) {
+            double deltax = currentPos.x;
+            double deltay = currentPos.y;
             boolean rotateX = deltax != 0;
             boolean rotateY = deltay != 0;
             if (rotateX) {
-                this.displVec.y = (float) deltax;
+                MouseInput.displVec.y = (float) deltax;
             }
             if (rotateY) {
-                this.displVec.x = (float) deltay;
+                MouseInput.displVec.x = (float) deltay;
             }
         }
-        this.previousPos.x = this.currentPos.x;
-        this.previousPos.y = this.currentPos.y;
+        MouseInput.previousPos.x = MouseInput.currentPos.x;
+        MouseInput.previousPos.y = MouseInput.currentPos.y;
+        MouseInput.currentPos.x = 0;
+        MouseInput.currentPos.y = 0;
     }
 
     /**
      * Retourne un boolean en fonction de si le click gauche de la souris est enfoncé
      * @return boolean
      */
-    public boolean isLeftButtonPressed() {
-        return this.leftButtonPressed;
+    @OpenGLThread
+    public static boolean isLeftButtonPressed() {
+        return MouseInput.leftButtonPressed;
     }
 
     /**
      * Retourne un boolean en fonction de si le click droit de la souris est enfoncé
      * @return boolean
      */
-    public boolean isRightButtonPressed() {
-        return this.rightButtonPressed;
+    @OpenGLThread
+    public static boolean isRightButtonPressed() {
+        return MouseInput.rightButtonPressed;
     }
 }

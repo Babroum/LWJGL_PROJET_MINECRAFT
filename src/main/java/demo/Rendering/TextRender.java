@@ -12,7 +12,6 @@ import org.lwjgl.stb.*;
 
 import demo.ShaderManager;
 import demo.Annotations.OpenGLThread;
-import demo.Types.Color4f;
 
 /**
  * Affichage du texte à l'écran

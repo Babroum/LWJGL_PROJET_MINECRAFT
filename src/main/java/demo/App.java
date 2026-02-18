@@ -38,6 +38,7 @@ public class App
     
 
     /*
+    export JAVA_HOME=/home/linuxbrew/.linuxbrew/opt/openjdk@21
     mvn clean                                                                                   
     mvn package
     mvn exec:java

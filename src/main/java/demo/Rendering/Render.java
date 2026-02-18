@@ -9,6 +9,7 @@ import org.lwjgl.opengl.GL11;
 
 import demo.ShaderManager;
 import demo.Annotations.OpenGLThread;
+import demo.Events.InputManager;
 import demo.Geometry.Node3D;
 import demo.Geometry.Object3D;
 import demo.Types.Color4f;
@@ -52,7 +53,7 @@ public class Render {
 			GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT); // clear the framebuffer
 
             // Modifie le déplacement de la caméra 
-            window.getInputManager().run(window, sceneGraph, nowMs - lastTimeMs);
+            InputManager.run(windowRef, window, sceneGraph, nowMs - lastTimeMs);
 
             ShaderManager.useShader();
             
@@ -84,7 +85,7 @@ public class Render {
             lastTimeNano = nowNano; 
 		}
 
-        window.exitWidow();
+        window.exitWindow();
     }
 
     @OpenGLThread
