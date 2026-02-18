@@ -41,6 +41,11 @@ public class MouseInput {
         });
     }
 
+    /**
+     * Callback quand la souris est bougé
+     * @param windowRef long
+     * @param window Window
+     */
     @OpenGLThread
     public void setCursorPosCallback(long windowRef, Window window){
         GLFW.glfwSetCursorPosCallback(windowRef, (handle, xpos, ypos) -> {
@@ -76,8 +81,6 @@ public class MouseInput {
         this.displVec.y = 0;
         if (this.previousPos.x > -window.width/2 && this.previousPos.y > -window.height/2
             && this.previousPos.x < window.width/2 && this.previousPos.y < window.height/2 && this.inWindow) {
-            //double deltax = this.currentPos.x - this.previousPos.x;
-            //double deltay = this.currentPos.y - this.previousPos.y; à modifier
             double deltax = currentPos.x;
             double deltay = currentPos.y;
             boolean rotateX = deltax != 0;

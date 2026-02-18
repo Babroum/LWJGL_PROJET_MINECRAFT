@@ -2,7 +2,6 @@ package demo.Events;
 
 import org.joml.Vector2f;
 import org.lwjgl.opengl.GL11;
-import org.lwjgl.system.NativeType;
 import org.lwjgl.glfw.GLFW;
 
 import demo.Annotations.OpenGLThread;
