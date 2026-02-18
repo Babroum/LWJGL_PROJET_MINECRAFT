@@ -27,8 +27,7 @@ public class Mesh {
     private IntBuffer indices;
     private int nbFaces;
     private int nbvertex;
-    // ids des vao vbo et ebo si la maille en a besoin
-    private int[] ids;
+    private int[] ids; // ids des vao vbo et ebo si la maille en a besoin
 
     /**
      * Ajoute une face au tableau de face.
@@ -91,7 +90,7 @@ public class Mesh {
     }
 
     /**
-     * Définis les ids des buffers créer avec les vertexs et indices 
+     * Définis les ids des buffers créer avec les sommets et indices 
      */
     @OpenGLThread
     public void setupVBOVAOEBO(){
@@ -102,17 +101,16 @@ public class Mesh {
     /**
      * Remplis le FloatBuffer avec tout les sommets de la maille
      */
-    @OpenGLThread
+    // a faire dans un autre thread
     public void fillFloatBufferVertex(){
         this.vertexs = BufferUtils.createFloatBuffer(this.nbFaces * 4 * 3);
         this.nbvertex = 0;
         synchronized (this.faces){
             for (int i = 0; i < this.nbFaces; i++){
-                for (int j = 0; j < this.faces[i].nbVertexs; j++){
+                for (int j = 0; j < this.faces[i].nbCoords; j++){
                     this.vertexs.put(this.faces[i].vertexs[j]);
-                    
                 }
-                this.nbvertex += this.faces[i].nbVertexs;
+                this.nbvertex += this.faces[i].nbCoords / 3;
             }
             this.vertexs.flip();
         }       
@@ -122,7 +120,7 @@ public class Mesh {
      * Remplis le IntBuffer avec tout les indices de la maille<br>
      * Fonctionne seulement pour des faces de 2 triangles
      */
-    @OpenGLThread
+    // a faire dans un autre thread
     public void fillIntBufferIndices(){
         this.indices = BufferUtils.createIntBuffer(this.nbFaces * 6);
         int[] indicesArray = new int[this.nbFaces * 6];
@@ -140,6 +138,10 @@ public class Mesh {
     }
 
     @OpenGLThread
+    /**
+     * Dessine la maille si les vbo vao et ebo ont bien étaient initialisé
+     * @throws Empty
+     */
     public void drawMesh() throws Empty{   
         if (this.ids == null) throw new Empty("les vbo vao et ebo ne sont pas initialisé");
         GL30.glBindVertexArray(ids[0]);

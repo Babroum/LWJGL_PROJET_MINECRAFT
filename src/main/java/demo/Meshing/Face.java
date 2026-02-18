@@ -16,7 +16,7 @@ public class Face {
     // {x1, y1, z1, x2, y2, z2, ...}
     public float[] vertexs = new float[12];
     public Direction direction;
-    public int nbVertexs;
+    public int nbCoords; // nombre de coordonnées dans la face
 
     /**
      * Ajoute un sommet grâce à ses coordonnées X, Y, Z au tableau des sommets.
@@ -26,13 +26,13 @@ public class Face {
      * @throws ArrayFull
      */
     public void addVertex(float X, float Y, float Z) throws ArrayFull{
-        if (this.nbVertexs == this.vertexs.length){
+        if (this.nbCoords == this.vertexs.length){
             throw new ArrayFull();
         }
-        this.vertexs[this.nbVertexs] = X;
-        this.vertexs[this.nbVertexs + 1] = Y;
-        this.vertexs[this.nbVertexs + 2] = Z;
-        this.nbVertexs += 3;
+        this.vertexs[this.nbCoords] = X;
+        this.vertexs[this.nbCoords + 1] = Y;
+        this.vertexs[this.nbCoords + 2] = Z;
+        this.nbCoords += 3;
     }
 
     /**
@@ -44,11 +44,11 @@ public class Face {
     public void delVertex(int x) throws IncorrectIndex, ArrayEmpty{
         if (x < 0 || x > this.vertexs.length - 3){
             throw new IncorrectIndex("L'index doit être compris entre 0 et 9");
-        }else if (this.nbVertexs == 0){
+        }else if (this.nbCoords == 0){
             throw new ArrayEmpty();
         }
         this.delGap(x);        
-        this.nbVertexs--;      
+        this.nbCoords -= 3;      
     }    
 
     // fait le décalage des valeurs dans le tableau.

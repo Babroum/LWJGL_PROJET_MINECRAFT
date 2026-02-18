@@ -3,6 +3,7 @@ package demo.Rendering;
 import org.lwjgl.opengl.GL11;
 
 import demo.Annotations.OpenGLThread;
+import demo.Geometry.Clone3D;
 import demo.Geometry.Node3D;
 import demo.Geometry.Object3D;
 import demo.Types.Color4f;
@@ -36,7 +37,6 @@ public class SceneGraph {
      * Retourne la camera de la scène
      * @return Camera
      */
-    @OpenGLThread
     public Camera getCamera(){
         return this.camera;
     }
@@ -45,7 +45,6 @@ public class SceneGraph {
      * Retourne le nombre de sommet dans la scène
      * @return int
      */
-    @OpenGLThread
     public int getTotalVertexCount(){
         return this.getNumberOfVertex(root);
     }
@@ -54,21 +53,24 @@ public class SceneGraph {
      * Retourne le nombre de nœud dans la scène
      * @return int
      */
-    @OpenGLThread
     public int getTotalNodeCount(){
         return this.getNumberOfNode(root);
     }
 
     // calcule récursivement le nombre de sommet
-    @OpenGLThread
     private int getNumberOfVertex(Node3D node){
         int count = 0;
-        // si le nœud est un object3D et qu'il a un mesh alors on récupère le nombre de sommet du mesh
+        // si le nœud est un object3D/Clone et qu'il a un mesh alors on récupère le nombre de sommet du mesh
         if (node instanceof Object3D){
             Object3D obj = (Object3D) node;
             if (obj.mesh != null){
                 count += obj.mesh.getVertexCount();
             }         
+        }else if (node instanceof Clone3D){
+            Clone3D obj = (Clone3D) node;
+            if (obj.getCloned().mesh != null){
+                count += obj.getCloned().mesh.getVertexCount();
+            }
         }
 
         // pour chaque enfant du nœud on calcule le nombre de sommet récursivement
@@ -85,7 +87,6 @@ public class SceneGraph {
     }
 
     // calcule récursivement le nombre de nœud
-    @OpenGLThread
     private int getNumberOfNode(Node3D node){
         int count = 1;
 

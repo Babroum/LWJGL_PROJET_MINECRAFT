@@ -30,7 +30,6 @@ public class Window {
 
     // Référence de la fenêtre
     private long window;
-
     private Render render = new Render();
     private WindowCloseEventManager windowCloseEventManager = new WindowCloseEventManager();
     private InputManager inputManager = new InputManager();
@@ -38,9 +37,17 @@ public class Window {
     private GLCapabilities openGL;
     private Runnable onReady;
 
+    /**
+     * Créer une fenêtre de taille 300 x 300
+     */
     public Window(){
         this(300, 300);
     }    
+    /**
+     * Créer une fenêtre de taille données
+     * @param width int
+     * @param height int
+     */
     public Window(int width, int height){
         this.width = Math.max(150, width);
         this.height = Math.max(150, height);   
@@ -90,7 +97,7 @@ public class Window {
 
         this.openGL = GL.createCapabilities(); // Will let lwjgl know we want to use this context as the context to draw with
 
-        if(this.onReady != null) this.onReady.run();
+        if(this.onReady != null) this.onReady.run(); // attend que le thread est fini de créer opengl avant de lancer le code hors 
         
         this.textRender = new TextRender("res/Textures/Font.png", 20, 20, 19,
                                         " !\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~");   
@@ -119,7 +126,7 @@ public class Window {
     }
 
     public void closeWindow(){
-        ShaderManager.close();
+        ShaderManager.closeProgramId();
         this.windowCloseEventManager.closeWidow(this.window);
     }
 

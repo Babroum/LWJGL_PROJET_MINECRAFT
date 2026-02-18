@@ -1,5 +1,8 @@
 package demo.Enum;
 
+/**
+ * Contient les directions des faces et les valeurs de directions
+ */
 public enum Direction {
     NORTH(-1, 0, 0),
     SOUTH(1, 0, 0),

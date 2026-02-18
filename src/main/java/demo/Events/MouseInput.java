@@ -6,6 +6,11 @@ import org.lwjgl.glfw.GLFW;
 
 import demo.Annotations.OpenGLThread;
 
+/**
+ * Définis les listeners GLFW
+ * <br>Et détecte les mouvements de souris (quitte l'écran, position, clique)
+ * @param windowRef
+ */
 public class MouseInput {
     
     private Vector2f currentPos;
@@ -55,7 +60,6 @@ public class MouseInput {
      * Retourne le vecteur entre l'ancienne et la nouvelle position de la souris
      * @return Vector2f
      */
-    @OpenGLThread
     public Vector2f getDisplVec() {
         return this.displVec;
     }
@@ -63,7 +67,6 @@ public class MouseInput {
     /**
      * Calcule le vecteur de déplacement de la souris
      */
-    @OpenGLThread
     public void input() {
         this.displVec.x = 0;
         this.displVec.y = 0;
@@ -87,7 +90,6 @@ public class MouseInput {
      * Retourne un boolean en fonction de si le click gauche de la souris est enfoncé
      * @return boolean
      */
-    @OpenGLThread
     public boolean isLeftButtonPressed() {
         return this.leftButtonPressed;
     }
@@ -96,7 +98,6 @@ public class MouseInput {
      * Retourne un boolean en fonction de si le click droit de la souris est enfoncé
      * @return boolean
      */
-    @OpenGLThread
     public boolean isRightButtonPressed() {
         return this.rightButtonPressed;
     }
