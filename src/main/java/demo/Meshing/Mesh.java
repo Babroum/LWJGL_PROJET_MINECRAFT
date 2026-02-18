@@ -144,7 +144,7 @@ public class Mesh {
      */
     public void drawMesh() throws Empty{   
         if (this.ids == null) throw new Empty("les vbo vao et ebo ne sont pas initialisé");
-        GL30.glBindVertexArray(ids[0]);
+        GL30.glBindVertexArray(ids[1]);
         GL11.glDrawElements(GL11.GL_TRIANGLES, this.indices.limit(), GL11.GL_UNSIGNED_INT, 0); // limit c comme length
         GL30.glBindVertexArray(0);             
     }        

@@ -8,6 +8,7 @@ import java.nio.file.Paths;
 
 import org.joml.Matrix4f;
 import org.lwjgl.BufferUtils;
+import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
@@ -284,7 +285,16 @@ public abstract class ShaderManager {
         GL15.glBindBuffer(GL20.GL_ELEMENT_ARRAY_BUFFER, ebo);
         GL15.glBufferData(GL20.GL_ELEMENT_ARRAY_BUFFER, indices, GL20.GL_STATIC_DRAW);
 
-        return new int[]{vao, vbo, ebo};
+        return new int[]{vbo, vao, ebo};
+    }
+
+    public static void updateTextVBOEBO(FloatBuffer vertex, IntBuffer indices, int vbo, int vao, int ebo){
+        // update les données sans recréer les buffers
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
+        GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, 0, vertex);
+
+        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ebo);
+        GL15.glBufferSubData(GL15.GL_ELEMENT_ARRAY_BUFFER, 0, indices);
     }
 
     @OpenGLThread

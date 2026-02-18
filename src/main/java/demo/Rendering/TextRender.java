@@ -27,8 +27,14 @@ public class TextRender {
     private int fontPerRow;
     private String chars;
 
+    private int[] ids;
+    private FloatBuffer vertexsBuffer;
+    private IntBuffer indicesBuffer;
+    private final int BUFFERSIZE = 512;
+
     /**
-     * Charge l'image des caractères en mémoire
+     * Charge l'image des caractères en mémoire <br>
+     * <b>TAILLE MAX TEXT 512 CHAR</b>
      * @param path String, chemin de l'image
      * @param gWidth int, largeur de la grille
      * @param gHeight int, hauteur de la grille
@@ -72,7 +78,11 @@ public class TextRender {
         STBImage.stbi_image_free(pixels);
         GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
 
+        // Initialise les buffers / shaders / vbo vao ebo
         ShaderManager.createTextShader();
+        this.vertexsBuffer = BufferUtils.createFloatBuffer(this.BUFFERSIZE * 16);
+        this.indicesBuffer = BufferUtils.createIntBuffer(this.BUFFERSIZE * 6);
+        this.ids = ShaderManager.createTextVBOVAOEBO(vertexsBuffer, indicesBuffer);
     }
 
     /**
@@ -110,21 +120,20 @@ public class TextRender {
             indices[i*6+3] = v+2;
             indices[i*6+4] = v+3;
             indices[i*6+5] = v;
-        }
+        }      
 
-        FloatBuffer vertexsBuffer = BufferUtils.createFloatBuffer(text.length() * 16);
-        vertexsBuffer.put(data).flip();
+        this.vertexsBuffer.clear();
+        this.vertexsBuffer.put(data).flip(); 
 
-        IntBuffer indicesBuffer = BufferUtils.createIntBuffer(text.length() * 6);
-        indicesBuffer.put(indices).flip();
+        this.indicesBuffer.clear();               
+        this.indicesBuffer.put(indices).flip();
 
-        int[] ids = ShaderManager.createTextVBOVAOEBO(vertexsBuffer, indicesBuffer);
+        // update avec les nouvelle données
+        ShaderManager.updateTextVBOEBO(vertexsBuffer, indicesBuffer, this.ids[0], this.ids[1], this.ids[2]);
 
-        GL30.glBindVertexArray(ids[0]);
+        GL30.glBindVertexArray(ids[1]);
         GL11.glDrawElements(GL11.GL_TRIANGLES, indices.length, GL11.GL_UNSIGNED_INT, 0);
         GL30.glBindVertexArray(0);
-
-        ShaderManager.deleteVBOVAOEBO(ids); // a modifier par des vbo dynamique
 
         GL11.glEnable(GL11.GL_DEPTH_TEST);
 
