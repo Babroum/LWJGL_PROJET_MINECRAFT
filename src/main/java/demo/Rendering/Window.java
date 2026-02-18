@@ -88,8 +88,8 @@ public class Window {
         GLFW.glfwSetFramebufferSizeCallback(this.window, new GLFWFramebufferSizeCallbackI(){
             @Override
             public void invoke(long window, int width, int height) {
-                Window.this.height = height; // pour modifier la taille de la fenêtre dans la classe
-                Window.this.width =  width; // pour modifier la taille de la fenêtre dans la classe
+                Window.this.height = height; // pour modifier la hauteur de la fenêtre dans la classe
+                Window.this.width =  width; // pour modifier la largeur de la fenêtre dans la classe
                 /*
                    GL11.glViewport(0, 0, width, height); // Redimensionne le glViewPort
                     GL11.glMatrixMode(GL11.GL_PROJECTION); // Fait pour changer la matrice de projection (pour ne pas etre étiré)

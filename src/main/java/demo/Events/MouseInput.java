@@ -33,6 +33,8 @@ public class MouseInput {
         //setCursorPosCallback(windowRef, window);
         GLFW.glfwSetCursorPosCallback(windowRef, (handle, xpos, ypos) -> {
             if (KeyboardInput.isMouseLock){
+                MouseInput.currentPos.x = 0;
+                MouseInput.currentPos.y = 0;
                 currentPos.x = (float) xpos - window.width/2;
                 currentPos.y = (float) ypos - window.height/2;
                 GLFW.glfwSetCursorPos(windowRef, window.width/2, window.height/2);
@@ -46,17 +48,6 @@ public class MouseInput {
             rightButtonPressed = button == GLFW.GLFW_MOUSE_BUTTON_2 && action == GLFW.GLFW_PRESS;
         });
     }
-
-    /*
-    @OpenGLThread
-    public void setCursorPosCallback(long windowRef, Window window){
-        GLFW.glfwSetCursorPosCallback(windowRef, (handle, xpos, ypos) -> {
-            currentPos.x = (float) xpos - window.width/2;
-            currentPos.y = (float) ypos - window.height/2;
-            GLFW.glfwSetCursorPos(windowRef, window.width/2, window.height/2);
-        });
-    }
-    */
 
     /**
      * Retourne la position de la souris actuelle
@@ -97,6 +88,8 @@ public class MouseInput {
         }
         MouseInput.previousPos.x = MouseInput.currentPos.x;
         MouseInput.previousPos.y = MouseInput.currentPos.y;
+        MouseInput.currentPos.x = 0;
+        MouseInput.currentPos.y = 0;
     }
 
     /**

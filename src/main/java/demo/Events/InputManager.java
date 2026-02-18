@@ -14,11 +14,11 @@ public class InputManager {
     /**
      * Vitesse de déplacement de la caméra
      */
-    private static final float MOVEMENTSPEED = 0.005f;
+    public static final float MOVEMENTSPEED = 0.005f;
     /**
      * Sensibilité de la souris
      */
-    private static final float MOUSESENS = 0.1f;
+    public static final float MOUSESENS = 0.1f;
 
     @OpenGLThread
     public static void create(long windowRef, Window window){
@@ -60,7 +60,6 @@ public class InputManager {
 
         // Déplace la caméra avec la souris et la bloque au milieu, desactive si pas sélectionné ou la souris débloqué
         if (GLFW.glfwGetWindowAttrib(window.getWindow(),GLFW.GLFW_FOCUSED) == 1 && KeyboardInput.isMouseLock){
-            GLFW.glfwSetCursorPos(window.getWindow(), window.width/2, window.height/2);
             Vector2f displVec = MouseInput.getDisplVec();
             camera.addRotation((float) Math.toRadians(displVec.x * InputManager.MOUSESENS),
                             (float) Math.toRadians(displVec.y * InputManager.MOUSESENS));
@@ -68,10 +67,10 @@ public class InputManager {
 
         // si le curseur est bloqué sur l'écran
         if (KeyboardInput.isMouseLock){
-            KeyboardInput.isCursorHidden=true; // on l'affiche
+            KeyboardInput.isCursorHidden=true; // on le cache
         }
         else{
-            KeyboardInput.isCursorHidden=false; // on le cache
+            KeyboardInput.isCursorHidden=false; // on l'affiche
         }
 
         // si le curseur doit être caché alors
