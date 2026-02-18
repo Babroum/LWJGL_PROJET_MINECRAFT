@@ -73,6 +73,8 @@ public class Render {
             window.getTextRender().drawText(window, "Node3D count : " + this.sceneGraph.getTotalNodeCount(), 0, 40, 20, Color4f.YELLOW);
             // Affiche la touche à appuyer pour toggle le wireframe
             window.getTextRender().drawText(window, "Toggle WireFrameMode : E", 0, 60, 15, Color4f.PURPLE);
+            // Affiche la touche à appuyer pour toggle le mouselock
+            window.getTextRender().drawText(window, "Toggle MouseLock : P", 0, 80, 15, Color4f.PURPLE);
 
             // Rends la fenêtre en buffer dessinée visible à l’écran
             GLFW.glfwSwapBuffers(windowRef);		
@@ -84,6 +86,7 @@ public class Render {
 
         window.exitWidow();
     }
+
     @OpenGLThread
     private void initialize3D(final int width, final int height)
     {
@@ -122,7 +125,6 @@ public class Render {
         ShaderManager.createShader();        
     }
 
-    
     @OpenGLThread
     private void drawScene(){
         this.sceneGraph.drawScene();

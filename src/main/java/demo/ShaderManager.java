@@ -8,7 +8,6 @@ import java.nio.file.Paths;
 
 import org.joml.Matrix4f;
 import org.lwjgl.BufferUtils;
-import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
@@ -17,9 +16,6 @@ import demo.Annotations.OpenGLThread;
 import demo.Exceptions.ShaderManagerError;
 
 public class ShaderManager {
-
-    private static String vertexShader;
-    private static String fragmentShader;
 
     private static int programId;
     private static int programTextId;
@@ -30,31 +26,20 @@ public class ShaderManager {
      */
     @OpenGLThread
     public static void createShader() throws ShaderManagerError{
+        String vertexShader;
+        String fragmentShader;
         try{
-            ShaderManager.vertexShader = Files.readString(Paths.get("res/Shaders/vertex.glsl"));
-            ShaderManager.fragmentShader = Files.readString(Paths.get("res/Shaders/fragment.glsl"));
+            vertexShader = Files.readString(Paths.get("res/Shaders/vertex.glsl"));
+            fragmentShader = Files.readString(Paths.get("res/Shaders/fragment.glsl"));
         }catch(IOException e){
             e.printStackTrace();
-        }
-        // creation de l'object shader
-        int vsId = GL20.glCreateShader(GL20.GL_VERTEX_SHADER);
-        // attacher le code source au shader
-        GL20.glShaderSource(vsId, ShaderManager.vertexShader);
-        // compiler le shader
-        GL20.glCompileShader(vsId);
-        int success = GL20.glGetShaderi(vsId, GL20.GL_COMPILE_STATUS);
-        if (success == GL20.GL_FALSE){
-            throw new ShaderManagerError(GL20.glGetShaderInfoLog(vsId));
+            return;
         }
 
-        int fgId = GL20.glCreateShader(GL20.GL_FRAGMENT_SHADER);
-        GL20.glShaderSource(fgId, ShaderManager.fragmentShader);
-        GL20.glCompileShader(fgId);
-        success = GL20.glGetShaderi(fgId, GL20.GL_COMPILE_STATUS);
-        if (success == GL20.GL_FALSE){
-            throw new ShaderManagerError(GL20.glGetShaderInfoLog(fgId));
-        }
-
+        int[] ids = ShaderManager.create(vertexShader, fragmentShader);
+        int vsId = ids[0];
+        int fgId = ids[1];
+        
         // attacher les shader compilés au programme
         ShaderManager.programId = GL20.glCreateProgram();
         GL20.glAttachShader(ShaderManager.programId, vsId);
@@ -62,7 +47,7 @@ public class ShaderManager {
 
         // vérifie que les sorties du vertex shader corresponde aux entrées du fragment shader
         GL20.glLinkProgram(ShaderManager.programId);
-        success = GL20.glGetProgrami(ShaderManager.programId, GL20.GL_LINK_STATUS);
+        int success = GL20.glGetProgrami(ShaderManager.programId, GL20.GL_LINK_STATUS);
         if (success == GL20.GL_FALSE){
             throw new ShaderManagerError(GL20.glGetProgramInfoLog(ShaderManager.programId));
         }
@@ -78,30 +63,19 @@ public class ShaderManager {
     // pareil mais pour les shaders de texte
     @OpenGLThread
     public static void createTextShader() throws ShaderManagerError{
+        String vertexTextShader;
+        String fragmentTextShader;
         try{
-            ShaderManager.vertexShader = Files.readString(Paths.get("res/Shaders/vertex_text.glsl"));
-            ShaderManager.fragmentShader = Files.readString(Paths.get("res/Shaders/fragment_text.glsl"));
+            vertexTextShader = Files.readString(Paths.get("res/Shaders/vertex_text.glsl"));
+            fragmentTextShader = Files.readString(Paths.get("res/Shaders/fragment_text.glsl"));
         }catch(IOException e){
             e.printStackTrace();
-        }
-        // creation de l'object shader
-        int vsId = GL20.glCreateShader(GL20.GL_VERTEX_SHADER);
-        // attacher le code source au shader
-        GL20.glShaderSource(vsId, ShaderManager.vertexShader);
-        // compiler le shader
-        GL20.glCompileShader(vsId);
-        int success = GL20.glGetShaderi(vsId, GL20.GL_COMPILE_STATUS);
-        if (success == GL20.GL_FALSE){
-            throw new ShaderManagerError(GL20.glGetShaderInfoLog(vsId));
+            return;
         }
 
-        int fgId = GL20.glCreateShader(GL20.GL_FRAGMENT_SHADER);
-        GL20.glShaderSource(fgId, ShaderManager.fragmentShader);
-        GL20.glCompileShader(fgId);
-        success = GL20.glGetShaderi(fgId, GL20.GL_COMPILE_STATUS);
-        if (success == GL20.GL_FALSE){
-            throw new ShaderManagerError(GL20.glGetShaderInfoLog(fgId));
-        }
+        int[] ids = ShaderManager.create(vertexTextShader, fragmentTextShader);
+        int vsId = ids[0];
+        int fgId = ids[1];
 
         // attacher les shader compilés au programme
         ShaderManager.programTextId = GL20.glCreateProgram();
@@ -110,7 +84,7 @@ public class ShaderManager {
 
         // vérifie que les sorties du vertex shader corresponde aux entrées du fragment shader
         GL20.glLinkProgram(ShaderManager.programTextId);
-        success = GL20.glGetProgrami(ShaderManager.programTextId, GL20.GL_LINK_STATUS);
+        int success = GL20.glGetProgrami(ShaderManager.programTextId, GL20.GL_LINK_STATUS);
         if (success == GL20.GL_FALSE){
             throw new ShaderManagerError(GL20.glGetProgramInfoLog(ShaderManager.programTextId));
         }
@@ -121,6 +95,30 @@ public class ShaderManager {
 
         GL20.glDetachShader(ShaderManager.programTextId, fgId);
         GL20.glDeleteShader(fgId);
+    }
+
+    @OpenGLThread
+    private static int[] create(String vertexShader, String fragmentShader){
+        // creation de l'object shader
+        int vsId = GL20.glCreateShader(GL20.GL_VERTEX_SHADER);
+        // attacher le code source au shader
+        GL20.glShaderSource(vsId, vertexShader);
+        // compiler le shader
+        GL20.glCompileShader(vsId);
+        int success = GL20.glGetShaderi(vsId, GL20.GL_COMPILE_STATUS);
+        if (success == GL20.GL_FALSE){
+            throw new ShaderManagerError(GL20.glGetShaderInfoLog(vsId));
+        }
+
+        int fgId = GL20.glCreateShader(GL20.GL_FRAGMENT_SHADER);
+        GL20.glShaderSource(fgId, fragmentShader);
+        GL20.glCompileShader(fgId);
+        success = GL20.glGetShaderi(fgId, GL20.GL_COMPILE_STATUS);
+        if (success == GL20.GL_FALSE){
+            throw new ShaderManagerError(GL20.glGetShaderInfoLog(fgId));
+        }
+
+        return new int[]{vsId, fgId};
     }
 
     @OpenGLThread
@@ -178,6 +176,11 @@ public class ShaderManager {
         GL20.glUniform4f(locationColor, red, green, blue, alpha);
     }
 
+    /**
+     * Envoie la matrice orthonormé au shader de texte
+     * @param width int
+     * @param height int
+     */
     @OpenGLThread
     public static void runTextOrtho(int width, int height){
         FloatBuffer buffer = BufferUtils.createFloatBuffer(16);
@@ -187,6 +190,13 @@ public class ShaderManager {
         GL20.glUniformMatrix4fv(locationOrtho, false, buffer);
     }
 
+    /**
+     * Envoie la couleur au shader de texte
+     * @param red float
+     * @param green float
+     * @param blue float
+     * @param alpha float
+     */
     @OpenGLThread
     public static void runTextFragmentColor(float red, float green, float blue, float alpha){
         int locationColor = GL20.glGetUniformLocation(ShaderManager.programTextId, "color");
@@ -194,8 +204,18 @@ public class ShaderManager {
     }
 
     @OpenGLThread
-    public static void close(){
+    public static void closeProgramId(){
         GL20.glDeleteProgram(ShaderManager.programId);
+    }
+
+    @OpenGLThread
+    public static void closeProgramTextId(){
+        GL20.glDeleteProgram(ShaderManager.programTextId);
+    }
+
+    @OpenGLThread
+    public static int getProgramId(){
+        return ShaderManager.programId;
     }
 
     @OpenGLThread
@@ -212,22 +232,7 @@ public class ShaderManager {
      */
     @OpenGLThread
     public static int[] createVBOVAOEBO(FloatBuffer vertex, IntBuffer indices, int packetSize){
-        // VAO = configuration de comment lire un vbo
-        // 1. VAO, créer, binder et uploader
-        int vao = GL30.glGenVertexArrays();
-        GL30.glBindVertexArray(vao);
-
-        // VBO = données brut à afficher
-        // 2. VBO, créer, binder et uploader
-        int vbo = GL20.glGenBuffers();
-        GL15.glBindBuffer(GL20.GL_ARRAY_BUFFER, vbo); 
-        GL15.glBufferData(GL20.GL_ARRAY_BUFFER, vertex, GL20.GL_STATIC_DRAW);
-
-        // EBO = les indices pour lire les sommets pour évité les duplications de sommets
-        // 3. EBO — doit être bindé PENDANT que le VAO est actif
-        int ebo = GL20.glGenBuffers();
-        GL15.glBindBuffer(GL20.GL_ELEMENT_ARRAY_BUFFER, ebo);
-        GL15.glBufferData(GL20.GL_ELEMENT_ARRAY_BUFFER, indices, GL20.GL_STATIC_DRAW);
+        int[] ids = ShaderManager.createBuffer(vertex, indices);
 
         // 3. Dire au VAO comment lire le VBO
         GL20.glVertexAttribPointer(0, packetSize, GL20.GL_FLOAT, false, packetSize * Float.BYTES, 0);
@@ -238,27 +243,13 @@ public class ShaderManager {
         GL30.glBindVertexArray(0);
 
         // retourne les références des buffers
-        return new int[]{vao, vbo, ebo};
+        return ids;
     }
 
+    // pareil que en haut mais pour les shaders de texte
     @OpenGLThread
     public static int[] createTextVBOVAOEBO(FloatBuffer vertex, IntBuffer indices){
-        // VAO = configuration de comment lire un vbo
-        // 1. VAO, créer, binder et uploader
-        int vao = GL30.glGenVertexArrays();
-        GL30.glBindVertexArray(vao);
-
-        // VBO = données brut à afficher
-        // 2. VBO, créer, binder et uploader
-        int vbo = GL20.glGenBuffers();
-        GL15.glBindBuffer(GL20.GL_ARRAY_BUFFER, vbo); 
-        GL15.glBufferData(GL20.GL_ARRAY_BUFFER, vertex, GL20.GL_STATIC_DRAW);
-
-        // EBO = les indices pour lire les sommets pour évité les duplications de sommets
-        // 3. EBO — doit être bindé PENDANT que le VAO est actif
-        int ebo = GL20.glGenBuffers();
-        GL15.glBindBuffer(GL20.GL_ELEMENT_ARRAY_BUFFER, ebo);
-        GL15.glBufferData(GL20.GL_ELEMENT_ARRAY_BUFFER, indices, GL20.GL_STATIC_DRAW);
+        int[] ids = ShaderManager.createBuffer(vertex, indices);
 
         // 3. Dire au VAO comment lire le VBO
         GL20.glVertexAttribPointer(0, 2, GL20.GL_FLOAT, false, 4 * Float.BYTES, 0);
@@ -272,15 +263,31 @@ public class ShaderManager {
         GL30.glBindVertexArray(0);
 
         // retourne les références des buffers
+        return ids;
+    }
+
+    private static int[] createBuffer(FloatBuffer vertex, IntBuffer indices){
+        // VAO = configuration de comment lire un vbo
+        // 1. VAO, créer, binder et uploader
+        int vao = GL30.glGenVertexArrays();
+        GL30.glBindVertexArray(vao);
+
+        // VBO = données brut à afficher
+        // 2. VBO, créer, binder et uploader
+        int vbo = GL20.glGenBuffers();
+        GL15.glBindBuffer(GL20.GL_ARRAY_BUFFER, vbo); 
+        GL15.glBufferData(GL20.GL_ARRAY_BUFFER, vertex, GL20.GL_STATIC_DRAW);
+
+        // EBO = les indices pour lire les sommets pour évité les duplications de sommets
+        // 3. EBO — doit être bindé PENDANT que le VAO est actif
+        int ebo = GL20.glGenBuffers();
+        GL15.glBindBuffer(GL20.GL_ELEMENT_ARRAY_BUFFER, ebo);
+        GL15.glBufferData(GL20.GL_ELEMENT_ARRAY_BUFFER, indices, GL20.GL_STATIC_DRAW);
+
         return new int[]{vao, vbo, ebo};
     }
 
-    /*Utilisation
-    GL30.glBindVertexArray(ids[0]);
-    GL11.glDrawElements(GL11.GL_TRIANGLES, indexCount, GL11.GL_UNSIGNED_INT, 0);
-    GL30.glBindVertexArray(0);
-    */
-
+    @OpenGLThread
     public static void deleteVBOVAOEBO(int[] ids){
         GL30.glDeleteVertexArrays(ids[0]); // vao
         GL20.glDeleteBuffers(ids[1]); // vbo

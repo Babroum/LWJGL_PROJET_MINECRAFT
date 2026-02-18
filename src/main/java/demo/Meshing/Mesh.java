@@ -102,17 +102,17 @@ public class Mesh {
     /**
      * Remplis le FloatBuffer avec tout les sommets de la maille
      */
+    // a faire dans un autre thread
     @OpenGLThread
     public void fillFloatBufferVertex(){
         this.vertexs = BufferUtils.createFloatBuffer(this.nbFaces * 4 * 3);
         this.nbvertex = 0;
         synchronized (this.faces){
             for (int i = 0; i < this.nbFaces; i++){
-                for (int j = 0; j < this.faces[i].nbVertexs; j++){
+                for (int j = 0; j < this.faces[i].nbCoords; j++){
                     this.vertexs.put(this.faces[i].vertexs[j]);
-                    
                 }
-                this.nbvertex += this.faces[i].nbVertexs;
+                this.nbvertex += this.faces[i].nbCoords / 3;
             }
             this.vertexs.flip();
         }       
@@ -122,6 +122,7 @@ public class Mesh {
      * Remplis le IntBuffer avec tout les indices de la maille<br>
      * Fonctionne seulement pour des faces de 2 triangles
      */
+    // a faire dans un autre thread
     @OpenGLThread
     public void fillIntBufferIndices(){
         this.indices = BufferUtils.createIntBuffer(this.nbFaces * 6);
