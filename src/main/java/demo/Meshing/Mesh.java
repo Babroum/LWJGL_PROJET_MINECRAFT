@@ -13,6 +13,7 @@ import demo.Exceptions.ArrayEmpty;
 import demo.Exceptions.ArrayFull;
 import demo.Exceptions.Empty;
 import demo.Exceptions.IncorrectIndex;
+import demo.Rendering.Render;
 
 /**
  * Une Maille décrivant un ensemble de face composées de sommet.
@@ -22,7 +23,7 @@ public class Mesh {
     /**
      * Tableau des faces de la maille.
      */
-    private Face[] faces = new Face[6]; // a modif 6 facces par cube
+    private Face[] faces = new Face[6]; // a modif 6 faces par cube
     private FloatBuffer vertexs; 
     private IntBuffer indices;
     private int nbFaces;
@@ -89,13 +90,18 @@ public class Mesh {
         return this.nbFaces;
     }
 
+    public void setupBuffers(){
+        this.vertexs = BufferUtils.createFloatBuffer(this.faces.length * 4 * 6);
+        this.indices = BufferUtils.createIntBuffer(this.faces.length * 6);
+    }
+
     /**
      * Définis les ids des buffers créer avec les sommets et indices 
      */
     @OpenGLThread
     public void setupVBOVAOEBO(){
         this.ids = new int[3];
-        this.ids = ShaderManager.createVBOVAOEBO(this.vertexs, this.indices, 3);
+        this.ids = ShaderManager.createVBOVAOEBO(this.vertexs, this.indices, 6);
     }
 
     /**
@@ -103,18 +109,19 @@ public class Mesh {
      */
     // a faire dans un autre thread
     public void fillFloatBufferVertex(){
-        this.vertexs = BufferUtils.createFloatBuffer(this.nbFaces * 4 * 3);
+        this.vertexs.clear();
         this.nbvertex = 0;
         synchronized (this.faces){
             for (int i = 0; i < this.nbFaces; i++){
                 for (int j = 0; j < this.faces[i].nbCoords; j++){
                     this.vertexs.put(this.faces[i].vertexs[j]);
                 }
-                this.nbvertex += this.faces[i].nbCoords / 3;
+                this.nbvertex += this.faces[i].nbCoords / 6;
             }
             this.vertexs.flip();
-        }       
-    }
+        }
+    }       
+    
 
     /**
      * Remplis le IntBuffer avec tout les indices de la maille<br>
@@ -122,7 +129,7 @@ public class Mesh {
      */
     // a faire dans un autre thread
     public void fillIntBufferIndices(){
-        this.indices = BufferUtils.createIntBuffer(this.nbFaces * 6);
+        this.indices.clear();
         int[] indicesArray = new int[this.nbFaces * 6];
         for (int i = 0; i < this.nbFaces; i++){
             int v = i * 4;
@@ -144,9 +151,12 @@ public class Mesh {
      */
     public void drawMesh() throws Empty{   
         if (this.ids == null) throw new Empty("les vbo vao et ebo ne sont pas initialisé");
+        Render.getTextureRender().draw();
         GL30.glBindVertexArray(ids[1]);
         GL11.glDrawElements(GL11.GL_TRIANGLES, this.indices.limit(), GL11.GL_UNSIGNED_INT, 0); // limit c comme length
-        GL30.glBindVertexArray(0);             
+        GL30.glBindVertexArray(0);     
+        Render.monitor.incrementDrawCalls();
+        Render.monitor.addTriangles(this.indices.limit() / 3);                     
     }        
 
     // fait le décalage des valeurs dans le tableau

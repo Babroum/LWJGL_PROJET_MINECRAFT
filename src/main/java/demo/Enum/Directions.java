@@ -3,7 +3,7 @@ package demo.Enum;
 /**
  * Contient les directions des faces et les valeurs de directions
  */
-public enum Direction {
+public enum Directions {
     NORTH(-1, 0, 0),
     SOUTH(1, 0, 0),
     UP(0, 1, 0),
@@ -13,7 +13,7 @@ public enum Direction {
 
     public final int dx, dy, dz;
 
-    Direction(int dx, int dy, int dz) {
+    Directions(int dx, int dy, int dz) {
         this.dx = dx;
         this.dy = dy;
         this.dz = dz;

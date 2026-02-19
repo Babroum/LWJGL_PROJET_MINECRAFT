@@ -9,6 +9,7 @@ import org.lwjgl.opengl.GL11;
 
 import demo.ShaderManager;
 import demo.Annotations.OpenGLThread;
+import demo.Enum.Textures;
 import demo.Events.InputManager;
 import demo.Geometry.Node3D;
 import demo.Geometry.Object3D;
@@ -16,12 +17,32 @@ import demo.Types.Color4f;
 
 public class Render {
     
-    public SceneGraph sceneGraph = new SceneGraph(); 
-    private double[] fpsHistory = new double[60];
+    public static SceneGraph sceneGraph = new SceneGraph(); 
+    private static TextRender textRender;  
+    private static TextureRender textureRender;
 
-    private int fpsIndex;
-    private int frameCount;
-    private float displayedFps = 0.0f;
+    private static double[] fpsHistory = new double[60];
+
+    private static int fpsIndex;
+    private static int frameCount;
+    private static float displayedFps = 0.0f;
+
+    private static FloatBuffer projBuffer = BufferUtils.createFloatBuffer(16);
+
+    public static PerformanceMonitor monitor = new PerformanceMonitor();
+
+
+    public static void setupBeforeRendering(){
+        // initialise en mémoire l'image des caractères
+        Render.textRender = new TextRender("res/Textures/font.png", 20, 20, 19,
+                                        " !\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~");   
+
+        // initialise en mémoire l'image des textures
+        Render.textureRender = new TextureRender();
+        Render.textureRender.addTexture("res/Textures/Blocks/grass_block_top.png", Textures.GRASS);
+        Render.textureRender.addTexture("res/Textures/Blocks/stone.png", Textures.STONE);
+        Render.textureRender.addTexture("res/Textures/Blocks/dirt.png", Textures.DIRT);
+    }
 
     /**
      * Gère le rendu de la fenêtre.
@@ -29,23 +50,21 @@ public class Render {
      * @param windowRef
      */
     @OpenGLThread
-    public void rendering(Window window, long windowRef){
+    public static void rendering(long windowRef){
         // Stocke le temps actuel (UNIX)
         long lastTimeMs = System.currentTimeMillis();
-        long lastTimeNano = System.nanoTime();
+        long lastTimeNano = System.nanoTime();        
 
-        this.initialize3D(window.width, window.height);
+        Render.initialize3D(Window.width, Window.height);
 
-        for(Node3D obj : window.getSceneGraph().root.getChildren()){
-            if (obj instanceof Object3D){
-                ((Object3D)obj).setupObjectBuffers();
-            }
-        }  
+        Render.setupVBOVAOEBORecursive(Window.getSceneGraph().root);
 
         // positionne la camera
-        this.sceneGraph.getCamera().setPosition(0, 0, 3);
+        Render.sceneGraph.getCamera().setPosition(0, 2, 3);
 
         while ( !GLFW.glfwWindowShouldClose(windowRef) ) {  
+            monitor.beginFrame();
+
             // Stocke le temps actuel (UNIX) en nanosec
             long nowMs = System.currentTimeMillis();
             long nowNano = System.nanoTime();
@@ -53,29 +72,43 @@ public class Render {
 			GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT); // clear the framebuffer
 
             // Modifie le déplacement de la caméra 
-            InputManager.run(windowRef, window, sceneGraph, nowMs - lastTimeMs);
+            monitor.startTimer("logic");
+            InputManager.run(windowRef, sceneGraph, nowMs - lastTimeMs);
+            monitor.stopTimer("logic");
 
             ShaderManager.useShader();
             
             // donne les matrices de camera et perspective au shader
-            ShaderManager.runProjection(this.calculateProjection(45.0f, (float) window.width / window.height, 0.1f, 5000.f)); // donne la perspective de l'ecran
-            ShaderManager.runView(this.sceneGraph.getCamera().getViewMatrixBuffer()); // donne la vue de la camera
-                                     
+            ShaderManager.runProjection(Render.calculateProjection(45.0f, (float) Window.width / Window.height, 0.1f, 5000.f)); // donne la perspective de l'ecran
+            ShaderManager.runView(Render.sceneGraph.getCamera().getViewMatrixBuffer()); // donne la vue de la camera
+
             // Dessine la scène
-            this.drawScene();     
+            monitor.startTimer("render");
+            Render.drawScene();     
+            monitor.stopTimer("render");
+
+            monitor.setActiveVAOs(ShaderManager.activeVAOCount);
 
             // Affiche les fps            
             double delta = (nowNano - lastTimeNano) / 1_000_000_000.0;
-            this.calculateFPS(delta, window);
+            Render.calculateFPS(delta);
 
             // Affiche le nombre de vertex à l'écran
-            window.getTextRender().drawText(window, "Vertex count : " + this.sceneGraph.getTotalVertexCount(), 0, 20, 20, Color4f.BLUE);
-            // Affiche le nombre de nœud à l'écran
-            window.getTextRender().drawText(window, "Node3D count : " + this.sceneGraph.getTotalNodeCount(), 0, 40, 20, Color4f.YELLOW);
+            Render.getTextRender().drawText("Vertex count : " + Render.sceneGraph.getTotalVertexCount(), 0, 20, 20, Color4f.BLUE);   
             // Affiche la touche à appuyer pour toggle le wireframe
-            window.getTextRender().drawText(window, "Toggle WireFrameMode : E", 0, 60, 15, Color4f.PURPLE);
+            Render.getTextRender().drawText("Toggle WireFrameMode : E", 0, 40, 15, Color4f.YELLOW);
             // Affiche la touche à appuyer pour toggle le mouselock
-            window.getTextRender().drawText(window, "Toggle MouseLock : P", 0, 80, 15, Color4f.PURPLE);
+            Render.getTextRender().drawText("Toggle MouseLock : P", 0, 60, 15, Color4f.YELLOW);       
+
+            // Affiche le nombre de nœud à l'écran
+            Render.getTextRender().drawText("Node3D count : " + Render.sceneGraph.getTotalNodeCount(), 0, 80, 15, Color4f.PURPLE);         
+
+            String[] lines = monitor.getDisplayLines();
+            for(int i = 0; i < lines.length; i++){
+                if(lines[i] != null){
+                    Render.getTextRender().drawText(lines[i], 0, 100 + i * 20, 15, Color4f.PURPLE);
+                }
+            }
 
             // Rends la fenêtre en buffer dessinée visible à l’écran
             GLFW.glfwSwapBuffers(windowRef);		
@@ -83,13 +116,40 @@ public class Render {
             GLFW.glfwPollEvents();
             lastTimeMs = nowMs;           
             lastTimeNano = nowNano; 
+
+            // TESTE A UTILISE POUR VOIR SI IL Y A ACCUMULATION DE RAM (FUITE DE MEMOIRE)
+            /*/
+            if(frameCount % 600 == 0){ // toutes les 600 frames (~10sec à 60fps)
+                System.gc();
+                System.out.println("RAM après GC: " + (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / (1024*1024) + " MB");
+            }*/
+
+            monitor.endFrame();
 		}
 
-        window.exitWindow();
+        Window.exitWindow();
+    }
+
+    private static void setupVBOVAOEBORecursive(Node3D node){
+        if (node == null) return;
+        if (node.getChildren() == null) return;
+        if (node instanceof Object3D){
+            ((Object3D)node).setupObjectBuffers();
+        }
+        for(Node3D child : node.getChildren()){
+            setupVBOVAOEBORecursive(child);
+        }
+    }
+
+    public static TextRender getTextRender(){
+        return Render.textRender;
+    }
+    public static TextureRender getTextureRender(){
+        return Render.textureRender;
     }
 
     @OpenGLThread
-    private void initialize3D(final int width, final int height)
+    private static void initialize3D(final int width, final int height)
     {
         // *** Gestion de la transparence ***
         // On indique que l’on souhaite activer la transparence
@@ -118,46 +178,44 @@ public class Render {
         GL11.glClearColor(1f, 0f, 0f, 1f);
         // On active le test de profondeur
         GL11.glEnable(GL11.GL_DEPTH_TEST);
-
         // Active les face visible que d’un côté (Pour éviter de dessiner des choses qui seront toujours cachées)
         GL11.glEnable(GL11.GL_CULL_FACE);
-        GL11.glCullFace(GL11.GL_FRONT);        
+        GL11.glCullFace(GL11.GL_FRONT);  
 
         ShaderManager.createShader();        
     }
     
     @OpenGLThread
-    private void drawScene(){
-        this.sceneGraph.drawScene();
+    private static void drawScene(){
+        Render.sceneGraph.drawScene();
     }
 
-    @OpenGLThread
     /**
      * Calcule les fps 
      * @param delta double, temps en nano seconde entre 2 frames
      * @param window Window
      */
-    private void calculateFPS(double delta, Window window){
+    @OpenGLThread
+    private static void calculateFPS(double delta){
         if (delta > 0){
-            this.fpsHistory[this.fpsIndex] = 1.0 / delta;
-            this.fpsIndex = (this.fpsIndex + 1) % this.fpsHistory.length;
-            if (this.frameCount % 30 == 0){
+            Render.fpsHistory[Render.fpsIndex] = 1.0 / delta;
+            Render.fpsIndex = (Render.fpsIndex + 1) % Render.fpsHistory.length;
+            if (Render.frameCount % 30 == 0){
                 double sum = 0;
                 for (double fps : fpsHistory){
                     sum += fps;
                 }
-                this.displayedFps = (float)(sum / this.fpsHistory.length);
+                Render.displayedFps = (float)(sum / Render.fpsHistory.length);
             }
-            window.getTextRender().drawText(window, "AVG FPS : " + String.format("%.0f", this.displayedFps) , 0, 0, 20, Color4f.RED);
-            this.frameCount++;
+            Render.getTextRender().drawText("AVG FPS : " + String.format("%.0f", Render.displayedFps) , 0, 0, 20, Color4f.RED);
+            Render.frameCount++;
         }        
     }
 
     // calcule la projection 
-    private FloatBuffer calculateProjection(float fov, float aspect, float near, float far) {
-        FloatBuffer matrixBuffer = BufferUtils.createFloatBuffer(16);
+    private static FloatBuffer calculateProjection(float fov, float aspect, float near, float far) {
         Matrix4f projection = new Matrix4f().perspective((float) Math.toRadians(fov), aspect, near, far);
-        projection.get(matrixBuffer);
-        return matrixBuffer;
+        projection.get(projBuffer);
+        return projBuffer;
     }
 }

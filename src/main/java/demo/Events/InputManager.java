@@ -21,8 +21,8 @@ public class InputManager {
     public static final float MOUSESENS = 0.1f;
 
     @OpenGLThread
-    public static void create(long windowRef, Window window){
-        new MouseInput(windowRef, window);
+    public static void create(long windowRef){
+        new MouseInput(windowRef);
         new KeyboardInput(windowRef);
     }
 
@@ -33,9 +33,9 @@ public class InputManager {
      * @param deltaTime long
      */
     @OpenGLThread
-    public static void run(long windowRef, Window window, SceneGraph sceneGraph, long deltaTime){
+    public static void run(long windowRef, SceneGraph sceneGraph, long deltaTime){
         // Récupère le dernier mouvement de la souris
-        MouseInput.input(window);
+        MouseInput.input();
 
         // Récupère les inputs clavier/souris
         float move = deltaTime * InputManager.MOVEMENTSPEED;
@@ -46,20 +46,20 @@ public class InputManager {
 
         // Active/désactive le wireframe/cull face
         if (KeyboardInput.isWireFrameMode){
-            GL11.glDisable(GL11.GL_CULL_FACE); 
+            //GL11.glDisable(GL11.GL_CULL_FACE); 
             GL11.glPolygonMode(GL11.GL_FRONT_AND_BACK, GL11.GL_LINE); 
         }else{
-            GL11.glEnable(GL11.GL_CULL_FACE); 
+            //GL11.glEnable(GL11.GL_CULL_FACE); 
             GL11.glPolygonMode(GL11.GL_FRONT_AND_BACK, GL11.GL_FILL); 
         }
 
         // Ferme la fenêtre
         if (KeyboardInput.isCloseWindow){
-            window.closeWindow();
+            Window.closeWindow();
         }
 
         // Déplace la caméra avec la souris et la bloque au milieu, desactive si pas sélectionné ou la souris débloqué
-        if (GLFW.glfwGetWindowAttrib(window.getWindow(),GLFW.GLFW_FOCUSED) == 1 && KeyboardInput.isMouseLock){
+        if (GLFW.glfwGetWindowAttrib(Window.getWindow(),GLFW.GLFW_FOCUSED) == 1 && KeyboardInput.isMouseLock){
             Vector2f displVec = MouseInput.getDisplVec();
             camera.addRotation((float) Math.toRadians(displVec.x * InputManager.MOUSESENS),
                             (float) Math.toRadians(displVec.y * InputManager.MOUSESENS));
@@ -75,10 +75,10 @@ public class InputManager {
 
         // si le curseur doit être caché alors
         if (KeyboardInput.isCursorHidden){
-            GLFW.glfwSetInputMode(window.getWindow(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_HIDDEN); // on le cache
+            GLFW.glfwSetInputMode(Window.getWindow(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_HIDDEN); // on le cache
         }
         else{
-            GLFW.glfwSetInputMode(window.getWindow(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL); // on l'affiche
+            GLFW.glfwSetInputMode(Window.getWindow(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL); // on l'affiche
         }
     }
 }

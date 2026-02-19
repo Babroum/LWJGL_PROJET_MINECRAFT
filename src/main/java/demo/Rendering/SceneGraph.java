@@ -1,5 +1,6 @@
 package demo.Rendering;
 
+import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL11;
 
 import demo.Annotations.OpenGLThread;
@@ -54,7 +55,7 @@ public class SceneGraph {
      * @return int
      */
     public int getTotalNodeCount(){
-        return this.getNumberOfNode(root);
+        return this.getNumberOfNode(root) - 1;
     }
 
     // calcule récursivement le nombre de sommet
@@ -64,7 +65,7 @@ public class SceneGraph {
         if (node instanceof Object3D){
             Object3D obj = (Object3D) node;
             if (obj.mesh != null){
-                count += obj.mesh.getVertexCount();
+                count += obj.mesh.getVertexCount();         
             }         
         }else if (node instanceof Clone3D){
             Clone3D obj = (Clone3D) node;
@@ -82,7 +83,6 @@ public class SceneGraph {
                 }
             }
         }
-
         return count;
     }
 
@@ -109,6 +109,6 @@ public class SceneGraph {
     public void drawScene(){
         // Couleur du background de la scène
         GL11.glClearColor(this.backGroundColor.red, this.backGroundColor.green, this.backGroundColor.blue, 1f);
-        this.root.drawNode();
+        this.root.drawNode(new Matrix4f().identity());
     }
 }

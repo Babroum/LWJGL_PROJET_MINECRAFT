@@ -13,7 +13,8 @@ public class Clone3D extends Node3D {
     private final Object3D cloned;
     
     /**
-     * Créer un clone de l'object passé en paramètre
+     * Créer un clone de l'object passé en paramètre <br>
+     * Garde la même texture
      * @param cloned Object3D
      */
     public Clone3D(final Object3D cloned){

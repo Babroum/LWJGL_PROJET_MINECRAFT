@@ -7,8 +7,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 
 import org.joml.Matrix4f;
-import org.lwjgl.BufferUtils;
-import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
@@ -20,6 +18,8 @@ public abstract class ShaderManager {
 
     private static int programId;
     private static int programTextId;
+
+    public static int activeVAOCount = 0;
 
     /**
      * Créer les shaders
@@ -183,8 +183,7 @@ public abstract class ShaderManager {
      * @param height int
      */
     @OpenGLThread
-    public static void runTextOrtho(int width, int height){
-        FloatBuffer buffer = BufferUtils.createFloatBuffer(16);
+    public static void runTextOrtho(FloatBuffer buffer, int width, int height){
         Matrix4f ortho = new Matrix4f().ortho(0, width, height, 0, -1, 1);
         ortho.get(buffer);
         int locationOrtho = GL20.glGetUniformLocation(ShaderManager.programTextId, "ortho");
@@ -236,14 +235,21 @@ public abstract class ShaderManager {
         int[] ids = ShaderManager.createBuffer(vertex, indices);
 
         // 3. Dire au VAO comment lire le VBO
-        GL20.glVertexAttribPointer(0, packetSize, GL20.GL_FLOAT, false, packetSize * Float.BYTES, 0);
+        GL20.glVertexAttribPointer(0, 3, GL20.GL_FLOAT, false, packetSize * Float.BYTES, 0);
         GL20.glEnableVertexAttribArray(0);
+        
+        GL20.glVertexAttribPointer(1, 2, GL20.GL_FLOAT, false, packetSize * Float.BYTES, 3 * Float.BYTES);
+        GL20.glEnableVertexAttribArray(1);
+
+        GL20.glVertexAttribPointer(2, 1, GL20.GL_FLOAT, false, packetSize * Float.BYTES, 5 * Float.BYTES);
+        GL20.glEnableVertexAttribArray(2);
 
         // 4. Unbind
         GL15.glBindBuffer(GL20.GL_ARRAY_BUFFER, 0);
         GL30.glBindVertexArray(0);
 
         // retourne les références des buffers
+        activeVAOCount++;
         return ids;
     }
 
@@ -264,6 +270,7 @@ public abstract class ShaderManager {
         GL30.glBindVertexArray(0);
 
         // retourne les références des buffers
+        activeVAOCount++;
         return ids;
     }
 
@@ -302,5 +309,6 @@ public abstract class ShaderManager {
         GL30.glDeleteVertexArrays(ids[0]); // vao
         GL20.glDeleteBuffers(ids[1]); // vbo
         GL20.glDeleteBuffers(ids[2]); // ebo 
+        activeVAOCount--;
     }
 }
