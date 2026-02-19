@@ -24,7 +24,7 @@ public class Mesh {
      * Tableau des faces de la maille.
      */
     private Face[] faces = new Face[6]; // a modif 6 faces par cube
-    private FloatBuffer vertexs; 
+    private IntBuffer vertexs; 
     private IntBuffer indices;
     private int nbFaces;
     private int nbvertex;
@@ -91,7 +91,7 @@ public class Mesh {
     }
 
     public void setupBuffers(){
-        this.vertexs = BufferUtils.createFloatBuffer(this.faces.length * 4 * 6);
+        this.vertexs = BufferUtils.createIntBuffer(this.faces.length * 4 * 6);
         this.indices = BufferUtils.createIntBuffer(this.faces.length * 6);
     }
 
@@ -108,7 +108,7 @@ public class Mesh {
      * Remplis le FloatBuffer avec tout les sommets de la maille
      */
     // a faire dans un autre thread
-    public void fillFloatBufferVertex(){
+    public void fillIntBufferVertex(){
         this.vertexs.clear();
         this.nbvertex = 0;
         synchronized (this.faces){

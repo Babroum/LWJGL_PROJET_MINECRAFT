@@ -46,10 +46,10 @@ public class InputManager {
 
         // Active/désactive le wireframe/cull face
         if (KeyboardInput.isWireFrameMode){
-            //GL11.glDisable(GL11.GL_CULL_FACE); 
+            GL11.glDisable(GL11.GL_CULL_FACE); 
             GL11.glPolygonMode(GL11.GL_FRONT_AND_BACK, GL11.GL_LINE); 
         }else{
-            //GL11.glEnable(GL11.GL_CULL_FACE); 
+            GL11.glEnable(GL11.GL_CULL_FACE); 
             GL11.glPolygonMode(GL11.GL_FRONT_AND_BACK, GL11.GL_FILL); 
         }
 

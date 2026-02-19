@@ -1,6 +1,7 @@
 package demo.Geometry;
 
 import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
 
 import org.joml.Matrix4f;
 import org.lwjgl.BufferUtils;
@@ -18,41 +19,41 @@ public class Node3D {
     /**
      * Coordonnée X du nœud.
      */
-    public float x = 0;
+    public int x = 0;
     /**
      * Coordonnée Y du nœud.
      */
-    public float y = 0;
+    public int y = 0;
     /**
      * Coordonnée Z du nœud.
      */
-    public float z = 0;
+    public int z = 0;
 
     /**
      * Angle X du nœud.
      */
-    public float angleX = 0;
+    public int angleX = 0;
     /**
      * Angle Y du nœud.
      */
-    public float angleY = 0;
+    public int angleY = 0;
     /**
      * Angle Z du nœud.
      */
-    public float angleZ = 0;
+    public int angleZ = 0;
 
     /**
      * Taille X du nœud.
      */
-    public float scaleX = 1;
+    public int scaleX = 1;
     /**
      * Taille Y du nœud.
      */
-    public float scaleY = 1;
+    public int scaleY = 1;
     /**
      * Taille Z du nœud.
      */
-    public float scaleZ = 1;
+    public int scaleZ = 1;
 
     /**
      * Tableau de nœud enfant.

@@ -16,7 +16,7 @@ public class Object3D extends Node3D{
      */
     public void setupObjectBuffers(){
         this.mesh.setupBuffers();
-        this.mesh.fillFloatBufferVertex();
+        this.mesh.fillIntBufferVertex();
         this.mesh.fillIntBufferIndices();
         this.mesh.setupVBOVAOEBO();
     }

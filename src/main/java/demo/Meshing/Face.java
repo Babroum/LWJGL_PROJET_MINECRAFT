@@ -16,16 +16,16 @@ public class Face {
      * Tableau des sommets de la face.
      */
     // {x1, y1, z1, u1, v1, texId,  x2, y2, z2, u2, v2, texId, ...}
-    public float[] vertexs = new float[24];
+    public int[] vertexs = new int[24];
     public Textures texture;
     public Directions direction;
     public int nbCoords; // nombre de coordonnées dans la face
 
-    public static final float[] QUAD_UV = {
-        1f, 1f,  // v0 bas droite
-        0f, 1f,  // v1 bas gauche
-        0f, 0f,  // v2 haut gauche
-        1f, 0f   // v3 haut droite
+    public static final int[] QUAD_UV = {
+        1, 1,  // v0 bas droite
+        0, 1,  // v1 bas gauche
+        0, 0,  // v2 haut gauche
+        1, 0   // v3 haut droite
     };
 
     /**
@@ -35,13 +35,12 @@ public class Face {
      * @param Z float
      * @throws ArrayFull
      */
-    public void addVertex(float X, float Y, float Z) throws ArrayFull{
-        System.out.println("nbCoords: " + this.nbCoords + " length: " + this.vertexs.length);
+    public void addVertex(int X, int Y, int Z) throws ArrayFull{
         if (this.nbCoords == this.vertexs.length){
             throw new ArrayFull();
         }
         int vertexIndex = this.nbCoords / 6;
-        this.vertexs[this.nbCoords] = X;
+        this.vertexs[this.nbCoords]     = X;
         this.vertexs[this.nbCoords + 1] = Y;
         this.vertexs[this.nbCoords + 2] = Z;
         this.vertexs[this.nbCoords + 3] = Face.QUAD_UV[vertexIndex * 2];

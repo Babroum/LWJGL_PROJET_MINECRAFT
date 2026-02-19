@@ -39,7 +39,10 @@ public class Render {
 
         // initialise en mémoire l'image des textures
         Render.textureRender = new TextureRender();
-        Render.textureRender.addTexture("res/Textures/Blocks/grass_block_top.png", Textures.GRASS);
+        Render.textureRender.addTexture("res/Textures/Blocks/null.png", Textures.NULL);
+        Render.textureRender.addTexture("res/Textures/Blocks/max.png", Textures.MAX);
+        Render.textureRender.addTexture("res/Textures/Blocks/grass_block_top.png", Textures.GRASS_TOP);
+        Render.textureRender.addTexture("res/Textures/Blocks/grass_block_side.png", Textures.GRASS_SIDE);
         Render.textureRender.addTexture("res/Textures/Blocks/stone.png", Textures.STONE);
         Render.textureRender.addTexture("res/Textures/Blocks/dirt.png", Textures.DIRT);
     }
@@ -60,7 +63,7 @@ public class Render {
         Render.setupVBOVAOEBORecursive(Window.getSceneGraph().root);
 
         // positionne la camera
-        Render.sceneGraph.getCamera().setPosition(0, 2, 3);
+        Render.sceneGraph.getCamera().setPosition(0f, 0f, 3f);
 
         while ( !GLFW.glfwWindowShouldClose(windowRef) ) {  
             monitor.beginFrame();
