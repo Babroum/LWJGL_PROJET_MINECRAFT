@@ -110,7 +110,7 @@ public class TextRender {
         GL11.glDisable(GL11.GL_DEPTH_TEST);
         GL20.glActiveTexture(GL20.GL_TEXTURE0);
         GL11.glBindTexture(GL11.GL_TEXTURE_2D, this.textureId);
-        GL20.glUniform1i(GL20.glGetUniformLocation(ShaderManager.getProgramTextId(), "tex"), 0); // 0 = texture unit 0
+        GL20.glUniform1i(GL20.glGetUniformLocation(ShaderManager.getProgramTextId(), "tex"), 0);
 
         for (int i = 0; i < text.length(); i++){
             this.drawChar(text.charAt(i), this.chars, x + i * fontSize, y, fontSize, i);

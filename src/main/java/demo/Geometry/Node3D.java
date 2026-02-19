@@ -79,17 +79,19 @@ public class Node3D {
 
     /**
      * Dessine le nœud actuel et tous ses enfants.
+     * @param Matrix4f , si un nœud parent est bougé les enfants vont le suivre
      */
     @OpenGLThread
-    public void drawNode(){
+    public void drawNode(Matrix4f parentModel){
         // Crée la model matrix   
-        Matrix4f model = new Matrix4f()
+        Matrix4f model = new Matrix4f(parentModel)
             .translate(this.x, this.y, this.z) // Position aux coordonnées X, Y, Z
             .rotateX((float) Math.toRadians(this.angleX)) // Rotation autour de l'axe X
             .rotateY((float) Math.toRadians(this.angleY)) // Rotation autour de l'axe Y
             .rotateZ((float) Math.toRadians(this.angleZ)) // Rotation autour de l'axe Z
             .scale(this.scaleX, this.scaleY, this.scaleZ); // Application des facteurs d'échelle
         model.get(this.buffer);
+
         ShaderManager.runModel(this.buffer);
 
         // Dessin spécifique
@@ -99,7 +101,7 @@ public class Node3D {
         synchronized (this.children)
         {
             for (int i = 0; i < this.nbChildren; i++){
-                this.children[i].drawNode();
+                this.children[i].drawNode(model);
             }
         }          
     }

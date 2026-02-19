@@ -4,6 +4,7 @@ import demo.Enum.Textures;
 import demo.Geometry.Cube;
 import demo.Rendering.SceneGraph;
 import demo.Rendering.Window;
+import demo.Types.Color4f;
 
 public class App 
 {   
@@ -15,18 +16,23 @@ public class App
         Window.startWindow(() -> draw(Window.getSceneGraph()));        
     }
 
-    public static void draw(SceneGraph scene){        
-        Cube cube1 = new Cube(Textures.GRASS);
-        Cube cube2 = new Cube(Textures.COBBLESTONE);
+    public static void draw(SceneGraph scene){
+        Cube cube1 = new Cube(Textures.DIRT);        
+        Cube cube2 = new Cube(Textures.GRASS);
+        Cube cube21 = new Cube(Textures.STONE);
         
-        cube1.addChild(cube2);
+        cube2.addChild(cube21);
         scene.root.addChild(cube1);
+        scene.root.addChild(cube2);
 
         cube1.x = 0f;
         cube1.z = 0f;
+
+        cube2.x = 0f;
+        cube2.z = 1f;
         
-        cube2.x = 1f;
-        cube2.z = 0f;
+        cube21.x = 2f;
+        cube21.z = 0f;
     }  
     
 

@@ -15,40 +15,41 @@ public class Face {
     /**
      * Tableau des sommets de la face.
      */
-    // {x1, y1, z1, u1, v1,  x2, y2, z2, u2, v2, ...}
-    public float[] vertexs = new float[20];
+    // {x1, y1, z1, u1, v1, texId,  x2, y2, z2, u2, v2, texId, ...}
+    public float[] vertexs = new float[24];
     public Textures texture;
     public Directions direction;
     public int nbCoords; // nombre de coordonnées dans la face
 
+    public static final float[] QUAD_UV = {
+        1f, 1f,  // v0 bas droite
+        0f, 1f,  // v1 bas gauche
+        0f, 0f,  // v2 haut gauche
+        1f, 0f   // v3 haut droite
+    };
+
     /**
      * Ajoute un sommet grâce à ses coordonnées X, Y, Z au tableau des sommets.
-     * @param X
-     * @param Y
-     * @param Z
+     * @param X float
+     * @param Y float
+     * @param Z float
      * @throws ArrayFull
      */
     public void addVertex(float X, float Y, float Z) throws ArrayFull{
+        System.out.println("nbCoords: " + this.nbCoords + " length: " + this.vertexs.length);
         if (this.nbCoords == this.vertexs.length){
             throw new ArrayFull();
         }
+        int vertexIndex = this.nbCoords / 6;
         this.vertexs[this.nbCoords] = X;
         this.vertexs[this.nbCoords + 1] = Y;
         this.vertexs[this.nbCoords + 2] = Z;
-        this.vertexs[this.nbCoords + 3] = 0;
-        this.vertexs[this.nbCoords + 4] = 0;
-        this.nbCoords += 5;
+        this.vertexs[this.nbCoords + 3] = Face.QUAD_UV[vertexIndex * 2];
+        this.vertexs[this.nbCoords + 4] = Face.QUAD_UV[vertexIndex * 2 + 1];
+        this.vertexs[this.nbCoords + 5] = Render.getTextureRender().getIndex(texture);
+        this.nbCoords += 6;
     }
-
-    public void addUV(){
-        float[] uvs = Render.getTextureRender().getUV(this.texture);
-        if (this.nbCoords == 0) {System.out.println("Face: addUV: Pas assez de vertex"); return;}
-        for (int i = 0, j = 3; i < uvs.length && j < this.nbCoords; i+=2, j+=5){
-            this.vertexs[j] = uvs[i];
-            this.vertexs[j + 1] = uvs[i + 1];
-        }
-    }
-
+    
     /**
      * Supprime un sommet du tableau de sommet grâce à l'index du x, supprime le y et le z après le x.
      * @param int

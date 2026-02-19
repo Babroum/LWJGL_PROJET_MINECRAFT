@@ -1,5 +1,6 @@
 package demo.Rendering;
 
+import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL11;
 
 import demo.Annotations.OpenGLThread;
@@ -108,6 +109,6 @@ public class SceneGraph {
     public void drawScene(){
         // Couleur du background de la scène
         GL11.glClearColor(this.backGroundColor.red, this.backGroundColor.green, this.backGroundColor.blue, 1f);
-        this.root.drawNode();
+        this.root.drawNode(new Matrix4f().identity());
     }
 }

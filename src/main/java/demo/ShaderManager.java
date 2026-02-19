@@ -241,6 +241,9 @@ public abstract class ShaderManager {
         GL20.glVertexAttribPointer(1, 2, GL20.GL_FLOAT, false, packetSize * Float.BYTES, 3 * Float.BYTES);
         GL20.glEnableVertexAttribArray(1);
 
+        GL20.glVertexAttribPointer(2, 1, GL20.GL_FLOAT, false, packetSize * Float.BYTES, 5 * Float.BYTES);
+        GL20.glEnableVertexAttribArray(2);
+
         // 4. Unbind
         GL15.glBindBuffer(GL20.GL_ARRAY_BUFFER, 0);
         GL30.glBindVertexArray(0);

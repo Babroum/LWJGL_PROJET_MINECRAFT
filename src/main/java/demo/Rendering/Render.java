@@ -9,11 +9,11 @@ import org.lwjgl.opengl.GL11;
 
 import demo.ShaderManager;
 import demo.Annotations.OpenGLThread;
+import demo.Enum.Textures;
 import demo.Events.InputManager;
 import demo.Geometry.Node3D;
 import demo.Geometry.Object3D;
 import demo.Types.Color4f;
-import demo.Types.TextureRender;
 
 public class Render {
     
@@ -34,11 +34,14 @@ public class Render {
 
     public static void setupBeforeRendering(){
         // initialise en mémoire l'image des caractères
-        Render.textRender = new TextRender("res/Textures/Font.png", 20, 20, 19,
+        Render.textRender = new TextRender("res/Textures/font.png", 20, 20, 19,
                                         " !\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~");   
 
         // initialise en mémoire l'image des textures
-        Render.textureRender = new TextureRender("res/Textures/BlockTextures.png", 32, 32, 10);
+        Render.textureRender = new TextureRender();
+        Render.textureRender.addTexture("res/Textures/Blocks/grass_block_top.png", Textures.GRASS);
+        Render.textureRender.addTexture("res/Textures/Blocks/stone.png", Textures.STONE);
+        Render.textureRender.addTexture("res/Textures/Blocks/dirt.png", Textures.DIRT);
     }
 
     /**
@@ -57,7 +60,7 @@ public class Render {
         Render.setupVBOVAOEBORecursive(Window.getSceneGraph().root);
 
         // positionne la camera
-        Render.sceneGraph.getCamera().setPosition(0, 0, 3);
+        Render.sceneGraph.getCamera().setPosition(0, 2, 3);
 
         while ( !GLFW.glfwWindowShouldClose(windowRef) ) {  
             monitor.beginFrame();
@@ -91,13 +94,14 @@ public class Render {
             Render.calculateFPS(delta);
 
             // Affiche le nombre de vertex à l'écran
-            Render.getTextRender().drawText("Vertex count : " + Render.sceneGraph.getTotalVertexCount(), 0, 20, 20, Color4f.BLUE);          
-            // Affiche le nombre de nœud à l'écran
-            Render.getTextRender().drawText("Node3D count : " + Render.sceneGraph.getTotalNodeCount(), 0, 40, 20, Color4f.YELLOW);
+            Render.getTextRender().drawText("Vertex count : " + Render.sceneGraph.getTotalVertexCount(), 0, 20, 20, Color4f.BLUE);   
             // Affiche la touche à appuyer pour toggle le wireframe
-            Render.getTextRender().drawText("Toggle WireFrameMode : E", 0, 60, 15, Color4f.PURPLE);
+            Render.getTextRender().drawText("Toggle WireFrameMode : E", 0, 40, 15, Color4f.YELLOW);
             // Affiche la touche à appuyer pour toggle le mouselock
-            Render.getTextRender().drawText("Toggle MouseLock : P", 0, 80, 15, Color4f.PURPLE);
+            Render.getTextRender().drawText("Toggle MouseLock : P", 0, 60, 15, Color4f.YELLOW);       
+
+            // Affiche le nombre de nœud à l'écran
+            Render.getTextRender().drawText("Node3D count : " + Render.sceneGraph.getTotalNodeCount(), 0, 80, 15, Color4f.PURPLE);         
 
             String[] lines = monitor.getDisplayLines();
             for(int i = 0; i < lines.length; i++){
@@ -112,6 +116,14 @@ public class Render {
             GLFW.glfwPollEvents();
             lastTimeMs = nowMs;           
             lastTimeNano = nowNano; 
+
+            // TESTE A UTILISE POUR VOIR SI IL Y A ACCUMULATION DE RAM (FUITE DE MEMOIRE)
+            /*/
+            if(frameCount % 600 == 0){ // toutes les 600 frames (~10sec à 60fps)
+                System.gc();
+                System.out.println("RAM après GC: " + (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / (1024*1024) + " MB");
+            }*/
+
             monitor.endFrame();
 		}
 
@@ -119,6 +131,7 @@ public class Render {
     }
 
     private static void setupVBOVAOEBORecursive(Node3D node){
+        if (node == null) return;
         if (node.getChildren() == null) return;
         if (node instanceof Object3D){
             ((Object3D)node).setupObjectBuffers();

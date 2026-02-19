@@ -90,13 +90,18 @@ public class Mesh {
         return this.nbFaces;
     }
 
+    public void setupBuffers(){
+        this.vertexs = BufferUtils.createFloatBuffer(this.faces.length * 4 * 6);
+        this.indices = BufferUtils.createIntBuffer(this.faces.length * 6);
+    }
+
     /**
      * Définis les ids des buffers créer avec les sommets et indices 
      */
     @OpenGLThread
     public void setupVBOVAOEBO(){
         this.ids = new int[3];
-        this.ids = ShaderManager.createVBOVAOEBO(this.vertexs, this.indices, 5);
+        this.ids = ShaderManager.createVBOVAOEBO(this.vertexs, this.indices, 6);
     }
 
     /**
@@ -104,17 +109,17 @@ public class Mesh {
      */
     // a faire dans un autre thread
     public void fillFloatBufferVertex(){
-        this.vertexs = BufferUtils.createFloatBuffer(this.nbFaces * 4 * 5); // 6 faces * 4 coins * 5 données (x,y,z,u,v)
+        this.vertexs.clear();
         this.nbvertex = 0;
         synchronized (this.faces){
             for (int i = 0; i < this.nbFaces; i++){
                 for (int j = 0; j < this.faces[i].nbCoords; j++){
                     this.vertexs.put(this.faces[i].vertexs[j]);
                 }
-                this.nbvertex += this.faces[i].nbCoords / 5;
+                this.nbvertex += this.faces[i].nbCoords / 6;
             }
-        }
             this.vertexs.flip();
+        }
     }       
     
 
@@ -124,7 +129,7 @@ public class Mesh {
      */
     // a faire dans un autre thread
     public void fillIntBufferIndices(){
-        this.indices = BufferUtils.createIntBuffer(this.nbFaces * 6);
+        this.indices.clear();
         int[] indicesArray = new int[this.nbFaces * 6];
         for (int i = 0; i < this.nbFaces; i++){
             int v = i * 4;

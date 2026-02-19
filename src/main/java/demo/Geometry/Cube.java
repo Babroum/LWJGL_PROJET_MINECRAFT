@@ -12,7 +12,6 @@ public class Cube extends Object3D{
         face.addVertex(-0.5f, -0.5f, 0.5f);
         face.addVertex(-0.5f, 0.5f, 0.5f);
         face.addVertex(0.5f, 0.5f, 0.5f);
-        face.addUV();
         face.direction = Directions.SOUTH;
         this.mesh.addFaces(face);
 
@@ -22,7 +21,6 @@ public class Cube extends Object3D{
         face.addVertex(0.5f, -0.5f, -0.5f);
         face.addVertex(0.5f, 0.5f, -0.5f);
         face.addVertex(-0.5f, 0.5f, -0.5f);
-        face.addUV();
         face.direction = Directions.NORTH;
         this.mesh.addFaces(face);
 
@@ -32,7 +30,6 @@ public class Cube extends Object3D{
         face.addVertex(-0.5f, -0.5f, -0.5f);
         face.addVertex(-0.5f, 0.5f, -0.5f);
         face.addVertex(-0.5f, 0.5f, 0.5f);
-        face.addUV();
         face.direction = Directions.WEST;
         this.mesh.addFaces(face);
 
@@ -42,7 +39,6 @@ public class Cube extends Object3D{
         face.addVertex(0.5f, -0.5f, 0.5f);
         face.addVertex(0.5f, 0.5f, 0.5f);
         face.addVertex(0.5f, 0.5f, -0.5f);
-        face.addUV();
         face.direction = Directions.EAST;
         this.mesh.addFaces(face);
 
@@ -52,7 +48,6 @@ public class Cube extends Object3D{
         face.addVertex(-0.5f, 0.5f, 0.5f);
         face.addVertex(-0.5f, 0.5f, -0.5f);
         face.addVertex(0.5f, 0.5f, -0.5f);
-        face.addUV();
         face.direction = Directions.UP;
         this.mesh.addFaces(face);
 
@@ -62,7 +57,6 @@ public class Cube extends Object3D{
         face.addVertex(-0.5f, -0.5f, -0.5f);
         face.addVertex(-0.5f, -0.5f, 0.5f);
         face.addVertex(0.5f, -0.5f, 0.5f);
-        face.addUV();
         face.direction = Directions.DOWN;
         this.mesh.addFaces(face);
 

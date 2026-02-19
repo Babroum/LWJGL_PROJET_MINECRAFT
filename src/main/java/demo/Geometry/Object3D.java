@@ -15,6 +15,7 @@ public class Object3D extends Node3D{
      * Puis créer les vbo vao ebo avec les buffers précédement remplit
      */
     public void setupObjectBuffers(){
+        this.mesh.setupBuffers();
         this.mesh.fillFloatBufferVertex();
         this.mesh.fillIntBufferIndices();
         this.mesh.setupVBOVAOEBO();
