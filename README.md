@@ -1,10 +1,13 @@
 # LWJGL-PROJET-MINECRAFT
 
 Un projet graphique 3D utilisant LWJGL (Lightweight Java Game Library) pour créer une application type Minecraft.
+Référentielle :
+
+<img width="1000" height="1000" alt="référentiel" src="https://github.com/user-attachments/assets/96717006-7e70-4033-851b-8087c81e1b5a" />
 
 ## Prérequis
 
-- **Java JDK 11 ou supérieur** - [Télécharger Java](https://www.oracle.com/java/technologies/downloads/)
+- **Java JDK 11 (pas 25) ou supérieur** - [Télécharger Java](https://www.oracle.com/java/technologies/downloads/)
 - **Git** - Pour cloner le projet
 
 ⚠️ **Maven n'est pas obligatoire !** Le projet inclut Maven Wrapper (`mvnw.cmd` pour Windows), qui télécharge et utilise Maven automatiquement.
@@ -32,15 +35,6 @@ OU CTRL+SHIFT+P et git clone
 
 Maven téléchargera automatiquement toutes les dépendances du `pom.xml` (y compris LWJGL et ses natives).
 
-### 3. Lancer les tests
-```bash
-# Sous Windows
-mvnw.cmd test
-
-# Sous Linux/Mac
-./mvnw test
-```
-
 ### 4. Générer le JAR exécutable
 ```bash
 # Sous Windows
@@ -49,17 +43,6 @@ mvnw.cmd package
 # Sous Linux/Mac
 ./mvnw package
 ```
-
-## Commandes Maven utiles
-
-| Commande | Description |
-|----------|-------------|
-| `mvnw clean` | Nettoie les fichiers générés |
-| `mvnw compile` | Compile le code source |
-| `mvnw test` | Lance les tests unitaires |
-| `mvnw package` | Crée un JAR exécutable |
-| `mvnw clean install` | Compile, teste et installe le projet |
-| `mvnw exec:java` | Lance l'application directement |
 
 ## Contribution
 
@@ -70,17 +53,6 @@ SUR L'ONGLET GIT DE VSCODE CLIQUER SUR LE LOGO DE BRANCHE ET SELECTIONNER LA BRA
 
 IL SUFFIT DE PUSH, ET POUR MERGE IL FAUT ALLER SUR GITHUB
 
-1. Créer une branche : `git checkout -b feature/ma-feature`
-2. Faire vos modifications
-3. Tester : `mvnw test`
-4. Commit : `git commit -m "Description des changements"`
-5. Push : `git push origin feature/ma-feature`
-
-## Notes importantes
-
-- Le fichier `dependency-reduced-pom.xml` est généré automatiquement par Maven - ne pas le modifier
-- Le répertoire `target/` est généré à la compilation - il est ignoré par Git
-- Les natives LWJGL sont téléchargées automatiquement et cachées localement
 
 ## AVANT DE PUSH UNE FEATURE
 Il faut créer une issue avec le label feature et le bon milestone, c'est comme une todo list en gros, pour savoir ce que l'on fait et qui le fait
