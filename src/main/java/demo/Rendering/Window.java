@@ -122,6 +122,7 @@ public class Window {
         GLFW.glfwDestroyWindow(Window.window);
         // On ferme les événements GLFW
         Window.closeGLFW();
+        System.exit(0);
     }
 
     public static void closeWindow(){

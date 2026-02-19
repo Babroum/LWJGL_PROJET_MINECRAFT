@@ -135,34 +135,16 @@
         </executions>
       </plugin>
 
-      <!-- Shaded JAR -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-shade-plugin</artifactId>
-        <version>3.4.1</version>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals><goal>shade</goal></goals>
-            <configuration>
-              <transformers>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                  <mainClass>demo.App</mainClass>
-                </transformer>
-              </transformers>
-              <finalName>maven-demo-shaded</finalName>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-
       <!-- Lancement via Maven -->
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
         <version>3.1.0</version>
-        <configuration>
+        <configuration>mv
           <mainClass>demo.App</mainClass>
+          <additionalClasspathElements>
+            <additionalClasspathElement>${project.basedir}/src/main/resources</additionalClasspathElement>
+          </additionalClasspathElements>
           <systemProperties>
             <systemProperty>
               <key>java.library.path</key>
@@ -170,6 +152,27 @@
             </systemProperty>
           </systemProperties>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifest>
+              <mainClass>demo.App</mainClass>
+            </manifest>
+          </archive>
+          <descriptorRefs>
+            <descriptorRef>jar-with-dependencies</descriptorRef>
+          </descriptorRefs>
+        </configuration>
+        <executions>
+          <execution>
+            <id>make-assembly</id>
+            <phase>package</phase>
+            <goals><goal>single</goal></goals>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

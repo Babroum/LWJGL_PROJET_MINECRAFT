@@ -36,11 +36,11 @@ public class TextureRender {
         return texture.ordinal(); // retourne 0 pour GRASS, 1 pour COBBLESTONE etc.
     }
 
-    public void addTexture(String path, Textures texture){
+    public void addTexture(ByteBuffer path, Textures texture){
         IntBuffer w = BufferUtils.createIntBuffer(1);
         IntBuffer h = BufferUtils.createIntBuffer(1);
         IntBuffer c = BufferUtils.createIntBuffer(1);
-        ByteBuffer pixels = STBImage.stbi_load(path, w, h, c, 4);
+        ByteBuffer pixels = STBImage.stbi_load_from_memory(path, w, h, c, 4);
         GL30.glTexSubImage3D(GL30.GL_TEXTURE_2D_ARRAY, 0, 0, 0, texture.ordinal(), 16, 16, 1, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, pixels);
         STBImage.stbi_image_free(pixels);
     }   

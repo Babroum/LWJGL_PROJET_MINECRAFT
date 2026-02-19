@@ -31,6 +31,7 @@ public class TextRender {
     private FloatBuffer vertexsBuffer;
     private IntBuffer indicesBuffer;
     private final int BUFFERSIZE = 512;
+    private int texUniformLocation;
 
     private float[] data = new float[BUFFERSIZE * 16];
     private int[] indices = new int[BUFFERSIZE * 6];
@@ -47,7 +48,7 @@ public class TextRender {
      * @param chars String, liste des caractères de l'image
      */
     @OpenGLThread
-    public TextRender(String path, int gWidth, int gHeight, int ftPerRow, String chars){
+    public TextRender(ByteBuffer path, int gWidth, int gHeight, int ftPerRow, String chars){
         this.gridWidth = gWidth;
         this.gridHeight = gHeight;
         this.fontPerRow = ftPerRow;
@@ -59,7 +60,7 @@ public class TextRender {
         IntBuffer channel = BufferUtils.createIntBuffer(1);
 
         // charge l'image, et remplis les buffers
-        ByteBuffer pixels = STBImage.stbi_load(path, width, height, channel, 4);
+        ByteBuffer pixels = STBImage.stbi_load_from_memory(path, width, height, channel, 4);
 
         if (pixels == null) {
             System.err.println("Erreur : " + STBImage.stbi_failure_reason());
@@ -88,6 +89,8 @@ public class TextRender {
         this.vertexsBuffer = BufferUtils.createFloatBuffer(this.BUFFERSIZE * 16);
         this.indicesBuffer = BufferUtils.createIntBuffer(this.BUFFERSIZE * 6);
         this.ids = ShaderManager.createTextVBOVAOEBO(vertexsBuffer, indicesBuffer);
+        
+        this.texUniformLocation = GL20.glGetUniformLocation(ShaderManager.getProgramTextId(), "tex");
     }
 
     /**
@@ -110,7 +113,7 @@ public class TextRender {
         GL11.glDisable(GL11.GL_DEPTH_TEST);
         GL20.glActiveTexture(GL20.GL_TEXTURE0);
         GL11.glBindTexture(GL11.GL_TEXTURE_2D, this.textureId);
-        GL20.glUniform1i(GL20.glGetUniformLocation(ShaderManager.getProgramTextId(), "tex"), 0);
+        GL20.glUniform1i(this.texUniformLocation, 0);
 
         for (int i = 0; i < text.length(); i++){
             this.drawChar(text.charAt(i), this.chars, x + i * fontSize, y, fontSize, i);

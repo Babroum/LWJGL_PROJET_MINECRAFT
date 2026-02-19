@@ -1,8 +1,10 @@
 package demo;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
@@ -19,7 +21,19 @@ public abstract class ShaderManager {
     private static int programId;
     private static int programTextId;
 
+    private static int locationProj, locationView, locationModel, locationColor;
+    private static int locationOrtho, locationTextColor, locationTexUniform;
+
+    private static final Matrix4f textOrthoMatrix = new Matrix4f();
+    private static int lastWidth = 0, lastHeight = 0;
+
     public static int activeVAOCount = 0;
+
+    // permet de lire les fichiers qui seront dans le .jar
+    private static String loadShaderFromClasspath(String path) throws IOException {
+        InputStream is = ShaderManager.class.getResourceAsStream(path);
+        return new String(is.readAllBytes(), StandardCharsets.UTF_8);
+    }
 
     /**
      * Créer les shaders
@@ -30,8 +44,8 @@ public abstract class ShaderManager {
         String vertexShader;
         String fragmentShader;
         try{
-            vertexShader = Files.readString(Paths.get("res/Shaders/vertex.glsl"));
-            fragmentShader = Files.readString(Paths.get("res/Shaders/fragment.glsl"));
+            vertexShader = loadShaderFromClasspath("/Shaders/vertex.glsl");
+            fragmentShader = loadShaderFromClasspath("/Shaders/fragment.glsl");
         }catch(IOException e){
             e.printStackTrace();
             return;
@@ -67,8 +81,8 @@ public abstract class ShaderManager {
         String vertexTextShader;
         String fragmentTextShader;
         try{
-            vertexTextShader = Files.readString(Paths.get("res/Shaders/vertex_text.glsl"));
-            fragmentTextShader = Files.readString(Paths.get("res/Shaders/fragment_text.glsl"));
+            vertexTextShader = loadShaderFromClasspath("/Shaders/vertex_text.glsl");
+            fragmentTextShader = loadShaderFromClasspath("/Shaders/fragment_text.glsl");
         }catch(IOException e){
             e.printStackTrace();
             return;
@@ -122,6 +136,17 @@ public abstract class ShaderManager {
         return new int[]{vsId, fgId};
     }
 
+    // Appelle cette méthode une seule fois après avoir créé les shaders
+    public static void cacheUniformLocations() {
+        locationProj = GL20.glGetUniformLocation(programId, "projection");
+        locationView = GL20.glGetUniformLocation(programId, "view");
+        locationModel = GL20.glGetUniformLocation(programId, "model");
+        locationColor = GL20.glGetUniformLocation(programId, "color");
+        locationOrtho = GL20.glGetUniformLocation(programTextId, "ortho");
+        locationTextColor = GL20.glGetUniformLocation(programTextId, "color");
+        locationTexUniform = GL20.glGetUniformLocation(programTextId, "tex");
+    }
+
     @OpenGLThread
     public static void useShader(){
         GL20.glUseProgram(ShaderManager.programId);
@@ -139,8 +164,7 @@ public abstract class ShaderManager {
     @OpenGLThread 
     public static void runProjection(FloatBuffer proj){
         proj.rewind();
-        int locationProj = GL20.glGetUniformLocation(ShaderManager.programId, "projection");
-        GL20.glUniformMatrix4fv(locationProj, false, proj);        
+        GL20.glUniformMatrix4fv(ShaderManager.locationProj, false, proj);        
     }
 
     /**
@@ -150,8 +174,7 @@ public abstract class ShaderManager {
     @OpenGLThread 
     public static void runView(FloatBuffer view){
         view.rewind();
-        int locationView = GL20.glGetUniformLocation(ShaderManager.programId, "view");
-        GL20.glUniformMatrix4fv(locationView, false, view);
+        GL20.glUniformMatrix4fv(ShaderManager.locationView, false, view);
     }
     /**
      * Envoie le model des cubes au shader
@@ -160,8 +183,7 @@ public abstract class ShaderManager {
     @OpenGLThread
     public static void runModel(FloatBuffer model){
         model.rewind();
-        int locationModel = GL20.glGetUniformLocation(ShaderManager.programId, "model");
-        GL20.glUniformMatrix4fv(locationModel, false, model);
+        GL20.glUniformMatrix4fv(ShaderManager.locationModel, false, model);
     }
 
     /**
@@ -173,8 +195,7 @@ public abstract class ShaderManager {
      */
     @OpenGLThread
     public static void runFragmentColor(float red, float green, float blue, float alpha){
-        int locationColor = GL20.glGetUniformLocation(ShaderManager.programId, "color");
-        GL20.glUniform4f(locationColor, red, green, blue, alpha);
+        GL20.glUniform4f(ShaderManager.locationColor, red, green, blue, alpha);
     }
 
     /**
@@ -184,10 +205,14 @@ public abstract class ShaderManager {
      */
     @OpenGLThread
     public static void runTextOrtho(FloatBuffer buffer, int width, int height){
-        Matrix4f ortho = new Matrix4f().ortho(0, width, height, 0, -1, 1);
-        ortho.get(buffer);
-        int locationOrtho = GL20.glGetUniformLocation(ShaderManager.programTextId, "ortho");
-        GL20.glUniformMatrix4fv(locationOrtho, false, buffer);
+        // ne change que si la fenetre est redimensionnée
+        if (width != lastWidth || height != lastHeight) {
+            textOrthoMatrix.identity().ortho(0, width, height, 0, -1, 1);
+            lastWidth = width;
+            lastHeight = height;
+        }
+        textOrthoMatrix.get(buffer);
+        GL20.glUniformMatrix4fv(ShaderManager.locationOrtho, false, buffer);
     }
 
     /**
@@ -199,8 +224,7 @@ public abstract class ShaderManager {
      */
     @OpenGLThread
     public static void runTextFragmentColor(float red, float green, float blue, float alpha){
-        int locationColor = GL20.glGetUniformLocation(ShaderManager.programTextId, "color");
-        GL20.glUniform4f(locationColor, red, green, blue, alpha);
+        GL20.glUniform4f(ShaderManager.locationColor, red, green, blue, alpha);
     }
 
     @OpenGLThread

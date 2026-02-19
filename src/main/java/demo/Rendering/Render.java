@@ -1,5 +1,8 @@
 package demo.Rendering;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 
 import org.joml.Matrix4f;
@@ -34,17 +37,29 @@ public class Render {
 
     public static void setupBeforeRendering(){
         // initialise en mémoire l'image des caractères
-        Render.textRender = new TextRender("res/Textures/font.png", 20, 20, 19,
+        try{
+            Render.textRender = new TextRender(Render.loadImageFromClasspath("/Textures/font.png"), 20, 20, 19,
                                         " !\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~");   
+            // initialise en mémoire l'image des textures
+            Render.textureRender = new TextureRender();
+            Render.textureRender.addTexture(Render.loadImageFromClasspath("/Textures/Blocks/null.png"), Textures.NULL);
+            Render.textureRender.addTexture(Render.loadImageFromClasspath("/Textures/Blocks/max.png"), Textures.MAX);
+            Render.textureRender.addTexture(Render.loadImageFromClasspath("/Textures/Blocks/grass_block_top.png"), Textures.GRASS_TOP);
+            Render.textureRender.addTexture(Render.loadImageFromClasspath("/Textures/Blocks/grass_block_side.png"), Textures.GRASS_SIDE);
+            Render.textureRender.addTexture(Render.loadImageFromClasspath("/Textures/Blocks/stone.png"), Textures.STONE);
+            Render.textureRender.addTexture(Render.loadImageFromClasspath("/Textures/Blocks/dirt.png"), Textures.DIRT);
+        }catch(IOException e){
+            System.out.println(e);
+        }        
+    }
 
-        // initialise en mémoire l'image des textures
-        Render.textureRender = new TextureRender();
-        Render.textureRender.addTexture("res/Textures/Blocks/null.png", Textures.NULL);
-        Render.textureRender.addTexture("res/Textures/Blocks/max.png", Textures.MAX);
-        Render.textureRender.addTexture("res/Textures/Blocks/grass_block_top.png", Textures.GRASS_TOP);
-        Render.textureRender.addTexture("res/Textures/Blocks/grass_block_side.png", Textures.GRASS_SIDE);
-        Render.textureRender.addTexture("res/Textures/Blocks/stone.png", Textures.STONE);
-        Render.textureRender.addTexture("res/Textures/Blocks/dirt.png", Textures.DIRT);
+    // permet de lire les images qui seront dans le .jar
+    public static ByteBuffer loadImageFromClasspath(String path) throws IOException {
+        InputStream is = Render.class.getResourceAsStream(path);
+        byte[] bytes = is.readAllBytes();
+        ByteBuffer buffer = BufferUtils.createByteBuffer(bytes.length);
+        buffer.put(bytes).flip();
+        return buffer;
     }
 
     /**
@@ -185,7 +200,8 @@ public class Render {
         GL11.glEnable(GL11.GL_CULL_FACE);
         GL11.glCullFace(GL11.GL_FRONT);  
 
-        ShaderManager.createShader();        
+        ShaderManager.createShader();    
+        ShaderManager.cacheUniformLocations();    
     }
     
     @OpenGLThread
