@@ -26,7 +26,7 @@ public class MouseInput {
      * @param windowRef long
      */
     @OpenGLThread
-    public MouseInput(long windowRef, Window window){
+    public MouseInput(long windowRef){
         MouseInput.previousPos = new Vector2f(-1, -1);
         MouseInput.currentPos = new Vector2f();
         MouseInput.displVec = new Vector2f();
@@ -40,9 +40,9 @@ public class MouseInput {
             if (KeyboardInput.isMouseLock){
                 MouseInput.currentPos.x = 0;
                 MouseInput.currentPos.y = 0;
-                currentPos.x = (float) xpos - window.width/2;
-                currentPos.y = (float) ypos - window.height/2;
-                GLFW.glfwSetCursorPos(windowRef, window.width/2, window.height/2);
+                currentPos.x = (float) xpos - Window.width/2;
+                currentPos.y = (float) ypos - Window.height/2;
+                GLFW.glfwSetCursorPos(windowRef, Window.width/2, Window.height/2);
             }
         });
         // Callback quand la souris est dans la fenêtre ou en dehors
@@ -75,11 +75,11 @@ public class MouseInput {
      * Calcule le vecteur de déplacement de la souris
      */
     @OpenGLThread
-    public static void input(Window window) {
+    public static void input() {
         MouseInput.displVec.x = 0;
         MouseInput.displVec.y = 0;
-        if (MouseInput.previousPos.x > -window.width/2 && MouseInput.previousPos.y > -window.height/2
-            && MouseInput.previousPos.x < window.width/2 && MouseInput.previousPos.y < window.height/2 && MouseInput.inWindow) {
+        if (MouseInput.previousPos.x > -Window.width/2 && MouseInput.previousPos.y > -Window.height/2
+            && MouseInput.previousPos.x < Window.width/2 && MouseInput.previousPos.y < Window.height/2 && MouseInput.inWindow) {
             double deltax = currentPos.x;
             double deltay = currentPos.y;
             boolean rotateX = deltax != 0;

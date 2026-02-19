@@ -32,12 +32,17 @@ public class TextRender {
     private IntBuffer indicesBuffer;
     private final int BUFFERSIZE = 512;
 
+    private float[] data = new float[BUFFERSIZE * 16];
+    private int[] indices = new int[BUFFERSIZE * 6];
+    
+    private FloatBuffer buffer = BufferUtils.createFloatBuffer(16);
+
     /**
      * Charge l'image des caractères en mémoire <br>
      * <b>TAILLE MAX TEXT 512 CHAR</b>
      * @param path String, chemin de l'image
-     * @param gWidth int, largeur de la grille
-     * @param gHeight int, hauteur de la grille
+     * @param gWidth int, largeur d'une case de la grille
+     * @param gHeight int, hauteur d'une case de la grille
      * @param ftPerRow int, nb de caractère par ligne
      * @param chars String, liste des caractères de l'image
      */
@@ -94,10 +99,12 @@ public class TextRender {
      * @param ftSize int, taille d'un caractère
      */
     @OpenGLThread
-    public void drawText(Window window, String text, int x, int y, int fontSize, Color4f color){   
+    public void drawText(String text, int x, int y, int fontSize, Color4f color){   
+
+        if (text == null) return;
 
         ShaderManager.useTextShader();
-        ShaderManager.runTextOrtho(window.width, window.height);
+        ShaderManager.runTextOrtho(this.buffer, Window.width, Window.height);
         ShaderManager.runTextFragmentColor(color.red, color.green, color.blue, color.alpha);
 
         GL11.glDisable(GL11.GL_DEPTH_TEST);
@@ -105,21 +112,18 @@ public class TextRender {
         GL11.glBindTexture(GL11.GL_TEXTURE_2D, this.textureId);
         GL20.glUniform1i(GL20.glGetUniformLocation(ShaderManager.getProgramTextId(), "tex"), 0); // 0 = texture unit 0
 
-        float[] data = new float[text.length() * 16]; // 6 vertices * 4 (x,y,u,v) par caractère
         for (int i = 0; i < text.length(); i++){
-            float[] charData = this.drawChar(text.charAt(i), this.chars, x + i * fontSize, y, fontSize);
-            System.arraycopy(charData, 0, data, i * 16, 16);
+            this.drawChar(text.charAt(i), this.chars, x + i * fontSize, y, fontSize, i);
         }
 
-        int[] indices = new int[text.length() * 6];
         for(int i = 0; i < text.length(); i++){
             int v = i * 4;
-            indices[i*6+0] = v;
-            indices[i*6+1] = v+1;
-            indices[i*6+2] = v+2;
-            indices[i*6+3] = v+2;
-            indices[i*6+4] = v+3;
-            indices[i*6+5] = v;
+            this.indices[i*6+0] = v;
+            this.indices[i*6+1] = v+1;
+            this.indices[i*6+2] = v+2;
+            this.indices[i*6+3] = v+2;
+            this.indices[i*6+4] = v+3;
+            this.indices[i*6+5] = v;
         }      
 
         this.vertexsBuffer.clear();
@@ -146,10 +150,13 @@ public class TextRender {
      * @param text String, la liste des caractères disponible dans le même ordre que l'image
      * @param x int
      * @param y int
+     * @param fontSize int
+     * @param charIndex int
      */
     @OpenGLThread
-    private float[] drawChar(char c, String text, int x, int y, int fontSize){
+    private void drawChar(char c, String text, int x, int y, int fontSize, int charIndex){
         float row = 0f;
+        int offset = charIndex * 16;
 
         // pour chaque caractère dans la liste de caractère
         for (int i = 0; i < text.length(); i++){
@@ -162,14 +169,21 @@ public class TextRender {
                 float column = (i % this.fontPerRow) * this.gridWidth / (float)this.width;
                 row = this.gridHeight * row / (float)this.height;
 
-                return new float[]{x, y, column, row, 
-                                   x + fontSize, y, column + (float)this.gridWidth / this.width, row,
-                                   x + fontSize, y + fontSize, column + (float)this.gridWidth / this.width, row + (float)this.gridHeight / height,
-                                   x, y + fontSize, column, row + (float)this.gridHeight / height
-                };
+                // écrit directement dans this.data au lieu de créer un nouveau tableau
+                this.data[offset]    = x;            this.data[offset+1]  = y;
+                this.data[offset+2]  = column;       this.data[offset+3]  = row;
+                this.data[offset+4]  = x + fontSize; this.data[offset+5]  = y;
+                this.data[offset+6]  = column + (float)this.gridWidth / this.width;
+                this.data[offset+7]  = row;
+                this.data[offset+8]  = x + fontSize; this.data[offset+9]  = y + fontSize;
+                this.data[offset+10] = column + (float)this.gridWidth / this.width;
+                this.data[offset+11] = row + (float)this.gridHeight / this.height;
+                this.data[offset+12] = x;            this.data[offset+13] = y + fontSize;
+                this.data[offset+14] = column;       this.data[offset+15] = row + (float)this.gridHeight / this.height;
+
+                return;
 
             }
         }
-        return null;
     }
 }

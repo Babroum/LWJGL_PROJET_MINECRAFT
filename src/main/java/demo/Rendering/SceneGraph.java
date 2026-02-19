@@ -54,7 +54,7 @@ public class SceneGraph {
      * @return int
      */
     public int getTotalNodeCount(){
-        return this.getNumberOfNode(root);
+        return this.getNumberOfNode(root) - 1;
     }
 
     // calcule récursivement le nombre de sommet
@@ -64,7 +64,7 @@ public class SceneGraph {
         if (node instanceof Object3D){
             Object3D obj = (Object3D) node;
             if (obj.mesh != null){
-                count += obj.mesh.getVertexCount();
+                count += obj.mesh.getVertexCount();         
             }         
         }else if (node instanceof Clone3D){
             Clone3D obj = (Clone3D) node;
@@ -82,7 +82,6 @@ public class SceneGraph {
                 }
             }
         }
-
         return count;
     }
 

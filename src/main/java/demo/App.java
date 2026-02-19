@@ -1,39 +1,32 @@
 package demo;
 
-import demo.Geometry.Clone3D;
+import demo.Enum.Textures;
 import demo.Geometry.Cube;
 import demo.Rendering.SceneGraph;
 import demo.Rendering.Window;
-import demo.Types.Color4f;
 
 public class App 
 {   
     
     public static void main( String[] args )
     {
-        Window window = new Window(1600,800);
+        new Window(1920,1080);
         
-        window.startWindow(() -> draw(window.getSceneGraph()));        
+        Window.startWindow(() -> draw(Window.getSceneGraph()));        
     }
 
     public static void draw(SceneGraph scene){        
-        Cube cube1 = new Cube();
-        Clone3D cube2 = new Clone3D(cube1); // replaced Cube cube2 = new Cube(); everything else works the same
-         
-        scene.root.addChild(cube1);
-        scene.root.addChild(cube2);
-
-        cube1.setColor(Color4f.BLUE);
-        cube1.x = -1f;
-        cube1.z = -5f;
-        cube1.angleX = 0f;
-        cube1.angleY = 0f;
+        Cube cube1 = new Cube(Textures.GRASS);
+        Cube cube2 = new Cube(Textures.COBBLESTONE);
         
-        cube2.setColor(Color4f.RED);        
+        cube1.addChild(cube2);
+        scene.root.addChild(cube1);
+
+        cube1.x = 0f;
+        cube1.z = 0f;
+        
         cube2.x = 1f;
-        cube2.z = -2f;
-        cube2.angleX = 0f;
-        cube2.angleY = 0f;
+        cube2.z = 0f;
     }  
     
 

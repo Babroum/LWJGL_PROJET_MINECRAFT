@@ -6,7 +6,7 @@ import demo.Types.Color4f;
 
 public class Object3D extends Node3D{
 
-    private Color4f color = new Color4f(0);
+    private Color4f color = Color4f.WHITE;
     public Mesh mesh = new Mesh();
 
     @OpenGLThread

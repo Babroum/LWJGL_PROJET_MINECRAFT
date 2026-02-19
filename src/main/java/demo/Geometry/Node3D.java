@@ -58,6 +58,7 @@ public class Node3D {
      * Tableau de nœud enfant.
      */
     private Node3D[] children = new Node3D[100];
+    private FloatBuffer buffer = BufferUtils.createFloatBuffer(16);
     private int nbChildren;
 
     /**
@@ -81,16 +82,15 @@ public class Node3D {
      */
     @OpenGLThread
     public void drawNode(){
-        // Crée la model matrix
-        FloatBuffer buffer = BufferUtils.createFloatBuffer(16);
+        // Crée la model matrix   
         Matrix4f model = new Matrix4f()
             .translate(this.x, this.y, this.z) // Position aux coordonnées X, Y, Z
             .rotateX((float) Math.toRadians(this.angleX)) // Rotation autour de l'axe X
             .rotateY((float) Math.toRadians(this.angleY)) // Rotation autour de l'axe Y
             .rotateZ((float) Math.toRadians(this.angleZ)) // Rotation autour de l'axe Z
             .scale(this.scaleX, this.scaleY, this.scaleZ); // Application des facteurs d'échelle
-        model.get(buffer);
-        ShaderManager.runModel(buffer);
+        model.get(this.buffer);
+        ShaderManager.runModel(this.buffer);
 
         // Dessin spécifique
         this.drawSpecific();
