@@ -63,6 +63,32 @@ public class BuffersManager {
         return new int[]{vbo, vao, ebo};
     }
 
+    @OpenGLThread
+    public static int[] createChunkVBOVAO(IntBuffer vertex){
+        // VAO = configuration de comment lire un vbo
+        // 1. VAO, créer, binder et uploader
+        int vao = GL30.glGenVertexArrays();
+        GL30.glBindVertexArray(vao);
+
+        // VBO = données brut à afficher
+        // 2. VBO, créer, binder et uploader
+        int vbo = GL20.glGenBuffers();
+        GL15.glBindBuffer(GL20.GL_ARRAY_BUFFER, vbo); 
+        GL15.glBufferData(GL20.GL_ARRAY_BUFFER, vertex, GL20.GL_STATIC_DRAW);
+
+        // 3. Dire au VAO comment lire le VBO
+        GL20.glVertexAttribPointer(0, 1, GL20.GL_INT, false, Float.BYTES, 0);
+        GL20.glEnableVertexAttribArray(0);
+
+        // 4. Unbind
+        GL15.glBindBuffer(GL20.GL_ARRAY_BUFFER, 0);
+        GL30.glBindVertexArray(0);
+
+        // retourne les références des buffers
+        activeVAOCount++;
+        return new int[]{vbo, vao};
+    }
+
     // pareil que en haut mais pour les shaders de texte
     @OpenGLThread
     public static int[] createTextVBOVAOEBO(FloatBuffer vertex, IntBuffer indices){
@@ -99,7 +125,7 @@ public class BuffersManager {
         return new int[]{vbo, vao, ebo};
     }
 
-    public static void updateTextVBOEBO(FloatBuffer vertex, IntBuffer indices, int vbo, int vao, int ebo){
+    public static void updateTextVBOEBO(FloatBuffer vertex, IntBuffer indices, int vbo, int ebo){
         // update les données sans recréer les buffers
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
         GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, 0, vertex);
@@ -108,11 +134,24 @@ public class BuffersManager {
         GL15.glBufferSubData(GL15.GL_ELEMENT_ARRAY_BUFFER, 0, indices);
     }
 
+    public static void updateChunkVBO(IntBuffer vertex, int vbo){
+        // update les données sans recréer les buffers
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
+        GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, 0, vertex);
+    }
+
     @OpenGLThread
     public static void deleteVBOVAOEBO(int[] ids){
         GL30.glDeleteVertexArrays(ids[0]); // vao
         GL20.glDeleteBuffers(ids[1]); // vbo
         GL20.glDeleteBuffers(ids[2]); // ebo 
+        activeVAOCount--;
+    }
+
+    @OpenGLThread
+    public static void deleteVBOVAO(int[] ids){
+        GL30.glDeleteVertexArrays(ids[0]); // vao
+        GL20.glDeleteBuffers(ids[1]); // vbo
         activeVAOCount--;
     }
 

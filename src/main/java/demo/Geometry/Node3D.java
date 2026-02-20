@@ -28,36 +28,39 @@ public class Node3D {
      */
     public int z = 0;
 
+    // PRIVATE CAR PAS NECESSAIRE DANS UN JEU MINECRAFT .___.
+    
     /**
      * Angle X du nœud.
      */
-    public int angleX = 0;
+    private int angleX = 0;
     /**
      * Angle Y du nœud.
      */
-    public int angleY = 0;
+    private int angleY = 0;
     /**
      * Angle Z du nœud.
      */
-    public int angleZ = 0;
+    private int angleZ = 0;
 
     /**
      * Taille X du nœud.
      */
-    public int scaleX = 1;
+    private int scaleX = 1;
     /**
      * Taille Y du nœud.
      */
-    public int scaleY = 1;
+    private int scaleY = 1;
     /**
      * Taille Z du nœud.
      */
-    public int scaleZ = 1;
+    private int scaleZ = 1;
+    
 
     /**
      * Tableau de nœud enfant.
      */
-    private Node3D[] children = new Node3D[10000];
+    private Node3D[] children = new Node3D[Chunk.MAXBLOCK]; // 16 * 16 * 255 = max de bloc par chunk
     private FloatBuffer buffer = BufferUtils.createFloatBuffer(16);
     private int nbChildren;
 

@@ -137,7 +137,7 @@ public class TextRender {
         this.indicesBuffer.put(indices).flip();
 
         // update avec les nouvelle données
-        BuffersManager.updateTextVBOEBO(vertexsBuffer, indicesBuffer, this.ids[0], this.ids[1], this.ids[2]);
+        BuffersManager.updateTextVBOEBO(vertexsBuffer, indicesBuffer, this.ids[0], this.ids[2]);
 
         GL30.glBindVertexArray(ids[1]);
         GL11.glDrawElements(GL11.GL_TRIANGLES, indices.length, GL11.GL_UNSIGNED_INT, 0);
