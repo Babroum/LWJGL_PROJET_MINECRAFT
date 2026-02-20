@@ -1,6 +1,7 @@
 package demo;
 
 import demo.Enum.Textures;
+import demo.Geometry.Clone3D;
 import demo.Geometry.Cube;
 import demo.Rendering.SceneGraph;
 import demo.Rendering.Window;
@@ -18,9 +19,17 @@ public class App
     public static void draw(SceneGraph scene){
         Cube cube1 = new Cube();        
         Cube cube2 = new Cube(Textures.MAX);
-        Cube cube21 = new Cube(Textures.STONE);
+
+        /*
+        for (int i = 2; i < 50; i++){
+            for(int j = 2; j < 50; j++){
+                Clone3D tmp = new Clone3D(cube2);
+                scene.root.addChild(tmp);
+                tmp.x = i;
+                tmp.y = j;
+            }
+        }*/
         
-        cube2.addChild(cube21);
         scene.root.addChild(cube1);
         scene.root.addChild(cube2);
 
@@ -30,9 +39,6 @@ public class App
         cube2.x = 1;
         cube2.z = 1;
         cube2.y = 1;
-        
-        cube21.x = 2;
-        cube21.z = 0;
     }  
     
 

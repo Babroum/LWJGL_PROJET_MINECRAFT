@@ -9,7 +9,7 @@ import demo.Types.Color4f;
  * Classe d'object cloné étant des Object3D
  */
 public class Clone3D extends Node3D {
-    private Color4f color;
+    private Color4f color = Color4f.WHITE;
     private final Object3D cloned;
     
     /**

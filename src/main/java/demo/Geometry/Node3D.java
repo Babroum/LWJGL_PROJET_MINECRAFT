@@ -57,7 +57,7 @@ public class Node3D {
     /**
      * Tableau de nœud enfant.
      */
-    private Node3D[] children = new Node3D[100];
+    private Node3D[] children = new Node3D[10000];
     private FloatBuffer buffer = BufferUtils.createFloatBuffer(16);
     private int nbChildren;
 
