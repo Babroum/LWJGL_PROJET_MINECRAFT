@@ -29,4 +29,13 @@ public class TexturesManager {
     public static TextureRender getTextureRender(){
         return TexturesManager.textureRender;
     }
+
+    /**
+    * Retourne l'index de la texture
+    * @param texture Textures
+    * @return int
+    */
+    public static int getIndex(TexturesType texture){
+        return texture.ordinal(); // retourne 0 pour GRASS, 1 pour COBBLESTONE etc.
+    }
 }

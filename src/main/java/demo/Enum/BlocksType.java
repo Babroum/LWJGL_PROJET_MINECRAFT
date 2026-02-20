@@ -21,7 +21,7 @@ public enum BlocksType {
             case STONE:
                 return TexturesType.STONE;
             default:
-                return TexturesType.NULL;
+                return TexturesType.valueOf(this.name());
         }
     }
 }

@@ -45,7 +45,7 @@ public class Face {
         this.vertexs[this.nbCoords + 2] = Z;
         this.vertexs[this.nbCoords + 3] = Face.QUAD_UV[vertexIndex * 2];
         this.vertexs[this.nbCoords + 4] = Face.QUAD_UV[vertexIndex * 2 + 1];
-        this.vertexs[this.nbCoords + 5] = TexturesManager.getTextureRender().getIndex(texture);
+        this.vertexs[this.nbCoords + 5] = TexturesManager.getIndex(texture);
         this.nbCoords += 6;
     }
     

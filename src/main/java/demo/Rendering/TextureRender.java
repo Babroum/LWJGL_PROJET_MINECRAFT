@@ -28,15 +28,6 @@ public class TextureRender {
     }
 
     /**
-     * Retourne l'index de la texture
-     * @param texture Textures
-     * @return int
-     */
-    public int getIndex(TexturesType texture){
-        return texture.ordinal(); // retourne 0 pour GRASS, 1 pour COBBLESTONE etc.
-    }
-
-    /**
      * Ajoute une texture grâce à son chemin string transformé en ByteBuffer par FileLoader <br>
      * Et le type de texture
      * @param path ByteBuffer
