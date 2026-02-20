@@ -1,7 +1,6 @@
 package demo.Geometry;
 
 import java.nio.FloatBuffer;
-import java.nio.IntBuffer;
 
 import org.joml.Matrix4f;
 import org.lwjgl.BufferUtils;

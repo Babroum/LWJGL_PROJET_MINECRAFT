@@ -4,7 +4,6 @@ import demo.Enum.Textures;
 import demo.Geometry.Cube;
 import demo.Rendering.SceneGraph;
 import demo.Rendering.Window;
-import demo.Types.Color4f;
 
 public class App 
 {   
@@ -18,7 +17,7 @@ public class App
 
     public static void draw(SceneGraph scene){
         Cube cube1 = new Cube();        
-        Cube cube2 = new Cube(Textures.GRASS);
+        Cube cube2 = new Cube(Textures.MAX);
         Cube cube21 = new Cube(Textures.STONE);
         
         cube2.addChild(cube21);

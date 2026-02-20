@@ -5,8 +5,6 @@ import java.io.InputStream;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL15;
@@ -22,7 +20,7 @@ public abstract class ShaderManager {
     private static int programTextId;
 
     private static int locationProj, locationView, locationModel, locationColor;
-    private static int locationOrtho, locationTextColor, locationTexUniform;
+    private static int locationOrtho, locationTextColor;
 
     private static final Matrix4f textOrthoMatrix = new Matrix4f();
     private static int lastWidth = 0, lastHeight = 0;
@@ -144,7 +142,6 @@ public abstract class ShaderManager {
         locationColor = GL20.glGetUniformLocation(programId, "color");
         locationOrtho = GL20.glGetUniformLocation(programTextId, "ortho");
         locationTextColor = GL20.glGetUniformLocation(programTextId, "color");
-        locationTexUniform = GL20.glGetUniformLocation(programTextId, "tex");
     }
 
     @OpenGLThread
@@ -224,7 +221,7 @@ public abstract class ShaderManager {
      */
     @OpenGLThread
     public static void runTextFragmentColor(float red, float green, float blue, float alpha){
-        GL20.glUniform4f(ShaderManager.locationColor, red, green, blue, alpha);
+        GL20.glUniform4f(ShaderManager.locationTextColor, red, green, blue, alpha);
     }
 
     @OpenGLThread
