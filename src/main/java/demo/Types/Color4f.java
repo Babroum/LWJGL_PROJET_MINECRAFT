@@ -2,8 +2,7 @@ package demo.Types;
 
 import demo.Annotations.OpenGLThread;
 import demo.Exceptions.IncorrectColorValue;
-
-import demo.ShaderManager;
+import demo.Managers.ShaderManager;
 
 /**
  * Définis une couleur RGBA

@@ -1,19 +1,18 @@
-package demo;
+package demo.Managers;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.FloatBuffer;
-import java.nio.IntBuffer;
-import java.nio.charset.StandardCharsets;
 
 import org.joml.Matrix4f;
-import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
-import org.lwjgl.opengl.GL30;
 
+import demo.FileLoader;
 import demo.Annotations.OpenGLThread;
 import demo.Exceptions.ShaderManagerError;
 
+/**
+ * Gère les shaders
+ */
 public abstract class ShaderManager {
 
     private static int programId;
@@ -25,14 +24,7 @@ public abstract class ShaderManager {
     private static final Matrix4f textOrthoMatrix = new Matrix4f();
     private static int lastWidth = 0, lastHeight = 0;
 
-    public static int activeVAOCount = 0;
-
-    // permet de lire les fichiers qui seront dans le .jar
-    private static String loadShaderFromClasspath(String path) throws IOException {
-        InputStream is = ShaderManager.class.getResourceAsStream(path);
-        return new String(is.readAllBytes(), StandardCharsets.UTF_8);
-    }
-
+    
     /**
      * Créer les shaders
      * @throws ShaderManagerError
@@ -42,8 +34,8 @@ public abstract class ShaderManager {
         String vertexShader;
         String fragmentShader;
         try{
-            vertexShader = loadShaderFromClasspath("/Shaders/vertex.glsl");
-            fragmentShader = loadShaderFromClasspath("/Shaders/fragment.glsl");
+            vertexShader = FileLoader.loadShaderFromClasspathS("/Shaders/vertex.glsl");
+            fragmentShader = FileLoader.loadShaderFromClasspathS("/Shaders/fragment.glsl");
         }catch(IOException e){
             e.printStackTrace();
             return;
@@ -79,8 +71,8 @@ public abstract class ShaderManager {
         String vertexTextShader;
         String fragmentTextShader;
         try{
-            vertexTextShader = loadShaderFromClasspath("/Shaders/vertex_text.glsl");
-            fragmentTextShader = loadShaderFromClasspath("/Shaders/fragment_text.glsl");
+            vertexTextShader = FileLoader.loadShaderFromClasspathS("/Shaders/vertex_text.glsl");
+            fragmentTextShader = FileLoader.loadShaderFromClasspathS("/Shaders/fragment_text.glsl");
         }catch(IOException e){
             e.printStackTrace();
             return;
@@ -135,7 +127,7 @@ public abstract class ShaderManager {
     }
 
     // Appelle cette méthode une seule fois après avoir créé les shaders
-    public static void cacheUniformLocations() {
+    public static void getUniformLocations() {
         locationProj = GL20.glGetUniformLocation(programId, "projection");
         locationView = GL20.glGetUniformLocation(programId, "view");
         locationModel = GL20.glGetUniformLocation(programId, "model");
@@ -242,103 +234,5 @@ public abstract class ShaderManager {
     @OpenGLThread
     public static int getProgramTextId(){
         return ShaderManager.programTextId;
-    }
-
-    /**
-     * Créer les buffers en les remplissant avant les données données
-     * @param vertex FloatBuffer, sommet à affiché
-     * @param indices IntBuffer, indice sur l'ordre des sommets
-     * @param packetSize int, taille des paquets de données
-     * @return
-     */
-    @OpenGLThread
-    public static int[] createVBOVAOEBO(IntBuffer vertex, IntBuffer indices, int packetSize){
-        // VAO = configuration de comment lire un vbo
-        // 1. VAO, créer, binder et uploader
-        int vao = GL30.glGenVertexArrays();
-        GL30.glBindVertexArray(vao);
-
-        // VBO = données brut à afficher
-        // 2. VBO, créer, binder et uploader
-        int vbo = GL20.glGenBuffers();
-        GL15.glBindBuffer(GL20.GL_ARRAY_BUFFER, vbo); 
-        GL15.glBufferData(GL20.GL_ARRAY_BUFFER, vertex, GL20.GL_STATIC_DRAW);
-
-        // EBO = les indices pour lire les sommets pour évité les duplications de sommets
-        // 3. EBO — doit être bindé PENDANT que le VAO est actif
-        int ebo = GL20.glGenBuffers();
-        GL15.glBindBuffer(GL20.GL_ELEMENT_ARRAY_BUFFER, ebo);
-        GL15.glBufferData(GL20.GL_ELEMENT_ARRAY_BUFFER, indices, GL20.GL_STATIC_DRAW);
-
-        // 3. Dire au VAO comment lire le VBO
-        GL20.glVertexAttribPointer(0, 3, GL20.GL_INT, false, packetSize * Float.BYTES, 0);
-        GL20.glEnableVertexAttribArray(0);
-        
-        GL20.glVertexAttribPointer(1, 2, GL20.GL_INT, false, packetSize * Float.BYTES, 3 * Float.BYTES);
-        GL20.glEnableVertexAttribArray(1);
-
-        GL20.glVertexAttribPointer(2, 1, GL20.GL_INT, false, packetSize * Float.BYTES, 5 * Float.BYTES);
-        GL20.glEnableVertexAttribArray(2);
-
-        // 4. Unbind
-        GL15.glBindBuffer(GL20.GL_ARRAY_BUFFER, 0);
-        GL30.glBindVertexArray(0);
-
-        // retourne les références des buffers
-        activeVAOCount++;
-        return new int[]{vbo, vao, ebo};
-    }
-
-    // pareil que en haut mais pour les shaders de texte
-    @OpenGLThread
-    public static int[] createTextVBOVAOEBO(FloatBuffer vertex, IntBuffer indices){
-        // VAO = configuration de comment lire un vbo
-        // 1. VAO, créer, binder et uploader
-        int vao = GL30.glGenVertexArrays();
-        GL30.glBindVertexArray(vao);
-
-        // VBO = données brut à afficher
-        // 2. VBO, créer, binder et uploader
-        int vbo = GL20.glGenBuffers();
-        GL15.glBindBuffer(GL20.GL_ARRAY_BUFFER, vbo); 
-        GL15.glBufferData(GL20.GL_ARRAY_BUFFER, vertex, GL20.GL_STATIC_DRAW);
-
-        // EBO = les indices pour lire les sommets pour évité les duplications de sommets
-        // 3. EBO — doit être bindé PENDANT que le VAO est actif
-        int ebo = GL20.glGenBuffers();
-        GL15.glBindBuffer(GL20.GL_ELEMENT_ARRAY_BUFFER, ebo);
-        GL15.glBufferData(GL20.GL_ELEMENT_ARRAY_BUFFER, indices, GL20.GL_STATIC_DRAW);
-
-        // 3. Dire au VAO comment lire le VBO
-        GL20.glVertexAttribPointer(0, 2, GL20.GL_FLOAT, false, 4 * Float.BYTES, 0);
-        GL20.glEnableVertexAttribArray(0);
-
-        GL20.glVertexAttribPointer(1, 2, GL20.GL_FLOAT, false, 4 * Float.BYTES, 2 * Float.BYTES);
-        GL20.glEnableVertexAttribArray(1);
-
-        // 4. Unbind
-        GL15.glBindBuffer(GL20.GL_ARRAY_BUFFER, 0);
-        GL30.glBindVertexArray(0);
-
-        // retourne les références des buffers
-        activeVAOCount++;
-        return new int[]{vbo, vao, ebo};
-    }
-
-    public static void updateTextVBOEBO(FloatBuffer vertex, IntBuffer indices, int vbo, int vao, int ebo){
-        // update les données sans recréer les buffers
-        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
-        GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, 0, vertex);
-
-        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ebo);
-        GL15.glBufferSubData(GL15.GL_ELEMENT_ARRAY_BUFFER, 0, indices);
-    }
-
-    @OpenGLThread
-    public static void deleteVBOVAOEBO(int[] ids){
-        GL30.glDeleteVertexArrays(ids[0]); // vao
-        GL20.glDeleteBuffers(ids[1]); // vbo
-        GL20.glDeleteBuffers(ids[2]); // ebo 
-        activeVAOCount--;
     }
 }

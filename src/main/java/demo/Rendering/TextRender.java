@@ -10,8 +10,9 @@ import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
 import org.lwjgl.stb.*;
 
-import demo.ShaderManager;
 import demo.Annotations.OpenGLThread;
+import demo.Managers.BuffersManager;
+import demo.Managers.ShaderManager;
 import demo.Types.Color4f;
 
 /**
@@ -88,7 +89,7 @@ public class TextRender {
         ShaderManager.createTextShader();
         this.vertexsBuffer = BufferUtils.createFloatBuffer(this.BUFFERSIZE * 16);
         this.indicesBuffer = BufferUtils.createIntBuffer(this.BUFFERSIZE * 6);
-        this.ids = ShaderManager.createTextVBOVAOEBO(vertexsBuffer, indicesBuffer);
+        this.ids = BuffersManager.createTextVBOVAOEBO(vertexsBuffer, indicesBuffer);
         
         this.texUniformLocation = GL20.glGetUniformLocation(ShaderManager.getProgramTextId(), "tex");
     }
@@ -136,7 +137,7 @@ public class TextRender {
         this.indicesBuffer.put(indices).flip();
 
         // update avec les nouvelle données
-        ShaderManager.updateTextVBOEBO(vertexsBuffer, indicesBuffer, this.ids[0], this.ids[1], this.ids[2]);
+        BuffersManager.updateTextVBOEBO(vertexsBuffer, indicesBuffer, this.ids[0], this.ids[1], this.ids[2]);
 
         GL30.glBindVertexArray(ids[1]);
         GL11.glDrawElements(GL11.GL_TRIANGLES, indices.length, GL11.GL_UNSIGNED_INT, 0);

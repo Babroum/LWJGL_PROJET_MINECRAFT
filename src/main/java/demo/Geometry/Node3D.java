@@ -5,9 +5,9 @@ import java.nio.FloatBuffer;
 import org.joml.Matrix4f;
 import org.lwjgl.BufferUtils;
 
-import demo.ShaderManager;
 import demo.Annotations.OpenGLThread;
 import demo.Exceptions.ArrayFull;
+import demo.Managers.ShaderManager;
 
 /**
  * Un nœud définit par des coordonnées, angles et tailles.

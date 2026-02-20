@@ -8,6 +8,7 @@ public enum Textures {
     STONE,
     DIRT,
     MAX,
+    HOMER,
     NULL;
 
     public Textures getTexture(Directions direction){

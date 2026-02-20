@@ -6,12 +6,13 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
 
-import demo.ShaderManager;
 import demo.Annotations.OpenGLThread;
 import demo.Exceptions.ArrayEmpty;
 import demo.Exceptions.ArrayFull;
 import demo.Exceptions.Empty;
 import demo.Exceptions.IncorrectIndex;
+import demo.Managers.BuffersManager;
+import demo.Managers.TexturesManager;
 import demo.Rendering.Render;
 
 /**
@@ -100,7 +101,7 @@ public class Mesh {
     @OpenGLThread
     public void setupVBOVAOEBO(){
         this.ids = new int[3];
-        this.ids = ShaderManager.createVBOVAOEBO(this.vertexs, this.indices, 6);
+        this.ids = BuffersManager.createVBOVAOEBO(this.vertexs, this.indices, 6);
     }
 
     /**
@@ -139,8 +140,7 @@ public class Mesh {
             indicesArray[i * 6 + 4] = v + 3;
             indicesArray[i * 6 + 5] = v;
         }
-        this.indices.put(indicesArray);
-        this.indices.flip();
+        this.indices.put(indicesArray).flip();
     }
 
     @OpenGLThread
@@ -150,11 +150,13 @@ public class Mesh {
      */
     public void drawMesh() throws Empty{   
         if (this.ids == null) throw new Empty("les vbo vao et ebo ne sont pas initialisé");
-        Render.getTextureRender().draw();
+        TexturesManager.getTextureRender().draw();
         GL30.glBindVertexArray(ids[1]);
         GL11.glDrawElements(GL11.GL_TRIANGLES, this.indices.limit(), GL11.GL_UNSIGNED_INT, 0); // limit c comme length
-        GL30.glBindVertexArray(0);     
+        GL30.glBindVertexArray(0);    
+        // enregistre le nombre d'appele de dessin 
         Render.monitor.incrementDrawCalls();
+        // et le nombre de triangle dessiné
         Render.monitor.addTriangles(this.indices.limit() / 3);                     
     }        
 

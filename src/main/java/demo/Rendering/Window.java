@@ -10,10 +10,10 @@ import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.system.MemoryUtil;
 
-import demo.ShaderManager;
 import demo.Annotations.OpenGLThread;
 import demo.Events.InputManager;
 import demo.Events.WindowCloseEventManager;
+import demo.Managers.ShaderManager;
 
 /**
  * La fenêtre géré par GLFW
@@ -81,7 +81,7 @@ public class Window {
             throw new RuntimeException("Impossible de créer la fenêtre");
         }
     
-        // Creer Listeners clavier/souris
+        // Créer les Listeners clavier/souris
         InputManager.create(window);
 
         // Management de la fermeture de la fenêtre

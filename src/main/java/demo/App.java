@@ -11,14 +11,17 @@ public class App
     
     public static void main( String[] args )
     {
+        // création de la fenêtre 
         new Window(1700,860);
         
+        // donne le draw en paramètre
+        // l'exécutera après l'initialisation d'opengl
         Window.startWindow(() -> draw(Window.getSceneGraph()));        
     }
 
     public static void draw(SceneGraph scene){
         Cube cube1 = new Cube();        
-        Cube cube2 = new Cube(Textures.MAX);
+        Cube cube2 = new Cube(Textures.HOMER);
 
         /*
         for (int i = 2; i < 50; i++){
@@ -28,6 +31,7 @@ public class App
                 tmp.x = i;
                 tmp.y = j;
             }
+            enorme_zizi.mp3
         }*/
         
         scene.root.addChild(cube1);

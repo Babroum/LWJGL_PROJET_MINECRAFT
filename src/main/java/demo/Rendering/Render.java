@@ -1,8 +1,6 @@
 package demo.Rendering;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 
 import org.joml.Matrix4f;
@@ -10,19 +8,20 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL11;
 
-import demo.ShaderManager;
+import demo.FileLoader;
 import demo.Annotations.OpenGLThread;
-import demo.Enum.Textures;
 import demo.Events.InputManager;
-import demo.Geometry.Node3D;
-import demo.Geometry.Object3D;
+import demo.Managers.BuffersManager;
+import demo.Managers.ShaderManager;
+import demo.Managers.TexturesManager;
 import demo.Types.Color4f;
 
 public class Render {
     
     public static SceneGraph sceneGraph = new SceneGraph(); 
+    public static PerformanceMonitor monitor = new PerformanceMonitor();
+
     private static TextRender textRender;  
-    private static TextureRender textureRender;
 
     private static double[] fpsHistory = new double[60];
 
@@ -32,34 +31,20 @@ public class Render {
 
     private static FloatBuffer projBuffer = BufferUtils.createFloatBuffer(16);
 
-    public static PerformanceMonitor monitor = new PerformanceMonitor();
-
-
+    /**
+     * Est appelé avant le début du draw scene 
+     */
+    @OpenGLThread
     public static void setupBeforeRendering(){
-        // initialise en mémoire l'image des caractères
+        // initialise en mémoire les textures des caractères
+        TexturesManager.loadTextures();
         try{
-            Render.textRender = new TextRender(Render.loadImageFromClasspath("/Textures/font.png"), 20, 20, 19,
-                                        " !\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~");   
-            // initialise en mémoire l'image des textures
-            Render.textureRender = new TextureRender();
-            Render.textureRender.addTexture(Render.loadImageFromClasspath("/Textures/Blocks/null.png"), Textures.NULL);
-            Render.textureRender.addTexture(Render.loadImageFromClasspath("/Textures/Blocks/max.png"), Textures.MAX);
-            Render.textureRender.addTexture(Render.loadImageFromClasspath("/Textures/Blocks/grass_block_top.png"), Textures.GRASS_TOP);
-            Render.textureRender.addTexture(Render.loadImageFromClasspath("/Textures/Blocks/grass_block_side.png"), Textures.GRASS_SIDE);
-            Render.textureRender.addTexture(Render.loadImageFromClasspath("/Textures/Blocks/stone.png"), Textures.STONE);
-            Render.textureRender.addTexture(Render.loadImageFromClasspath("/Textures/Blocks/dirt.png"), Textures.DIRT);
+            // initialise en mémoire l'image des caractères
+            Render.textRender = new TextRender(FileLoader.loadImageFromClasspathBB("/Textures/font.png"), 20, 20, 19,
+                                        " !\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~");          
         }catch(IOException e){
             System.out.println(e);
         }        
-    }
-
-    // permet de lire les images qui seront dans le .jar
-    public static ByteBuffer loadImageFromClasspath(String path) throws IOException {
-        InputStream is = Render.class.getResourceAsStream(path);
-        byte[] bytes = is.readAllBytes();
-        ByteBuffer buffer = BufferUtils.createByteBuffer(bytes.length);
-        buffer.put(bytes).flip();
-        return buffer;
     }
 
     /**
@@ -73,39 +58,48 @@ public class Render {
         long lastTimeMs = System.currentTimeMillis();
         long lastTimeNano = System.nanoTime();        
 
+        // Prépare la 3D
         Render.initialize3D(Window.width, Window.height);
 
-        Render.setupVBOVAOEBORecursive(Window.getSceneGraph().root);
+        // définis les buffers pour chaque node
+        // a modif pour chaque chunk
+        BuffersManager.setupVBOVAOEBORecursive(Window.getSceneGraph().root);
 
         // positionne la camera
         Render.sceneGraph.getCamera().setPosition(0f, 0f, 3f);
 
         while ( !GLFW.glfwWindowShouldClose(windowRef) ) {  
+            // démarre l'enregistrement de performances pour la frame
             monitor.beginFrame();
 
-            // Stocke le temps actuel (UNIX) en nanosec
+            // Stocke le temps actuel (UNIX) et en nanosec
             long nowMs = System.currentTimeMillis();
             long nowNano = System.nanoTime();
 
-			GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT); // clear the framebuffer
+            // nettoie le frame buffer
+			GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
 
-            // Modifie le déplacement de la caméra 
+            // Enregistre le temps pour les inputs
             monitor.startTimer("logic");
+            // Modifie le déplacement de la caméra 
             InputManager.run(windowRef, sceneGraph, nowMs - lastTimeMs);
             monitor.stopTimer("logic");
-
+            
+            // utilise le shader 
             ShaderManager.useShader();
             
             // donne les matrices de camera et perspective au shader
             ShaderManager.runProjection(Render.calculateProjection(45.0f, (float) Window.width / Window.height, 0.1f, 5000.f)); // donne la perspective de l'ecran
             ShaderManager.runView(Render.sceneGraph.getCamera().getViewMatrixBuffer()); // donne la vue de la camera
 
-            // Dessine la scène
+            // enregistre le temps de rendu
             monitor.startTimer("render");
+            // Dessine la scène
             Render.drawScene();     
             monitor.stopTimer("render");
 
-            monitor.setActiveVAOs(ShaderManager.activeVAOCount);
+            // récupère le nombre de vbo
+            monitor.setActiveVAOs(BuffersManager.activeVAOCount);
 
             // Affiche les fps            
             double delta = (nowNano - lastTimeNano) / 1_000_000_000.0;
@@ -121,6 +115,7 @@ public class Render {
             // Affiche le nombre de nœud à l'écran
             Render.getTextRender().drawText("Node3D count : " + Render.sceneGraph.getTotalNodeCount(), 0, 80, 15, Color4f.PURPLE);         
 
+            // Affiche les lignes retourner par le PerformanceManager
             String[] lines = monitor.getDisplayLines();
             for(int i = 0; i < lines.length; i++){
                 if(lines[i] != null){
@@ -142,30 +137,27 @@ public class Render {
                 System.out.println("RAM après GC: " + (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / (1024*1024) + " MB");
             }*/
 
+            // termine l'enregistrement de donnée pour la frame
             monitor.endFrame();
 		}
 
+        // ferme le fenêtre quand la boucle de rendu est fini
         Window.exitWindow();
     }
 
-    private static void setupVBOVAOEBORecursive(Node3D node){
-        if (node == null) return;
-        if (node.getChildren() == null) return;
-        if (node instanceof Object3D){
-            ((Object3D)node).setupObjectBuffers();
-        }
-        for(Node3D child : node.getChildren()){
-            setupVBOVAOEBORecursive(child);
-        }
-    }
-
+    /**
+     * Retourne le textRender
+     * @return TextRender
+     */
     public static TextRender getTextRender(){
         return Render.textRender;
     }
-    public static TextureRender getTextureRender(){
-        return Render.textureRender;
-    }
-
+    
+    /**
+     * Initialise la 3D avant la boucle de Rendu
+     * @param width int
+     * @param height int
+     */
     @OpenGLThread
     private static void initialize3D(final int width, final int height)
     {
@@ -200,10 +192,16 @@ public class Render {
         GL11.glEnable(GL11.GL_CULL_FACE);
         GL11.glCullFace(GL11.GL_FRONT);  
 
+        // Créer les shaders
         ShaderManager.createShader();    
-        ShaderManager.cacheUniformLocations();    
+        // récupère les ids des uniformes dans les .glsl
+        // pour ne pas à avoir à les re recup à chaque frame
+        ShaderManager.getUniformLocations();    
     }
     
+    /**
+     * Dessine la scène 
+     */
     @OpenGLThread
     private static void drawScene(){
         Render.sceneGraph.drawScene();
@@ -231,7 +229,7 @@ public class Render {
         }        
     }
 
-    // calcule la projection 
+    // calcule la matrice de projection et la retourne en floatbuffer pour les shaders
     private static FloatBuffer calculateProjection(float fov, float aspect, float near, float far) {
         Matrix4f projection = new Matrix4f().perspective((float) Math.toRadians(fov), aspect, near, far);
         projection.get(projBuffer);
