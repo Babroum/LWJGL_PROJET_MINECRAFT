@@ -1,16 +1,16 @@
 package demo.Geometry;
 
+import demo.Enum.BlocksType;
 import demo.Enum.Directions;
-import demo.Enum.Textures;
 import demo.Meshing.Face;
 
 public class Cube extends Object3D{
 
     public Cube(){
-        this(Textures.NULL);
+        this(BlocksType.NULL);
     }
 
-    public Cube(Textures texture){   
+    public Cube(BlocksType texture){   
         Face face = new Face();        
         face.direction = Directions.SOUTH;
         face.texture = texture.getTexture(face.direction);

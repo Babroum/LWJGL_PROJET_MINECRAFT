@@ -3,7 +3,7 @@ package demo.Managers;
 import java.io.IOException;
 
 import demo.FileLoader;
-import demo.Enum.Textures;
+import demo.Enum.TexturesType;
 import demo.Rendering.TextureRender;
 
 public class TexturesManager {
@@ -14,13 +14,13 @@ public class TexturesManager {
         try{
             // initialise en mémoire l'image des textures
             TexturesManager.textureRender = new TextureRender();
-            TexturesManager.textureRender.addTexture(FileLoader.loadImageFromClasspathBB("/Textures/Blocks/null.png"), Textures.NULL);
-            TexturesManager.textureRender.addTexture(FileLoader.loadImageFromClasspathBB("/Textures/Blocks/max.png"), Textures.MAX);
-            TexturesManager.textureRender.addTexture(FileLoader.loadImageFromClasspathBB("/Textures/Blocks/grass_block_top.png"), Textures.GRASS_TOP);
-            TexturesManager.textureRender.addTexture(FileLoader.loadImageFromClasspathBB("/Textures/Blocks/grass_block_side.png"), Textures.GRASS_SIDE);
-            TexturesManager.textureRender.addTexture(FileLoader.loadImageFromClasspathBB("/Textures/Blocks/stone.png"), Textures.STONE);
-            TexturesManager.textureRender.addTexture(FileLoader.loadImageFromClasspathBB("/Textures/Blocks/dirt.png"), Textures.DIRT);
-            TexturesManager.textureRender.addTexture(FileLoader.loadImageFromClasspathBB("/Textures/Blocks/homer.png"), Textures.HOMER);
+            TexturesManager.textureRender.addTexture(FileLoader.loadImageFromClasspathBB("/Textures/Blocks/null.png"), TexturesType.NULL);
+            TexturesManager.textureRender.addTexture(FileLoader.loadImageFromClasspathBB("/Textures/Blocks/max.png"), TexturesType.MAX);
+            TexturesManager.textureRender.addTexture(FileLoader.loadImageFromClasspathBB("/Textures/Blocks/grass_block_top.png"), TexturesType.GRASS_TOP);
+            TexturesManager.textureRender.addTexture(FileLoader.loadImageFromClasspathBB("/Textures/Blocks/grass_block_side.png"), TexturesType.GRASS_SIDE);
+            TexturesManager.textureRender.addTexture(FileLoader.loadImageFromClasspathBB("/Textures/Blocks/stone.png"), TexturesType.STONE);
+            TexturesManager.textureRender.addTexture(FileLoader.loadImageFromClasspathBB("/Textures/Blocks/dirt.png"), TexturesType.DIRT);
+            TexturesManager.textureRender.addTexture(FileLoader.loadImageFromClasspathBB("/Textures/Blocks/homer.png"), TexturesType.HOMER);
         }catch(IOException e){
             System.out.println(e);
         }

@@ -5,7 +5,7 @@ import demo.Exceptions.ArrayFull;
 import demo.Exceptions.IncorrectIndex;
 import demo.Managers.TexturesManager;
 import demo.Enum.Directions;
-import demo.Enum.Textures;
+import demo.Enum.TexturesType;
 
 /**
  * Une face décrivant un ensemble de 4 Sommets d'une maille.
@@ -17,7 +17,7 @@ public class Face {
      */
     // {x1, y1, z1, u1, v1, texId,  x2, y2, z2, u2, v2, texId, ...}
     public int[] vertexs = new int[24];
-    public Textures texture;
+    public TexturesType texture;
     public Directions direction;
     public int nbCoords; // nombre de coordonnées dans la face
 

@@ -1,6 +1,7 @@
 package demo;
 
-import demo.Enum.Textures;
+import demo.Enum.BlocksType;
+import demo.Enum.TexturesType;
 import demo.Geometry.Clone3D;
 import demo.Geometry.Cube;
 import demo.Rendering.SceneGraph;
@@ -21,7 +22,7 @@ public class App
 
     public static void draw(SceneGraph scene){
         Cube cube1 = new Cube();        
-        Cube cube2 = new Cube(Textures.HOMER);
+        Cube cube2 = new Cube(BlocksType.HOMER);
 
         /*
         for (int i = 2; i < 50; i++){

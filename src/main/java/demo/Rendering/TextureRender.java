@@ -9,7 +9,7 @@ import org.lwjgl.opengl.GL30;
 import org.lwjgl.stb.STBImage;
 
 import demo.Annotations.OpenGLThread;
-import demo.Enum.Textures;
+import demo.Enum.TexturesType;
 import demo.Managers.ShaderManager;
 
 public class TextureRender {
@@ -22,7 +22,7 @@ public class TextureRender {
     public TextureRender(){
         this.textureId = GL11.glGenTextures();
         GL11.glBindTexture(GL30.GL_TEXTURE_2D_ARRAY, this.textureId);
-        GL30.glTexImage3D(GL30.GL_TEXTURE_2D_ARRAY, 0, GL11.GL_RGBA, 16, 16, Textures.values().length, 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, (ByteBuffer)null);
+        GL30.glTexImage3D(GL30.GL_TEXTURE_2D_ARRAY, 0, GL11.GL_RGBA, 16, 16, TexturesType.values().length, 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, (ByteBuffer)null);
         GL11.glTexParameteri(GL30.GL_TEXTURE_2D_ARRAY, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_NEAREST);
         GL11.glTexParameteri(GL30.GL_TEXTURE_2D_ARRAY, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_NEAREST);
     }
@@ -32,7 +32,7 @@ public class TextureRender {
      * @param texture Textures
      * @return int
      */
-    public int getIndex(Textures texture){
+    public int getIndex(TexturesType texture){
         return texture.ordinal(); // retourne 0 pour GRASS, 1 pour COBBLESTONE etc.
     }
 
@@ -42,7 +42,7 @@ public class TextureRender {
      * @param path ByteBuffer
      * @param texture Textures
      */
-    public void addTexture(ByteBuffer path, Textures texture){
+    public void addTexture(ByteBuffer path, TexturesType texture){
         IntBuffer w = BufferUtils.createIntBuffer(1);
         IntBuffer h = BufferUtils.createIntBuffer(1);
         IntBuffer c = BufferUtils.createIntBuffer(1);
