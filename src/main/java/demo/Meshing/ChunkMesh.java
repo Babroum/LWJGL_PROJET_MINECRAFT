@@ -20,6 +20,7 @@ import demo.Rendering.Render;
 /**
  * Une Maille décrivant l'ensemble des ..
  */
+// PERFORMANCE CALCULER SEULEMENT SUR LE PACKING ET PAS TOUT LE RESTE
 // IL NE VA PLUS AVOIR D'EBO CAR
 // SANS VERTEX PACKING (AVEC EBO) : (AVANT)
 // 4 sommets * 6 ints = 24 ints par faces
@@ -55,6 +56,7 @@ public class ChunkMesh {
     private IntBuffer vertexBufferPack;
     // Tout les sommets de tout les objets avant la transformation en IntBuffer pack
     private int[] vertexArrayPack;
+
     /**
      * Le nombre de sommet dans la maille
      */
@@ -101,6 +103,42 @@ public class ChunkMesh {
             addedVertices++;
         }    
         this.faceCount += addedVertices / 6; // /6 car 6 sommets par face
+    }
+
+    /**
+     * Ajoute les mailles d'un cube à la maille du chunk <br>
+     * <b>Vertex Packing Ici</b>
+     * @param array
+     * @param cubeX
+     * @param cubeY
+     * @param cubeZ
+     */
+    //[ 00000 | 00000000 | 00000 | 0 | 0 | 000 | 000000000 ]
+    //    x        y         z     u   v   dir   textureId
+    // 512 textures max
+    @ChunkThread
+    public void addObjectFaceVertexToArray(int[] array, int cubeX, int cubeY, int cubeZ) throws ArrayEmpty{
+        if (array.length < 7){
+            throw new ArrayEmpty();
+        }
+        // on garde la face
+        for(int i = 0; i < array.length; i += 7){
+            int packed = 0;
+            // |= c'est le OU permet de combiner sans supprimer les valeurs
+            // & c'est un ET il applique un masque pour la sécurité au cas ou par exemple on recoit 6 bits au lieu de 5
+            packed |= ((array[i]   + cubeX) & 0x1F) << 27; // 5 bits, décale de 27 bits (donc prend les 5 premiers bits, 32 - 27 = 5)
+            packed |= ((array[i+1] + cubeY) & 0xFF) << 19; // 8 bits
+            packed |= ((array[i+2] + cubeZ) & 0x1F) << 14; // 5 bits
+            packed |= (array[i+3] & 0x1)            << 13; // 1 bit
+            packed |= (array[i+4] & 0x1)            << 12; // 1 bit
+            packed |= (array[i+5] & 0x7)   << 9;  // 3 bits
+            packed |= (array[i+6] & 0x1FF);                // 9 bits
+
+            this.vertexArrayPack[this.vertexCount] = packed;
+
+            this.vertexCount++;;
+        }    
+        this.faceCount++;
     }
 
     /**

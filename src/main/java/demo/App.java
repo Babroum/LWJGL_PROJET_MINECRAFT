@@ -39,6 +39,27 @@ public class App
             chunk2.generateChunkMesh();
             readyChunks.add(chunk2);
         });
+        /* EXEMPLE UTILISATION CASSER AJOUTER DANS INPUT MANAGER (pas opti de créer un thread a chaque click, il faudra utiliser un pool de thread)
+        if (MouseInput.isLeftClick()) { // casser un bloc
+            Chunk chunk = getChunkAtCursor(); // existe pas
+            int[] pos = getBlockAtCursor(); // existe pas
+            new Thread(() -> {
+                chunk.removeBlock(pos[0], pos[1], pos[2]);
+                chunk.rebuildMesh();
+                Render.dirtyChunks.add(chunk);
+            }).start();
+        }
+
+        if (MouseInput.isRightClick()) { // placer un bloc
+            Chunk chunk = getChunkAtCursor(); // existe pas
+            int[] pos = getBlockAtCursor(); // existe pas
+            new Thread(() -> {
+                chunk.addBlock(BlocksType.GRASS, pos[0], pos[1], pos[2]);
+                chunk.rebuildMesh();
+                Render.dirtyChunks.add(chunk);
+            }).start();
+        }
+        */
         
         generationThread.start();
         Render.setChunkQueue(readyChunks);

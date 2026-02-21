@@ -1,11 +1,13 @@
 package demo.Geometry;
 
 import demo.Annotations.OpenGLThread;
+import demo.Enum.BlocksType;
 import demo.Meshing.Mesh;
 
 public class Object3D extends Node3D{
 
     public Mesh mesh = new Mesh();
+    public BlocksType blockType = BlocksType.AIR;
 
     @OpenGLThread
     /**

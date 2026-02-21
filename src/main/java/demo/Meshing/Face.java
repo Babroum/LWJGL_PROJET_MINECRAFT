@@ -50,4 +50,5 @@ public class Face {
         this.vertexs[this.nbCoords + 6] = TexturesManager.getIndex(texture);
         this.nbCoords += 7;
     }
+
 }

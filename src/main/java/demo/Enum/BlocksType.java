@@ -4,6 +4,7 @@ package demo.Enum;
  * Liste de blocks qui existent
  */
 public enum BlocksType {
+    AIR,
     GRASS,
     COBBLESTONE,
     STONE,

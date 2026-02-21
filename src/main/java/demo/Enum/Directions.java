@@ -18,5 +18,8 @@ public enum Directions {
         this.dy = dy;
         this.dz = dz;
     }
-    // Utilisation : Direction.NORTH.dx
+
+    public static Directions fromInt(int value){
+        return Directions.values()[value];
+    }
 }
