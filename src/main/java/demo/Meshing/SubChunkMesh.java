@@ -12,7 +12,7 @@ import demo.Annotations.OpenGLThread;
 import demo.Events.KeyboardInput;
 import demo.Exceptions.ArrayEmpty;
 import demo.Exceptions.Empty;
-import demo.Geometry.Chunk;
+import demo.Geometry.SubChunk;
 import demo.Managers.BuffersManager;
 import demo.Managers.TexturesManager;
 import demo.Rendering.Render;
@@ -50,7 +50,7 @@ import demo.Rendering.Render;
 // ~8.7 Go utilisés
 
 // meilleur : VERTEX PACKING SANS EBO
-public class ChunkMesh {
+public class SubChunkMesh {
 
     // Tout les sommets de tout les objets en IntBuffer pour opengl pack
     private IntBuffer vertexBufferPack;
@@ -147,8 +147,8 @@ public class ChunkMesh {
     @ChunkThread
     public void setupChunkBuffers(){
         this.vertexCount = 0;
-        this.vertexArrayPack = new int[Chunk.MAXBLOCK * 4 * 6];
-        this.vertexBufferPack = BufferUtils.createIntBuffer(Chunk.MAXBLOCK * 4 * 6); // 65536 blocks max * 4 sommets (1 int par sommet) * 6 faces
+        this.vertexArrayPack = new int[SubChunk.MAXBLOCK * 4 * 6];
+        this.vertexBufferPack = BufferUtils.createIntBuffer(SubChunk.MAXBLOCK * 4 * 6); // 4096 blocks max * 4 sommets (1 int par sommet) * 6 faces
     }
 
     /**
@@ -188,15 +188,15 @@ public class ChunkMesh {
             16, 0, 16,  0, 0, 16,
             0, 0, 16,   0, 0, 0,
             // verticales
-            0, 0, 0,    0, 255, 0,
-            16, 0, 0,   16, 255, 0,
-            16, 0, 16,  16, 255, 16,
-            0, 0, 16,   0, 255, 16,
+            0, 0, 0,    0, 16, 0,
+            16, 0, 0,   16, 16, 0,
+            16, 0, 16,  16, 16, 16,
+            0, 0, 16,   0, 16, 16,
             // haut
-            0, 255, 0,  16, 255, 0,
-            16, 255, 0, 16, 255, 16,
-            16, 255, 16,0, 255, 16,
-            0, 255, 16, 0, 255, 0
+            0, 16, 0,  16, 16, 0,
+            16, 16, 0, 16, 16, 16,
+            16, 16, 16,0, 16, 16,
+            0, 16, 16, 0, 16, 0
         };   
         
         IntBuffer linesBuffer = BufferUtils.createIntBuffer(lines.length);

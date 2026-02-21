@@ -62,7 +62,7 @@ public class Node3D {
     /**
      * Tableau de nœud enfant.
      */
-    private Node3D[] children = new Node3D[Chunk.MAXBLOCK]; // 16 * 16 * 255 = max de bloc par chunk
+    private Node3D[] children = new Node3D[SubChunk.MAXBLOCK]; // 16 * 16 * 16 = max de bloc par subchunk
     public FloatBuffer buffer = BufferUtils.createFloatBuffer(16);
     private int nbChildren;
 
