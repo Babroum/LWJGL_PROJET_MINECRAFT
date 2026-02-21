@@ -7,6 +7,7 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
 
+import demo.Annotations.ChunkThread;
 import demo.Annotations.OpenGLThread;
 import demo.Events.KeyboardInput;
 import demo.Exceptions.ArrayEmpty;
@@ -76,6 +77,7 @@ public class ChunkMesh {
     //[ 00000 | 00000000 | 00000 | 0 | 0 | 000 | 000000000 ]
     //    x        y         z     u   v   dir   textureId
     // 512 textures max
+    @ChunkThread
     public void addObjectVertexToArray(int[] array, int cubeX, int cubeY, int cubeZ) throws ArrayEmpty{
         if (array.length < 7){
             throw new ArrayEmpty();
@@ -104,6 +106,7 @@ public class ChunkMesh {
     /**
      * Définit la taille du buffer pour les vertexs
      */
+    @ChunkThread
     public void setupChunkBuffers(){
         this.vertexCount = 0;
         this.vertexArrayPack = new int[Chunk.MAXBLOCK * 4 * 6];
@@ -113,26 +116,13 @@ public class ChunkMesh {
     /**
      * Remplis le buffer avec le tableau de sommet
      */
+    @ChunkThread
     public void fillChunkVertexBufferWithArray(){
         this.vertexBufferPack.clear();
         for(int i = 0; i < this.vertexCount; i++){
             this.vertexBufferPack.put(this.vertexArrayPack[i]);
         }
         this.vertexBufferPack.flip(); // remet la position du buffer à 0, sinon il lirai de la fin des données à la fin du buffer
-    }
-
-    /**
-     * Permet d'ajouter un bloc et de vider puis remplir le buffer du chunk <br>
-     * <b>Les données ne doivent pas être packé !</b>
-     * @param array int[], la maille d'un bloc à ajouté
-     * @param cubeX
-     * @param cubeY
-     * @param cubeZ
-     */
-    public void updateChunkVertexBufferWithArray(int[] array, int cubeX, int cubeY, int cubeZ){
-        this.addObjectVertexToArray(array, cubeX, cubeY, cubeZ);
-        this.fillChunkVertexBufferWithArray();
-        this.updateChunkVBOVAO();
     }
 
     /**
@@ -189,8 +179,10 @@ public class ChunkMesh {
 
     /**
      * Met à jour le vbo du chunk
+     * Pas utile pour l'instant
      */
     @OpenGLThread
+    @Deprecated
     public void updateChunkVBOVAO(){
         BuffersManager.updateChunkVBO(this.vertexBufferPack, this.ids[0]);
     }

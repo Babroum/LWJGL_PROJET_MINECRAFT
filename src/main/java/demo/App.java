@@ -1,7 +1,10 @@
 package demo;
 
+import java.util.concurrent.ConcurrentLinkedQueue;
+
 import demo.Enum.BlocksType;
 import demo.Geometry.Chunk;
+import demo.Rendering.Render;
 import demo.Rendering.SceneGraph;
 import demo.Rendering.Window;
 
@@ -19,19 +22,28 @@ public class App
     }
 
     public static void draw(SceneGraph scene){
-        Chunk chunk = new Chunk();
-        Chunk chunk2 = new Chunk();
-        
-        chunk2.setChunkPosition(1, 0, 0);
+        // ConcurrentLinkedQueue pour passer les chunks prêts au thread OpenGL
+        ConcurrentLinkedQueue<Chunk> readyChunks = new ConcurrentLinkedQueue<>();
+        ConcurrentLinkedQueue<Chunk> dirtyChunks = new ConcurrentLinkedQueue<>();
 
-        // A faire avant d'ajouter à la scène sinon c'est pas pris en compte
-        chunk.addFloor(0, 1, BlocksType.GRASS);        
-        chunk2.addFloor(1, 1, BlocksType.GRASS);
+        // thread de génération
+        Thread generationThread = new Thread(() -> {
+            Chunk chunk = new Chunk();
+            chunk.addFloor(0, 1, BlocksType.GRASS);
+            chunk.generateChunkMesh();
+            readyChunks.add(chunk);
+
+            Chunk chunk2 = new Chunk();
+            chunk2.setChunkPosition(1, 0, 0);
+            chunk2.addFloor(1, 1, BlocksType.GRASS);
+            chunk2.generateChunkMesh();
+            readyChunks.add(chunk2);
+        });
         
-        scene.root.addChild(chunk);
-        scene.root.addChild(chunk2);
+        generationThread.start();
+        Render.setChunkQueue(readyChunks);
+        Render.setDirtyChunkQueue(dirtyChunks);
     }  
-    
 
     /*
     export JAVA_HOME=/home/linuxbrew/.linuxbrew/opt/openjdk@21

@@ -2,6 +2,7 @@ package demo.Geometry;
 
 import org.joml.Matrix4f;
 
+import demo.Annotations.ChunkThread;
 import demo.Annotations.OpenGLThread;
 import demo.Enum.BlocksType;
 import demo.Exceptions.IncorrectCoordinates;
@@ -19,10 +20,11 @@ public class Chunk extends Node3D{
     private Object3D[] objects;
     private int objectCount;
 
+    @ChunkThread
     public Chunk(){
         this.objects = new Object3D[Chunk.MAXBLOCK];
         this.objectCount = 0;
-        // définit la taille du buffer et du tableau de vertex
+        // définit la taille du buffer et du tableau de vertex  
         this.mesh.setupChunkBuffers();
     }
 
@@ -32,20 +34,51 @@ public class Chunk extends Node3D{
      * @param chunkY
      * @param chunkZ
      */
+    @ChunkThread
     public void setChunkPosition(int chunkX, int chunkY, int chunkZ){
         this.x = chunkX * Chunk.CHUNKSIZEX;
         this.y = chunkY * Chunk.CHUNKSIZEY;
         this.z = chunkZ * Chunk.CHUNKSIZEZ;
     }
 
-    /**
-     * Remplis le vbo avec les données des objets avant le rendu
-     */
-    public void setupChunkBuffers(){
+    @ChunkThread
+    public void generateChunkMesh(){
+        for(int i = 0; i < this.objectCount; i++){
+            this.objects[i].setupObjectBuffers();
+        }
         // envoie la maille des objets à la maille
         this.uploadMesh();
         // rempli le buffer de la maille avec les données pack (vertex packing)
         this.mesh.fillChunkVertexBufferWithArray();
+    }
+
+    @ChunkThread
+    public void rebuildChunkMesh(){
+        this.mesh.setupChunkBuffers();
+        this.generateChunkMesh();
+    }
+
+    @ChunkThread
+    public void removeBlock(int x, int y, int z) throws IncorrectCoordinates{
+        if (x < 0 || x >= Chunk.CHUNKSIZEX ||
+            y < 0 || y >= Chunk.CHUNKSIZEY ||
+            z < 0 || z >= Chunk.CHUNKSIZEZ
+        ){throw new IncorrectCoordinates("Coordonées dans le chunk invalide");}
+        for (int i = 0; i < objectCount; i++) {
+            if (objects[i].x == x && objects[i].y == y && objects[i].z == z) {
+                objects[i] = objects[objectCount - 1];
+                objects[objectCount - 1] = null;
+                objectCount--;
+                return;
+            }
+        }
+    }
+
+    /**
+     * Remplis le vbo avec les données des objets avant le rendu
+     */
+    @OpenGLThread
+    public void setupChunkVBOVAO(){
         // créer les vbo vao avec le buffer rempli
         this.mesh.createChunkVBOVAO();
         this.mesh.createChunkBorderVBOVAO();
@@ -57,6 +90,7 @@ public class Chunk extends Node3D{
      * @param nbFloor int, épaisseur du sol
      * @param type BlocksType
      */
+    @ChunkThread
     public void addFloor(int Y, int nbFloor, BlocksType type){
         if (Y < 0 || Y + nbFloor >= Chunk.CHUNKSIZEY
         ){throw new IncorrectCoordinates("Coordonées dans le chunk invalide");}
@@ -77,6 +111,7 @@ public class Chunk extends Node3D{
      * @param y int
      * @param z int
      */
+    @ChunkThread
     public void addBlock(BlocksType type, int x, int y, int z) throws IncorrectCoordinates{
         if (x < 0 || x >= Chunk.CHUNKSIZEX ||
             y < 0 || y >= Chunk.CHUNKSIZEY ||
@@ -96,6 +131,7 @@ public class Chunk extends Node3D{
     /**
      * Envoie la maille de chaque bloc à la maille du chunk
      */
+    @ChunkThread
     public void uploadMesh(){
         for (int i = 0; i < this.objectCount; i++){
             int cubeX =this.objects[i].x;
