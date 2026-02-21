@@ -17,6 +17,7 @@ public class KeyboardInput {
     public static boolean isCloseWindow;
     public static boolean isCursorHidden = true;
     public static boolean isMouseLock = true;
+    public static boolean isChunkBorderShow;
 
     @OpenGLThread
     public KeyboardInput(long windowRef){
@@ -41,6 +42,10 @@ public class KeyboardInput {
                 
                 case GLFW.GLFW_KEY_P:
                     KeyboardInput.isMouseLock = !KeyboardInput.isMouseLock;
+                    break;
+
+                case GLFW.GLFW_KEY_B:
+                    KeyboardInput.isChunkBorderShow = !KeyboardInput.isChunkBorderShow;
                     break;
 
                 default:

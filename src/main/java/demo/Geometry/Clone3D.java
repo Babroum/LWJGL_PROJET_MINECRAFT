@@ -2,12 +2,14 @@ package demo.Geometry;
 
 import java.util.Objects;
 
-import demo.Annotations.OpenGLThread;
 import demo.Types.Color4f;
 
 /**
- * Classe d'object cloné étant des Object3D
+ * Classe d'object cloné étant des Object3D <br>
+ * Pas utile pour les blocks <br>
+ * Peut servir pour les arbres, mobs, ...
  */
+// A modifier 
 public class Clone3D extends Node3D {
     private Color4f color = Color4f.WHITE;
     private final Object3D cloned;
@@ -43,15 +45,5 @@ public class Clone3D extends Node3D {
      */
     public void setColor(final Color4f color){
         this.color = Objects.requireNonNull(color, "color must not be null");
-    }
-    
-    /**
-     * Applique la couleur et dessine la maille
-     */
-    @OpenGLThread
-    @Override
-    public void drawSpecific(){
-        this.color.apply();
-        this.cloned.mesh.drawMesh();
     }
 }

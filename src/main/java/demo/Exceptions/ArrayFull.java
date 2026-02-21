@@ -7,4 +7,7 @@ public class ArrayFull extends RuntimeException{
     public ArrayFull(){
         super();
     }
+    public ArrayFull(String message){
+        super(message);
+    }
 }

@@ -7,7 +7,9 @@ import org.lwjgl.BufferUtils;
 
 import demo.Annotations.OpenGLThread;
 import demo.Exceptions.ArrayFull;
+import demo.Exceptions.Empty;
 import demo.Managers.ShaderManager;
+import demo.Rendering.Render;
 
 /**
  * Un nœud définit par des coordonnées, angles et tailles.
@@ -28,37 +30,40 @@ public class Node3D {
      */
     public int z = 0;
 
+    // PRIVATE CAR PAS NECESSAIRE DANS UN JEU MINECRAFT .___.
+    
     /**
      * Angle X du nœud.
      */
-    public int angleX = 0;
+    private int angleX = 0;
     /**
      * Angle Y du nœud.
      */
-    public int angleY = 0;
+    private int angleY = 0;
     /**
      * Angle Z du nœud.
      */
-    public int angleZ = 0;
+    private int angleZ = 0;
 
     /**
      * Taille X du nœud.
      */
-    public int scaleX = 1;
+    private int scaleX = 1;
     /**
      * Taille Y du nœud.
      */
-    public int scaleY = 1;
+    private int scaleY = 1;
     /**
      * Taille Z du nœud.
      */
-    public int scaleZ = 1;
+    private int scaleZ = 1;
+    
 
     /**
      * Tableau de nœud enfant.
      */
-    private Node3D[] children = new Node3D[10000];
-    private FloatBuffer buffer = BufferUtils.createFloatBuffer(16);
+    private Node3D[] children = new Node3D[Chunk.MAXBLOCK]; // 16 * 16 * 255 = max de bloc par chunk
+    public FloatBuffer buffer = BufferUtils.createFloatBuffer(16);
     private int nbChildren;
 
     /**
@@ -83,7 +88,9 @@ public class Node3D {
      */
     @OpenGLThread
     public void drawNode(Matrix4f parentModel){
+        Render.monitor.incrementNodeCount();
         // Crée la model matrix   
+        // Placement des nœuds enfants relativement à la position de ce nœud
         Matrix4f model = new Matrix4f(parentModel)
             .translate(this.x, this.y, this.z) // Position aux coordonnées X, Y, Z
             .rotateX((float) Math.toRadians(this.angleX)) // Rotation autour de l'axe X
@@ -91,19 +98,19 @@ public class Node3D {
             .rotateZ((float) Math.toRadians(this.angleZ)) // Rotation autour de l'axe Z
             .scale(this.scaleX, this.scaleY, this.scaleZ); // Application des facteurs d'échelle
         model.get(this.buffer);
-
         ShaderManager.runModel(this.buffer);
 
         // Dessin spécifique
         this.drawSpecific();
 
-        // Placement des nœuds enfants relativement à la position de ce nœud
         synchronized (this.children)
         {
             for (int i = 0; i < this.nbChildren; i++){
-                this.children[i].drawNode(model);
+                //if(!(this.children[i] instanceof Object3D)){
+                    this.children[i].drawNode(model);
+                //}
             }
-        }          
+        }    
     }
 
     /**
@@ -122,6 +129,6 @@ public class Node3D {
      * Ne fait rien par défaut
      */
     @OpenGLThread
-    public void drawSpecific(){
+    public void drawSpecific() throws Empty{
     }
 }

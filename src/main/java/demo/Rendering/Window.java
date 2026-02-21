@@ -13,6 +13,7 @@ import org.lwjgl.system.MemoryUtil;
 import demo.Annotations.OpenGLThread;
 import demo.Events.InputManager;
 import demo.Events.WindowCloseEventManager;
+import demo.Managers.BuffersManager;
 import demo.Managers.ShaderManager;
 
 /**
@@ -99,7 +100,10 @@ public class Window {
 
         Render.setupBeforeRendering();
 
-        if(Window.onReady != null) Window.onReady.run(); // attend que le thread est fini de créer opengl avant de lancer le code hors 
+        if(Window.onReady != null) Window.onReady.run(); // attend que le thread est fini de créer opengl avant de lancer le code
+
+        // définis les buffers pour chaque chunk avant le rendu
+        BuffersManager.setupVBOVAOEBORecursive(Window.getSceneGraph().root);
         
         //callback pour redimension de fenetre en gros quand fenetre est redimensionnee executer ce code
         GLFW.glfwSetFramebufferSizeCallback(Window.window, new GLFWFramebufferSizeCallbackI(){

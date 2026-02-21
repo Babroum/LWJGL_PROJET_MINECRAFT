@@ -20,13 +20,14 @@ public class PerformanceMonitor {
     private final Map<String, Long> timerStart = new LinkedHashMap<>();
     private final Map<String, Double> timerResults = new LinkedHashMap<>();
 
-    private final String[] displayLines = new String[8]; // variable d'instance
+    private final String[] displayLines = new String[9]; // variable d'instance
 
     // --- Compteurs ---
     private int drawCalls = 0;
     private int triangleCount = 0;
     private int faceCulledCount = 0;
     private int activeVAOs = 0;
+    private int drawNode = 0;
 
     // --- Mémoire ---
     private long usedMemoryMB = 0;
@@ -83,6 +84,7 @@ public class PerformanceMonitor {
     public void incrementDrawCalls() { drawCalls++; }
     public void addTriangles(int count) { triangleCount += count; }
     public void incrementFaceCulled() { faceCulledCount++; }
+    public void incrementNodeCount() { drawNode++; }
     public void setActiveVAOs(int count) { activeVAOs = count; }
 
     // =====================
@@ -107,9 +109,10 @@ public class PerformanceMonitor {
         this.displayLines[2] = "Triangles: "   + triangleCount;
         this.displayLines[3] = "Faces culled: "+ faceCulledCount;
         this.displayLines[4] = "VAOs actifs: " + activeVAOs;
-        this.displayLines[5] = "RAM: "         + usedMemoryMB + " MB";
-        this.displayLines[6] = "Logique: "     + getTimer("logic")  + " ms";
-        this.displayLines[7] = "Rendu: "       + getTimer("render") + " ms";
+        this.displayLines[5] = "Node draw: "   + drawNode;
+        this.displayLines[6] = "RAM: "         + usedMemoryMB + " MB";
+        this.displayLines[7] = "Logique: "     + getTimer("logic")  + " ms";
+        this.displayLines[8] = "Rendu: "       + getTimer("render") + " ms";
         return this.displayLines;
     }
 }
