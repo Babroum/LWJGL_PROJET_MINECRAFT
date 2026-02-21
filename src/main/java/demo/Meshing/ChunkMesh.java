@@ -1,5 +1,6 @@
 package demo.Meshing;
 
+import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 
 import org.lwjgl.BufferUtils;
@@ -7,10 +8,13 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
 
 import demo.Annotations.OpenGLThread;
+import demo.Events.KeyboardInput;
+import demo.Exceptions.ArrayEmpty;
 import demo.Exceptions.Empty;
 import demo.Geometry.Chunk;
 import demo.Managers.BuffersManager;
 import demo.Managers.TexturesManager;
+import demo.Rendering.Render;
 
 /**
  * Une Maille décrivant l'ensemble des ..
@@ -58,34 +62,43 @@ public class ChunkMesh {
      * Le nombre de face dans la maille
      */
     private int faceCount;
-    // ids des vao vbo
+    // ids des vao vbo, et le vbo et vao du chunkborder
     private int[] ids; 
 
     /**
      * Ajoute les mailles d'un cube à la maille du chunk <br>
      * <b>Vertex Packing Ici</b>
      * @param array
+     * @param cubeX
+     * @param cubeY
+     * @param cubeZ
      */
-    //[ 0000 | 00000000 | 0000 | 0 | 0 | 000 | 00000000000 ]
-    //    x        y        z    u   v   dir    textureId
-    public void addObjectVertexToArray(int[] array){
-        for(int i = 0; i < array.length; i++){
+    //[ 00000 | 00000000 | 00000 | 0 | 0 | 000 | 000000000 ]
+    //    x        y         z     u   v   dir   textureId
+    // 512 textures max
+    public void addObjectVertexToArray(int[] array, int cubeX, int cubeY, int cubeZ) throws ArrayEmpty{
+        if (array.length < 7){
+            throw new ArrayEmpty();
+        }
+        int addedVertices = 0; // compte les vertices ajoutés lors de cet appel
+        for(int i = 0; i < array.length; i += 7){
             int packed = 0;
             // |= c'est le OU permet de combiner sans supprimer les valeurs
-            // & c'est un ET il applique un masque pour la sécurité au cas ou par exemple on recoit 5 bits au lieu de 4
-            packed |= (array[0] & 0xF)         << 28; // 4 bits, décale de 28 bits (donc prend les 4 premiers bits, 32 - 28 = 4)
-            packed |= (array[1] & 0xFF)        << 20; // 8 bits
-            packed |= (array[2] & 0xF)         << 16; // 4 bits
-            packed |= (array[3] & 0x1)         << 15; // 1 bit
-            packed |= (array[4] & 0x1)         << 14; // 1 bit
-            packed |= (array[5] & 0x7)         << 11; // 3 bits
-            packed |= (array[7] & 0x7FF);             // 11 bits
+            // & c'est un ET il applique un masque pour la sécurité au cas ou par exemple on recoit 6 bits au lieu de 5
+            packed |= ((array[i]   + cubeX) & 0x1F) << 27; // 5 bits, décale de 27 bits (donc prend les 5 premiers bits, 32 - 27 = 5)
+            packed |= ((array[i+1] + cubeY) & 0xFF) << 19; // 8 bits
+            packed |= ((array[i+2] + cubeZ) & 0x1F) << 14; // 5 bits
+            packed |= (array[i+3] & 0x1)            << 13; // 1 bit
+            packed |= (array[i+4] & 0x1)            << 12; // 1 bit
+            packed |= (array[i+5] & 0x7)            << 9;  // 3 bits
+            packed |= (array[i+6] & 0x1FF);                // 9 bits
 
-            vertexArrayPack[vertexCount] = packed;
+            this.vertexArrayPack[this.vertexCount] = packed;
 
-            vertexCount++;
-        } 
-        this.faceCount++; 
+            this.vertexCount++;
+            addedVertices++;
+        }    
+        this.faceCount += addedVertices / 6; // /6 car 6 sommets par face
     }
 
     /**
@@ -101,10 +114,9 @@ public class ChunkMesh {
      * Remplis le buffer avec le tableau de sommet
      */
     public void fillChunkVertexBufferWithArray(){
-        if (this.vertexCount == 0 ) throw new Empty("pas assez de sommets");
         this.vertexBufferPack.clear();
-        for(int i : this.vertexArrayPack){
-            this.vertexBufferPack.put(i);
+        for(int i = 0; i < this.vertexCount; i++){
+            this.vertexBufferPack.put(this.vertexArrayPack[i]);
         }
         this.vertexBufferPack.flip(); // remet la position du buffer à 0, sinon il lirai de la fin des données à la fin du buffer
     }
@@ -113,10 +125,14 @@ public class ChunkMesh {
      * Permet d'ajouter un bloc et de vider puis remplir le buffer du chunk <br>
      * <b>Les données ne doivent pas être packé !</b>
      * @param array int[], la maille d'un bloc à ajouté
+     * @param cubeX
+     * @param cubeY
+     * @param cubeZ
      */
-    public void updateChunkVertexBufferWithArray(int[] array){
-        this.addObjectVertexToArray(array);
+    public void updateChunkVertexBufferWithArray(int[] array, int cubeX, int cubeY, int cubeZ){
+        this.addObjectVertexToArray(array, cubeX, cubeY, cubeZ);
         this.fillChunkVertexBufferWithArray();
+        this.updateChunkVBOVAO();
     }
 
     /**
@@ -125,8 +141,50 @@ public class ChunkMesh {
      */
     @OpenGLThread
     public void createChunkVBOVAO(){
-        this.ids = new int[2];
-        this.ids = BuffersManager.createChunkVBOVAO(this.vertexBufferPack);
+        this.ids = new int[4];
+        int[] result = BuffersManager.createChunkVBOVAO(this.vertexBufferPack);
+        this.ids[0] = result[0];
+        this.ids[1] = result[1];
+    }
+
+    /**
+     * Dessine les bordures d'un chunk avec des lignes
+     */
+    @OpenGLThread
+    public void createChunkBorderVBOVAO(){      
+        // 4 sommets du contour du chunk en bas
+        int[] lines = {
+            // bas
+            0, 0, 0,    16, 0, 0,
+            16, 0, 0,   16, 0, 16,
+            16, 0, 16,  0, 0, 16,
+            0, 0, 16,   0, 0, 0,
+            // verticales
+            0, 0, 0,    0, 255, 0,
+            16, 0, 0,   16, 255, 0,
+            16, 0, 16,  16, 255, 16,
+            0, 0, 16,   0, 255, 16,
+            // haut
+            0, 255, 0,  16, 255, 0,
+            16, 255, 0, 16, 255, 16,
+            16, 255, 16,0, 255, 16,
+            0, 255, 16, 0, 255, 0
+        };   
+        
+        IntBuffer linesBuffer = BufferUtils.createIntBuffer(lines.length);
+        
+        for(int i = 0; i < lines.length; i+=3){
+            int packed = 0;
+            packed |= ((lines[i]  ) & 0x1F) << 27;
+            packed |= ((lines[i+1]) & 0xFF) << 19;
+            packed |= ((lines[i+2]) & 0x1F) << 14;
+            linesBuffer.put(packed);
+        }
+        linesBuffer.flip();
+
+        int[] chunkBorderIds = BuffersManager.createChunkVBOVAO(linesBuffer);
+        this.ids[2] = chunkBorderIds[0];
+        this.ids[3] = chunkBorderIds[1];
     }
 
     /**
@@ -142,10 +200,20 @@ public class ChunkMesh {
      * @throws Empty
      */
     @OpenGLThread
-    public void drawChunkMesh() throws Empty{   
+    public void drawChunkMesh(FloatBuffer buffer) throws Empty{   
+        if (this.ids == null) throw new Empty("les vbo et vao ne sont pas initialisé");
         TexturesManager.getTextureRender().draw();
+        if(KeyboardInput.isChunkBorderShow){
+            GL30.glBindVertexArray(ids[3]);
+            GL11.glDrawArrays(GL11.GL_LINES, 0, 24);
+            GL30.glBindVertexArray(0);  
+        }
         GL30.glBindVertexArray(ids[1]);
-        GL11.glDrawArrays(GL11.GL_TRIANGLES, 0, this.faceCount * 6); // nb face * nb int par face
+        GL11.glDrawArrays(GL11.GL_TRIANGLES, 0, this.vertexCount);
         GL30.glBindVertexArray(0);        
+        // enregistre le nombre d'appele de dessin 
+        Render.monitor.incrementDrawCalls();
+        // et le nombre de triangle dessiné
+        Render.monitor.addTriangles(this.faceCount * 2); // nb face * nb triangle par face     
     } 
 }

@@ -13,11 +13,15 @@ public class Cube extends Object3D{
     public Cube(BlocksType texture){   
         Face face = new Face();        
         face.direction = Directions.SOUTH;
-        face.texture = texture.getTexture(face.direction);
+        face.texture = texture.getTexture(face.direction);   
+        // triangle 1
         face.addVertex(0, 0, 0);
         face.addVertex(1, 0, 0);
         face.addVertex(1, 1, 0);
-        face.addVertex(0, 1, 0);        
+        // triangle 2
+        face.addVertex(1, 1, 0);
+        face.addVertex(0, 1, 0);
+        face.addVertex(0, 0, 0);   
         this.mesh.addFaces(face);
 
         face = new Face();
@@ -26,7 +30,10 @@ public class Cube extends Object3D{
         face.addVertex(1, 0, 1);
         face.addVertex(0, 0, 1);
         face.addVertex(0, 1, 1);
-        face.addVertex(1, 1, 1);       
+
+        face.addVertex(0, 1, 1);
+        face.addVertex(1, 1, 1);    
+        face.addVertex(1, 0, 1);   
         this.mesh.addFaces(face);
 
         face = new Face();
@@ -35,7 +42,10 @@ public class Cube extends Object3D{
         face.addVertex(1, 0, 0);
         face.addVertex(1, 0, 1);
         face.addVertex(1, 1, 1);
-        face.addVertex(1, 1, 0);        
+
+        face.addVertex(1, 1, 1);
+        face.addVertex(1, 1, 0);       
+        face.addVertex(1, 0, 0); 
         this.mesh.addFaces(face);
 
         face = new Face();
@@ -44,7 +54,10 @@ public class Cube extends Object3D{
         face.addVertex(0, 0, 1);
         face.addVertex(0, 0, 0);
         face.addVertex(0, 1, 0);
-        face.addVertex(0, 1, 1);        
+
+        face.addVertex(0, 1, 0);
+        face.addVertex(0, 1, 1);      
+        face.addVertex(0, 0, 1);  
         this.mesh.addFaces(face);
 
         face = new Face();
@@ -53,7 +66,10 @@ public class Cube extends Object3D{
         face.addVertex(0, 1, 0);
         face.addVertex(1, 1, 0);
         face.addVertex(1, 1, 1);
-        face.addVertex(0, 1, 1);        
+
+        face.addVertex(1, 1, 1);
+        face.addVertex(0, 1, 1);     
+        face.addVertex(0, 1, 0);   
         this.mesh.addFaces(face);
 
         face = new Face();
@@ -62,7 +78,10 @@ public class Cube extends Object3D{
         face.addVertex(0, 0, 1);
         face.addVertex(1, 0, 1);
         face.addVertex(1, 0, 0);
+
+        face.addVertex(1, 0, 0);
         face.addVertex(0, 0, 0);
+        face.addVertex(0, 0, 1);
         this.mesh.addFaces(face);
     }
 }

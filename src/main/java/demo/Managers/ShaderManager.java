@@ -18,13 +18,50 @@ public abstract class ShaderManager {
     private static int programId;
     private static int programTextId;
 
-    private static int locationProj, locationView, locationModel, locationColor;
+    private static int locationProj, locationView, locationModel;
     private static int locationOrtho, locationTextColor;
 
     private static final Matrix4f textOrthoMatrix = new Matrix4f();
     private static int lastWidth = 0, lastHeight = 0;
 
     
+    // pareil mais pour les shaders de texte
+    @OpenGLThread
+    public static void createTextShader() throws ShaderManagerError{
+        String vertexTextShader;
+        String fragmentTextShader;
+        try{
+            vertexTextShader = FileLoader.loadShaderFromClasspathS("/Shaders/vertex_text.glsl");
+            fragmentTextShader = FileLoader.loadShaderFromClasspathS("/Shaders/fragment_text.glsl");
+        }catch(IOException e){
+            e.printStackTrace();
+            return;
+        }
+
+        int[] ids = ShaderManager.create(vertexTextShader, fragmentTextShader);
+        int vsId = ids[0];
+        int fgId = ids[1];
+
+        // attacher les shader compilés au programme
+        ShaderManager.programTextId = GL20.glCreateProgram();
+        GL20.glAttachShader(ShaderManager.programTextId, vsId);
+        GL20.glAttachShader(ShaderManager.programTextId, fgId);
+
+        // vérifie que les sorties du vertex shader corresponde aux entrées du fragment shader
+        GL20.glLinkProgram(ShaderManager.programTextId);
+        int success = GL20.glGetProgrami(ShaderManager.programTextId, GL20.GL_LINK_STATUS);
+        if (success == GL20.GL_FALSE){
+            throw new ShaderManagerError(GL20.glGetProgramInfoLog(ShaderManager.programTextId));
+        }
+
+        // une fois les vertex liés on détache et supprime les shaders
+        GL20.glDetachShader(ShaderManager.programTextId, vsId);
+        GL20.glDeleteShader(vsId);
+
+        GL20.glDetachShader(ShaderManager.programTextId, fgId);
+        GL20.glDeleteShader(fgId);
+    }
+
     /**
      * Créer les shaders
      * @throws ShaderManagerError
@@ -65,43 +102,6 @@ public abstract class ShaderManager {
         GL20.glDeleteShader(fgId);
     }
 
-    // pareil mais pour les shaders de texte
-    @OpenGLThread
-    public static void createTextShader() throws ShaderManagerError{
-        String vertexTextShader;
-        String fragmentTextShader;
-        try{
-            vertexTextShader = FileLoader.loadShaderFromClasspathS("/Shaders/vertex_text.glsl");
-            fragmentTextShader = FileLoader.loadShaderFromClasspathS("/Shaders/fragment_text.glsl");
-        }catch(IOException e){
-            e.printStackTrace();
-            return;
-        }
-
-        int[] ids = ShaderManager.create(vertexTextShader, fragmentTextShader);
-        int vsId = ids[0];
-        int fgId = ids[1];
-
-        // attacher les shader compilés au programme
-        ShaderManager.programTextId = GL20.glCreateProgram();
-        GL20.glAttachShader(ShaderManager.programTextId, vsId);
-        GL20.glAttachShader(ShaderManager.programTextId, fgId);
-
-        // vérifie que les sorties du vertex shader corresponde aux entrées du fragment shader
-        GL20.glLinkProgram(ShaderManager.programTextId);
-        int success = GL20.glGetProgrami(ShaderManager.programTextId, GL20.GL_LINK_STATUS);
-        if (success == GL20.GL_FALSE){
-            throw new ShaderManagerError(GL20.glGetProgramInfoLog(ShaderManager.programTextId));
-        }
-
-        // une fois les vertex liés on détache et supprime les shaders
-        GL20.glDetachShader(ShaderManager.programTextId, vsId);
-        GL20.glDeleteShader(vsId);
-
-        GL20.glDetachShader(ShaderManager.programTextId, fgId);
-        GL20.glDeleteShader(fgId);
-    }
-
     @OpenGLThread
     private static int[] create(String vertexShader, String fragmentShader){
         // creation de l'object shader
@@ -131,7 +131,6 @@ public abstract class ShaderManager {
         locationProj = GL20.glGetUniformLocation(programId, "projection");
         locationView = GL20.glGetUniformLocation(programId, "view");
         locationModel = GL20.glGetUniformLocation(programId, "model");
-        locationColor = GL20.glGetUniformLocation(programId, "color");
         locationOrtho = GL20.glGetUniformLocation(programTextId, "ortho");
         locationTextColor = GL20.glGetUniformLocation(programTextId, "color");
     }
@@ -173,18 +172,6 @@ public abstract class ShaderManager {
     public static void runModel(FloatBuffer model){
         model.rewind();
         GL20.glUniformMatrix4fv(ShaderManager.locationModel, false, model);
-    }
-
-    /**
-     * Envoie la couleur au fragment shader
-     * @param red float
-     * @param green float
-     * @param blue float
-     * @param alpha float
-     */
-    @OpenGLThread
-    public static void runFragmentColor(float red, float green, float blue, float alpha){
-        GL20.glUniform4f(ShaderManager.locationColor, red, green, blue, alpha);
     }
 
     /**

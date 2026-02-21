@@ -61,12 +61,8 @@ public class Render {
         // Prépare la 3D
         Render.initialize3D(Window.width, Window.height);
 
-        // définis les buffers pour chaque node
-        // a modif pour chaque chunk
-        BuffersManager.setupVBOVAOEBORecursive(Window.getSceneGraph().root);
-
         // positionne la camera
-        Render.sceneGraph.getCamera().setPosition(0f, 0f, 3f);
+        Render.sceneGraph.getCamera().setPosition(0f, 5f, 5f);
 
         while ( !GLFW.glfwWindowShouldClose(windowRef) ) {  
             // démarre l'enregistrement de performances pour la frame
@@ -109,17 +105,17 @@ public class Render {
             Render.getTextRender().drawText("Vertex count : " + Render.sceneGraph.getTotalVertexCount(), 0, 20, 20, Color4f.BLUE);   
             // Affiche la touche à appuyer pour toggle le wireframe
             Render.getTextRender().drawText("Toggle WireFrameMode : E", 0, 40, 15, Color4f.YELLOW);
-            // Affiche la touche à appuyer pour toggle le mouselock
             Render.getTextRender().drawText("Toggle MouseLock : P", 0, 60, 15, Color4f.YELLOW);       
+            Render.getTextRender().drawText("Toggle ChunkBorder : B", 0, 80, 15, Color4f.YELLOW);       
 
             // Affiche le nombre de nœud à l'écran
-            Render.getTextRender().drawText("Node3D count : " + Render.sceneGraph.getTotalNodeCount(), 0, 80, 15, Color4f.PURPLE);         
+            Render.getTextRender().drawText("Node3D count : " + Render.sceneGraph.getTotalNodeCount(), 0, 100, 15, Color4f.PURPLE);         
 
             // Affiche les lignes retourner par le PerformanceManager
             String[] lines = monitor.getDisplayLines();
             for(int i = 0; i < lines.length; i++){
                 if(lines[i] != null){
-                    Render.getTextRender().drawText(lines[i], 0, 100 + i * 20, 15, Color4f.PURPLE);
+                    Render.getTextRender().drawText(lines[i], 0, 120 + i * 20, 15, Color4f.PURPLE);
                 }
             }
 
@@ -230,7 +226,7 @@ public class Render {
     }
 
     // calcule la matrice de projection et la retourne en floatbuffer pour les shaders
-    private static FloatBuffer calculateProjection(float fov, float aspect, float near, float far) {
+    public static FloatBuffer calculateProjection(float fov, float aspect, float near, float far) {
         Matrix4f projection = new Matrix4f().perspective((float) Math.toRadians(fov), aspect, near, far);
         projection.get(projBuffer);
         return projBuffer;

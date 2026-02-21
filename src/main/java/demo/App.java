@@ -1,9 +1,7 @@
 package demo;
 
 import demo.Enum.BlocksType;
-import demo.Enum.TexturesType;
-import demo.Geometry.Clone3D;
-import demo.Geometry.Cube;
+import demo.Geometry.Chunk;
 import demo.Rendering.SceneGraph;
 import demo.Rendering.Window;
 
@@ -21,29 +19,17 @@ public class App
     }
 
     public static void draw(SceneGraph scene){
-        Cube cube1 = new Cube();        
-        Cube cube2 = new Cube(BlocksType.HOMER);
-
-        /*
-        for (int i = 2; i < 50; i++){
-            for(int j = 2; j < 50; j++){
-                Clone3D tmp = new Clone3D(cube2);
-                scene.root.addChild(tmp);
-                tmp.x = i;
-                tmp.y = j;
-            }
-            enorme_zizi.mp3
-        }*/
+        Chunk chunk = new Chunk();
+        Chunk chunk2 = new Chunk();
         
-        scene.root.addChild(cube1);
-        scene.root.addChild(cube2);
+        chunk2.setChunkPosition(1, 0, 0);
 
-        cube1.x = 0;
-        cube1.z = 0;
-
-        cube2.x = 1;
-        cube2.z = 1;
-        cube2.y = 1;
+        // A faire avant d'ajouter à la scène sinon c'est pas pris en compte
+        chunk.addFloor(0, 1, BlocksType.GRASS);        
+        chunk2.addFloor(1, 1, BlocksType.GRASS);
+        
+        scene.root.addChild(chunk);
+        scene.root.addChild(chunk2);
     }  
     
 

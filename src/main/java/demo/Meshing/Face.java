@@ -1,8 +1,6 @@
 package demo.Meshing;
 
-import demo.Exceptions.ArrayEmpty;
 import demo.Exceptions.ArrayFull;
-import demo.Exceptions.IncorrectIndex;
 import demo.Managers.TexturesManager;
 import demo.Enum.Directions;
 import demo.Enum.TexturesType;
@@ -25,7 +23,10 @@ public class Face {
         1, 1,  // v0 bas droite
         0, 1,  // v1 bas gauche
         0, 0,  // v2 haut gauche
-        1, 0   // v3 haut droite
+
+        0, 0,  // v3 haut gauche
+        1, 0,  // v4 haut droite
+        1, 1   // v5 bas droite
     };
 
     /**
