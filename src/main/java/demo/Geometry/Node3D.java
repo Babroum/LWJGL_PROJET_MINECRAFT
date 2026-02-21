@@ -9,7 +9,6 @@ import demo.Annotations.OpenGLThread;
 import demo.Exceptions.ArrayFull;
 import demo.Exceptions.Empty;
 import demo.Managers.ShaderManager;
-import demo.Rendering.Render;
 
 /**
  * Un nœud définit par des coordonnées, angles et tailles.
@@ -88,7 +87,6 @@ public class Node3D {
      */
     @OpenGLThread
     public void drawNode(Matrix4f parentModel){
-        Render.monitor.incrementNodeCount();
         // Crée la model matrix   
         // Placement des nœuds enfants relativement à la position de ce nœud
         Matrix4f model = new Matrix4f(parentModel)

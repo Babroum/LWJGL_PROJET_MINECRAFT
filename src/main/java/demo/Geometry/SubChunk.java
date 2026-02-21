@@ -26,11 +26,10 @@ public class SubChunk extends Node3D{
     private int[] eastFace  = new int[SubChunk.CHUNKSIZEY * SubChunk.CHUNKSIZEX]; 
     private int[] upFace    = new int[SubChunk.CHUNKSIZEY * SubChunk.CHUNKSIZEX]; 
     private int[] downFace  = new int[SubChunk.CHUNKSIZEY * SubChunk.CHUNKSIZEX]; 
-    // donne au mesh le chunk au quel il appartient
+
+    // donne au mesh le subChunk au quel il appartient
     public SubChunkMesh mesh = new SubChunkMesh();
     private Object3D[] objects;
-
-
 
     // contient des 1 et 0 (block plein, block vide(air))
     private BitSet bitSet = new BitSet(SubChunk.MAXBLOCK); 
@@ -43,72 +42,72 @@ public class SubChunk extends Node3D{
     }
 
     /**
-     * Place le chunk avec des coordonnées par rapport au autres chunk
-     * @param chunkX
-     * @param chunkY
-     * @param chunkZ
+     * Place le subChunk avec des coordonnées par rapport au autres subChunk
+     * @param x int
+     * @param y int
+     * @param z int
      */
     @ChunkThread
-    public void setChunkPosition(int chunkX, int chunkY, int chunkZ){
-        this.x = chunkX * SubChunk.CHUNKSIZEX;
-        this.y = chunkY * SubChunk.CHUNKSIZEY;
-        this.z = chunkZ * SubChunk.CHUNKSIZEZ;
+    public void setSubChunkPosition(int x, int y, int z){
+        this.x = x;
+        this.y = y;
+        this.z = z;
     }
 
     /**
-     * Génère la maille d'un chunk
+     * Génère la maille d'un subChunk
      */
     @ChunkThread
-    public void generateChunkMesh(){
-        this.fillBitSet();
-        this.calculateFaceCulling();
+    public void generateSubChunkMesh(){
+        this.fillSubChunkBitSet();
+        this.calculateSubChunkFaceCulling();
         // envoie la maille des objets à la maille
-        this.uploadMesh();
+        this.uploadSubChunkMesh();
         // rempli le buffer de la maille avec les données pack (vertex packing)
         this.mesh.fillChunkVertexBufferWithArray();
     }
 
     /**
-     * Recréer la maille d'un chunk
+     * Recréer la maille d'un subChunk
      */
     @ChunkThread
-    public void rebuildChunkMesh(){
+    public void rebuildSubChunkMesh(){
         this.mesh.setupChunkBuffers();
-        this.generateChunkMesh();
+        this.generateSubChunkMesh();
     }
 
     /**
      * Remplis le vbo avec les données des objets avant le rendu
      */
     @OpenGLThread
-    public void setupChunkVBOVAO(){
+    public void setupSubChunkVBOVAO(){
         // créer les vbo vao avec le buffer rempli
         this.mesh.createChunkVBOVAO();
         this.mesh.createChunkBorderVBOVAO();
     }
 
     /**
-     * Ajoute un sol 
-     * @param y int, hauteur du sol
+     * Ajoute un sol au subChunk
+     * @param Y int, hauteur du sol
      * @param nbFloor int, épaisseur du sol
      * @param type BlocksType
      */
     @ChunkThread
-    public void addFloor(int Y, int nbFloor, BlocksType type){
-        if (Y < 0 || Y + nbFloor >= SubChunk.CHUNKSIZEY
-        ){throw new IncorrectCoordinates("Coordonées dans le chunk invalide");}
+    public void addFloorToSubChunk(int Y, int nbFloor, BlocksType type){
+        if (Y < 0 || Y + nbFloor > SubChunk.CHUNKSIZEY
+        ){throw new IncorrectCoordinates("Coordonées dans le subChunk invalide");}
         for(int y = Y; y < Y + nbFloor; y++){
             for(int x = 0; x < SubChunk.CHUNKSIZEX; x++){
                 for (int z = 0; z < SubChunk.CHUNKSIZEZ; z++){
-                    this.addBlock(type, x, y, z);          
+                    this.addBlockToSubChunk(type, x, y, z);          
                 }    
             }
         }  
     }
 
     /**
-     * Ajoute un block dans le chunk (remplace le bloc AIR<br> 
-     * (coordonnées locales du chunk)
+     * Ajoute un block dans le subChunk <br> 
+     * (coordonnées locales du subChunk)
      * @param type BlockType
      * @param x int
      * @param y int
@@ -116,11 +115,11 @@ public class SubChunk extends Node3D{
      * @throws IncorrectCoordinates
      */
     @ChunkThread
-    public void addBlock(BlocksType type, int x, int y, int z) throws IncorrectCoordinates{
+    public void addBlockToSubChunk(BlocksType type, int x, int y, int z) throws IncorrectCoordinates{
         if (x < 0 || x >= SubChunk.CHUNKSIZEX ||
             y < 0 || y >= SubChunk.CHUNKSIZEY ||
             z < 0 || z >= SubChunk.CHUNKSIZEZ
-        ){throw new IncorrectCoordinates("Coordonées dans le chunk invalide");}
+        ){throw new IncorrectCoordinates("Coordonées dans le subChunk invalide");}
         int index = x + y * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
         // créer un cube et l'ajoute à la liste
         this.objects[index] = new Cube(type);
@@ -132,19 +131,19 @@ public class SubChunk extends Node3D{
     }
 
     /**
-     * Retire un block dans le chunk (transforme en AIR) <br>
-     * (coordonnées locales du chunk)
+     * Retire un block dans le subChunk <br>
+     * (coordonnées locales du subChunk)
      * @param x int
      * @param y int
      * @param z int
      * @throws IncorrectCoordinates
      */
     @ChunkThread
-    public void removeBlock(int x, int y, int z) throws IncorrectCoordinates{
+    public void removeBlockFromSubChunk(int x, int y, int z) throws IncorrectCoordinates{
         if (x < 0 || x >= SubChunk.CHUNKSIZEX ||
             y < 0 || y >= SubChunk.CHUNKSIZEY ||
             z < 0 || z >= SubChunk.CHUNKSIZEZ
-        ){throw new IncorrectCoordinates("Coordonées dans le chunk invalide");}
+        ){throw new IncorrectCoordinates("Coordonées dans le subChunk invalide");}
         int index = x + y * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
         this.objects[index] = null;
     }
@@ -153,7 +152,7 @@ public class SubChunk extends Node3D{
      * Envoie les faces à dessiné calculé avec le face culling à la maille
      */
     @ChunkThread
-    public void uploadMesh(){
+    private void uploadSubChunkMesh(){
         // Ouest Est
         for (int y = 0; y < SubChunk.CHUNKSIZEY; y++){
             for (int z = 0; z < SubChunk.CHUNKSIZEZ; z++){
@@ -240,8 +239,8 @@ public class SubChunk extends Node3D{
     /**
      * Comme son nom l'indique
      */
-    public void calculateFaceCulling(){
-        // Récup ouest est, on remplit l'int qui correspond a la ligne avec le BitSet du chunk
+    private void calculateSubChunkFaceCulling(){
+        // Récup ouest est, on remplit l'int qui correspond a la ligne avec le BitSet du subChunk
         for (int y = 0; y < SubChunk.CHUNKSIZEY; y++){
             for (int z = 0; z < SubChunk.CHUNKSIZEZ; z++){
                 int index = y + z * SubChunk.CHUNKSIZEY;      
@@ -285,18 +284,18 @@ public class SubChunk extends Node3D{
     }
 
     /**
-     * Retourne les objets du chunk
+     * Retourne les objets du subChunk
      * @return
      */
-    public Object3D[] getChunkObject(){
+    public Object3D[] getSubChunkObject(){
         return this.objects;
     }
 
     /**
-     * Remplis le BitSet du chunk (cube plein = 1, cube vide = 0)
+     * Remplis le BitSet du subChunk (cube plein = 1, cube vide = 0)
      */
     @ChunkThread
-    public void fillBitSet(){
+    private void fillSubChunkBitSet(){
         for(int i = 0; i < SubChunk.MAXBLOCK; i++){
             if (this.objects[i] != null){
                 this.bitSet.set(i); // met a 1 l'indice i
@@ -305,7 +304,7 @@ public class SubChunk extends Node3D{
     }
 
     /**
-     * Dessine la maille du chunk
+     * Dessine la maille du subChunk
      */
     @OpenGLThread
     @Override

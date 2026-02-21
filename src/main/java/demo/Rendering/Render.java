@@ -12,12 +12,10 @@ import org.lwjgl.opengl.GL11;
 import demo.FileLoader;
 import demo.Annotations.OpenGLThread;
 import demo.Events.InputManager;
-import demo.Geometry.SubChunk;
-import demo.Geometry.SubChunk;
+import demo.Geometry.Chunk;
 import demo.Managers.BuffersManager;
 import demo.Managers.ShaderManager;
 import demo.Managers.TexturesManager;
-import demo.Meshing.SubChunkMesh;
 import demo.Types.Color4f;
 
 public class Render {
@@ -33,8 +31,8 @@ public class Render {
     private static int frameCount;
     private static float displayedFps = 0.0f;
 
-    public static ConcurrentLinkedQueue<SubChunk> chunkQueue = new ConcurrentLinkedQueue<>();
-    public static ConcurrentLinkedQueue<SubChunk> dirtyChunks = new ConcurrentLinkedQueue<>();
+    public static ConcurrentLinkedQueue<Chunk> chunkQueue = new ConcurrentLinkedQueue<>();
+    public static ConcurrentLinkedQueue<Chunk> dirtyChunks = new ConcurrentLinkedQueue<>();
 
     private static FloatBuffer projBuffer = BufferUtils.createFloatBuffer(16);
 
@@ -96,14 +94,14 @@ public class Render {
             ShaderManager.runView(Render.sceneGraph.getCamera().getViewMatrixBuffer()); // donne la vue de la camera
 
             // poll les chunks prêts et upload sur GPU
-            SubChunk chunk;
+            Chunk chunk;
             while((chunk = Render.chunkQueue.poll()) != null){
                 chunk.setupChunkVBOVAO();
                 Render.sceneGraph.root.addChild(chunk);
             }
 
             // Chunks modifiés update le VBO existant
-            SubChunk dirty;
+            Chunk dirty;
             while ((dirty = dirtyChunks.poll()) != null) {
                 dirty.setupChunkVBOVAO();
             }
@@ -161,10 +159,10 @@ public class Render {
         Window.exitWindow();
     }
 
-    public static void setChunkQueue(ConcurrentLinkedQueue<SubChunk> queue){
+    public static void setChunkQueue(ConcurrentLinkedQueue<Chunk> queue){
         Render.chunkQueue = queue;
     }
-    public static void setDirtyChunkQueue(ConcurrentLinkedQueue<SubChunk> queue){
+    public static void setDirtyChunkQueue(ConcurrentLinkedQueue<Chunk> queue){
         Render.dirtyChunks = queue;
     }
 

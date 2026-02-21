@@ -3,7 +3,7 @@ package demo;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import demo.Enum.BlocksType;
-import demo.Geometry.SubChunk;
+import demo.Geometry.Chunk;
 import demo.Rendering.Render;
 import demo.Rendering.SceneGraph;
 import demo.Rendering.Window;
@@ -23,19 +23,21 @@ public class App
 
     public static void draw(SceneGraph scene){
         // ConcurrentLinkedQueue pour passer les chunks prêts au thread OpenGL
-        ConcurrentLinkedQueue<SubChunk> readyChunks = new ConcurrentLinkedQueue<>();
-        ConcurrentLinkedQueue<SubChunk> dirtyChunks = new ConcurrentLinkedQueue<>();
+        ConcurrentLinkedQueue<Chunk> readyChunks = new ConcurrentLinkedQueue<>();
+        ConcurrentLinkedQueue<Chunk> dirtyChunks = new ConcurrentLinkedQueue<>();
 
         // thread de génération
         Thread generationThread = new Thread(() -> {
-            SubChunk chunk = new SubChunk();
-            chunk.addFloor(0, 1, BlocksType.GRASS);
+            Chunk chunk = new Chunk();
+            chunk.addFloorToChunk(0, 1, BlocksType.GRASS);
             chunk.generateChunkMesh();
             readyChunks.add(chunk);
 
-            SubChunk chunk2 = new SubChunk();
+            Chunk chunk2 = new Chunk();
             chunk2.setChunkPosition(1, 0, 0);
-            chunk2.addFloor(1, 1, BlocksType.GRASS);
+            chunk2.addFloorToChunk(3, 1, BlocksType.GRASS);
+            chunk2.addBlockToChunk(BlocksType.MAX, 5, 4, 5);
+            chunk2.addFloorToChunk(16, 1, BlocksType.GRASS);
             chunk2.generateChunkMesh();
             readyChunks.add(chunk2);
         });
