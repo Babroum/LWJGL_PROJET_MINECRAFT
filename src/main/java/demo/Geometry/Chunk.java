@@ -15,16 +15,18 @@ public class Chunk extends Node3D{
     
     public static final int SUBCHUNKCOUNT = 16;
     public SubChunk[] subChunks;
+    public String name;
     
     /**
      * Initialise les subChunks du chunks
      */
     @ChunkThread
-    public Chunk(){
+    public Chunk(String name){
         this.subChunks = new SubChunk[Chunk.SUBCHUNKCOUNT];
         for (int i = 0; i < this.subChunks.length; i++){
             this.subChunks[i] = new SubChunk();
             this.subChunks[i].setSubChunkPosition(0, i * SubChunk.CHUNKSIZEY, 0);
+            this.subChunks[i].name = name + "," + i;
             Render.monitor.addSubChunkCount();
         }
         Render.monitor.addChunkCount();
