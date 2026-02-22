@@ -7,7 +7,7 @@ import java.nio.charset.StandardCharsets;
 
 import org.lwjgl.BufferUtils;
 
-import demo.Managers.ShaderManager;
+import demo.Managers.ShadersManager;
 import demo.Rendering.Render;
 
 public class FileLoader {
@@ -22,7 +22,7 @@ public class FileLoader {
 
     // permet de lire les fichiers qui seront dans le .jar
     public static String loadShaderFromClasspathS(String path) throws IOException {
-        InputStream is = ShaderManager.class.getResourceAsStream(path);
+        InputStream is = ShadersManager.class.getResourceAsStream(path);
         return new String(is.readAllBytes(), StandardCharsets.UTF_8);
     }
 

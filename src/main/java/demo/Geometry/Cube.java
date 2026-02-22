@@ -16,7 +16,7 @@ public class Cube extends Object3D{
             return;
         }
         Face face = new Face();        
-        face.direction = Directions.SOUTH;
+        face.direction = Directions.NORTH;
         face.texture = type.getTexture(face.direction);   
         // triangle 1
         face.addVertex(0, 0, 0); // 1
@@ -29,7 +29,7 @@ public class Cube extends Object3D{
         this.mesh.addFaces(face);
 
         face = new Face();
-        face.direction = Directions.NORTH;
+        face.direction = Directions.SOUTH;
         face.texture = type.getTexture(face.direction);
         face.addVertex(1, 0, 1);
         face.addVertex(0, 0, 1);

@@ -33,16 +33,14 @@ public class Chunk extends Node3D{
     /**
      * Définis la position du chunk
      * @param chunkX int
-     * @param chunkY int
      * @param chunkZ int
      */
     @ChunkThread
-    public void setChunkPosition(int chunkX, int chunkY, int chunkZ){
+    public void setChunkPosition(int chunkX, int chunkZ){
         this.x = chunkX * SubChunk.CHUNKSIZEX;
-        this.y = chunkY * SubChunk.CHUNKSIZEY;
         this.z = chunkZ * SubChunk.CHUNKSIZEZ;
         for (int i = 0; i < this.subChunks.length; i++){
-            this.subChunks[i].setSubChunkPosition(0, i * SubChunk.CHUNKSIZEY + this.y, 0);
+            this.subChunks[i].setSubChunkPosition(this.x, i * SubChunk.CHUNKSIZEY, this.z);
         }
     }
 
@@ -97,17 +95,25 @@ public class Chunk extends Node3D{
      */
     @ChunkThread
     public void generateChunkMesh(){
-        for(SubChunk sub : this.subChunks) sub.generateSubChunkMesh();
+        for(SubChunk sub : this.subChunks){
+            sub.fillSubChunkBitSet();
+        } 
+        for(SubChunk sub : this.subChunks){
+            sub.generateSubChunkMesh();
+        }
     }
 
     /**
-     * Recréer la maille des subChunks
+     * Permet d'obtenir le subChunk d'un chunk
+     * @param y int 
+     * @throws IncorrectCoordinates
+     * @return SubChunk
      */
     @ChunkThread
-    public void rebuildChunkMesh(){
-        for(SubChunk sub : this.subChunks) sub.rebuildSubChunkMesh();
+    public SubChunk getSubChunk(int y) throws IncorrectCoordinates{ 
+        if (y < 0 || y >= Chunk.SUBCHUNKCOUNT) throw new IncorrectCoordinates("Les coordonées sont incorrects (0 pour le subChunk n°0, 1 ... n°1, etc...");
+        return this.subChunks[y];
     }
-
     /**
      * Remplis les vbo des subChunks avec les données des objets avant le rendu
      */
@@ -118,10 +124,8 @@ public class Chunk extends Node3D{
 
     @Override
     public void drawNode(Matrix4f parentModel){
-        Matrix4f model = new Matrix4f(parentModel)
-            .translate(this.x, this.y, this.z);
         for (SubChunk sub : subChunks){
-            sub.drawNode(model);
+            sub.drawNode(parentModel);
         }
     }
 }

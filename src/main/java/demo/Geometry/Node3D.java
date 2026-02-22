@@ -8,7 +8,7 @@ import org.lwjgl.BufferUtils;
 import demo.Annotations.OpenGLThread;
 import demo.Exceptions.ArrayFull;
 import demo.Exceptions.Empty;
-import demo.Managers.ShaderManager;
+import demo.Managers.ShadersManager;
 
 /**
  * Un nœud définit par des coordonnées, angles et tailles.
@@ -96,7 +96,7 @@ public class Node3D {
             .rotateZ((float) Math.toRadians(this.angleZ)) // Rotation autour de l'axe Z
             .scale(this.scaleX, this.scaleY, this.scaleZ); // Application des facteurs d'échelle
         model.get(this.buffer);
-        ShaderManager.runModel(this.buffer);
+        ShadersManager.runModel(this.buffer);
 
         // Dessin spécifique
         this.drawSpecific();

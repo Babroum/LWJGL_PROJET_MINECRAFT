@@ -12,7 +12,7 @@ import org.lwjgl.stb.*;
 
 import demo.Annotations.OpenGLThread;
 import demo.Managers.BuffersManager;
-import demo.Managers.ShaderManager;
+import demo.Managers.ShadersManager;
 import demo.Types.Color4f;
 
 /**
@@ -86,12 +86,12 @@ public class TextRender {
         GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
 
         // Initialise les buffers / shaders / vbo vao ebo
-        ShaderManager.createTextShader();
+        ShadersManager.createTextShader();
         this.vertexsBuffer = BufferUtils.createFloatBuffer(this.BUFFERSIZE * 16);
         this.indicesBuffer = BufferUtils.createIntBuffer(this.BUFFERSIZE * 6);
         this.ids = BuffersManager.createTextVBOVAOEBO(vertexsBuffer, indicesBuffer);
         
-        this.texUniformLocation = GL20.glGetUniformLocation(ShaderManager.getProgramTextId(), "tex");
+        this.texUniformLocation = GL20.glGetUniformLocation(ShadersManager.getProgramTextId(), "tex");
     }
 
     /**
@@ -107,9 +107,9 @@ public class TextRender {
 
         if (text == null) return;
 
-        ShaderManager.useTextShader();
-        ShaderManager.runTextOrtho(this.buffer, Window.width, Window.height);
-        ShaderManager.runTextFragmentColor(color.red, color.green, color.blue, color.alpha);
+        ShadersManager.useTextShader();
+        ShadersManager.runTextOrtho(this.buffer, Window.width, Window.height);
+        ShadersManager.runTextFragmentColor(color.red, color.green, color.blue, color.alpha);
 
         GL11.glDisable(GL11.GL_DEPTH_TEST);
         GL20.glActiveTexture(GL20.GL_TEXTURE0);
@@ -145,7 +145,7 @@ public class TextRender {
 
         GL11.glEnable(GL11.GL_DEPTH_TEST);
 
-        ShaderManager.useShader();      
+        ShadersManager.useShader();      
     }
 
     /**

@@ -91,7 +91,7 @@ public class Color4f {
     @OpenGLThread
     public void apply(){
         // donne la couleur au shader
-        //ShaderManager.runFragmentColor(this.red, this.green, this.blue, this.alpha);
+        //ShadersManager.runFragmentColor(this.red, this.green, this.blue, this.alpha);
         //GL11.glColor4f(this.red, this.green, this.blue, this.alpha);
     }
     

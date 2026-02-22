@@ -13,7 +13,7 @@ import org.lwjgl.system.MemoryUtil;
 import demo.Annotations.OpenGLThread;
 import demo.Events.InputManager;
 import demo.Events.WindowCloseEventManager;
-import demo.Managers.ShaderManager;
+import demo.Managers.ShadersManager;
 
 /**
  * La fenêtre géré par GLFW
@@ -126,7 +126,7 @@ public class Window {
     }
 
     public static void closeWindow(){
-        ShaderManager.closeProgramId();
+        ShadersManager.closeProgramId();
         Window.windowCloseEventManager.closeWidow(Window.window);
     }
 

@@ -1,23 +1,15 @@
 package demo.Enum;
 
 /**
- * Contient les directions des faces et les valeurs de directions
+ * Contient les directions des faces
  */
 public enum Directions {
-    NORTH(-1, 0, 0),
-    SOUTH(1, 0, 0),    
-    WEST (0, 0, -1),    
-    EAST (0, 0, 1),
-    UP   (0, 1, 0),
-    DOWN (0, -1, 0);
-
-    public final int dx, dy, dz;
-
-    Directions(int dx, int dy, int dz) {
-        this.dx = dx;
-        this.dy = dy;
-        this.dz = dz;
-    }
+    NORTH,
+    SOUTH,    
+    WEST,    
+    EAST,
+    UP,
+    DOWN;
 
     public static Directions fromInt(int value){
         return Directions.values()[value];

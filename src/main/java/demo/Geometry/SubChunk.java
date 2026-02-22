@@ -9,7 +9,8 @@ import demo.Annotations.OpenGLThread;
 import demo.Enum.BlocksType;
 import demo.Enum.Directions;
 import demo.Exceptions.IncorrectCoordinates;
-import demo.Managers.ShaderManager;
+import demo.Managers.ChunksManager;
+import demo.Managers.ShadersManager;
 import demo.Meshing.SubChunkMesh;
 
 public class SubChunk extends Node3D{
@@ -32,13 +33,13 @@ public class SubChunk extends Node3D{
     private Object3D[] objects;
 
     // contient des 1 et 0 (block plein, block vide(air))
-    private BitSet bitSet = new BitSet(SubChunk.MAXBLOCK); 
+    public BitSet bitSet = new BitSet(SubChunk.MAXBLOCK); 
 
     @ChunkThread
     public SubChunk(){
-        this.objects = new Object3D[SubChunk.MAXBLOCK];
+        this.objects = new Object3D[SubChunk.MAXBLOCK];     
         // définit la taille du buffer et du tableau de vertex  
-        this.mesh.setupChunkBuffers();
+        this.mesh.setupSubChunkBuffers();   
     }
 
     /**
@@ -59,21 +60,11 @@ public class SubChunk extends Node3D{
      */
     @ChunkThread
     public void generateSubChunkMesh(){
-        this.fillSubChunkBitSet();
         this.calculateSubChunkFaceCulling();
         // envoie la maille des objets à la maille
         this.uploadSubChunkMesh();
         // rempli le buffer de la maille avec les données pack (vertex packing)
-        this.mesh.fillChunkVertexBufferWithArray();
-    }
-
-    /**
-     * Recréer la maille d'un subChunk
-     */
-    @ChunkThread
-    public void rebuildSubChunkMesh(){
-        this.mesh.setupChunkBuffers();
-        this.generateSubChunkMesh();
+        this.mesh.fillSubChunkVertexBufferWithArray();
     }
 
     /**
@@ -82,8 +73,13 @@ public class SubChunk extends Node3D{
     @OpenGLThread
     public void setupSubChunkVBOVAO(){
         // créer les vbo vao avec le buffer rempli
-        this.mesh.createChunkVBOVAO();
-        this.mesh.createChunkBorderVBOVAO();
+        this.mesh.createSubChunkVBOVAO();
+        this.mesh.createSubChunkBorderVBOVAO();
+    }
+
+    @OpenGLThread
+    public void removeSubChunk(){
+        this.mesh.deleteSubChunkVBOVAO();
     }
 
     /**
@@ -149,7 +145,7 @@ public class SubChunk extends Node3D{
     }
 
     /**
-     * Envoie les faces à dessiné calculé avec le face culling à la maille
+     * Envoie les faces à dessiné calculé avec le face culling de la maille
      */
     @ChunkThread
     private void uploadSubChunkMesh(){
@@ -190,15 +186,6 @@ public class SubChunk extends Node3D{
             for (int x = 0; x < SubChunk.CHUNKSIZEX; x++){
                 int index = y + x * SubChunk.CHUNKSIZEY;                
 
-                int ligneNorth = this.northFace[index];
-                while (ligneNorth != 0){
-                    int z = Integer.numberOfLeadingZeros(ligneNorth);
-                    int objectIndex = x + y * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
-                    if (this.objects[objectIndex] == null) continue;
-                    this.mesh.addObjectFaceVertexToArray(this.objects[objectIndex].mesh.getFaceVertex(Directions.NORTH), x, y, z);
-                    ligneNorth &= ~(1 << (31 - z));
-                }
-
                 int ligneSouth = this.southFace[index];
                 while (ligneSouth != 0){
                     int z = Integer.numberOfLeadingZeros(ligneSouth);
@@ -206,6 +193,15 @@ public class SubChunk extends Node3D{
                     if (this.objects[objectIndex] == null) continue;
                     this.mesh.addObjectFaceVertexToArray(this.objects[objectIndex].mesh.getFaceVertex(Directions.SOUTH), x, y, z);
                     ligneSouth &= ~(1 << (31 - z));
+                }
+
+                int ligneNorth = this.northFace[index];
+                while (ligneNorth != 0){
+                    int z = Integer.numberOfLeadingZeros(ligneNorth);
+                    int objectIndex = x + y * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
+                    if (this.objects[objectIndex] == null) continue;
+                    this.mesh.addObjectFaceVertexToArray(this.objects[objectIndex].mesh.getFaceVertex(Directions.NORTH), x, y, z);
+                    ligneNorth &= ~(1 << (31 - z));
                 }
             }
         }
@@ -249,9 +245,30 @@ public class SubChunk extends Node3D{
                     this.eastFace[index] |= (this.bitSet.get(bitSetIndex) ? 1 : 0) << (31 - x);                    
                 }
                 int ligne = this.eastFace[index];
+                
+                // Est : récupère les bits les plus à droite du voisin est (x = 15)
+                int ligneNeighborEast = 0;
+                // si il y a un voisin
+                if (this.getNeighborEast() != null){
+                    int bitSetIndex = 15 + y * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
+                    // on récupère la valeur du bitSet à l'index
+                    // met le dernier bit a 1
+                    ligneNeighborEast = (this.getNeighborEast().bitSet.get(bitSetIndex) ? 1 : 0);
+                }                                 
+                // si on récup le bit le plus a droite du voisin il faut le mettre le plus a gauche pour le subChunk actuel
+                ligneNeighborEast = ligneNeighborEast << 31;
+
+                int ligneNeighborWest = 0;
+                if (this.getNeighborWest() != null){
+                    int bitSetIndex = 0 + y * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
+                    ligneNeighborWest = (this.getNeighborWest().bitSet.get(bitSetIndex) ? 1 : 0);
+                }   
+                // si on récup le bit le plus a droite du voisin il faut le mettre le plus a droite par rapport a la ligne donc au milieu de l'int pour le subChunk actuel
+                ligneNeighborWest = ligneNeighborWest << 16;
+
                 // le >> ajoute un 1 au début le >>> ajoute un 0
-                this.eastFace[index] = ligne & ~(ligne >>> 1); // faces vers l'est
-                this.westFace[index] = ligne & ~(ligne << 1); // faces vers l'ouest      
+                this.eastFace[index] = ligne & ~((ligne >>> 1) | ligneNeighborEast); // faces vers l'est + le bloc voisin
+                this.westFace[index] = ligne & ~((ligne << 1) | ligneNeighborWest); // faces vers l'ouest + le bloc voisin     
             }
         }
         // Récup nord sud
@@ -263,8 +280,23 @@ public class SubChunk extends Node3D{
                     this.northFace[index] |= (this.bitSet.get(bitSetIndex) ? 1 : 0) << (31 - z);
                 }
                 int ligne = this.northFace[index];
-                this.northFace[index] = ligne & ~(ligne << 1); // faces vers le nord
-                this.southFace[index] = ligne & ~(ligne >>> 1); // faces vers le sud  
+
+                int ligneNeighborSouth = 0;
+                if (this.getNeighborSouth() != null){
+                    int bitSetIndex = x + y * SubChunk.CHUNKSIZEX + 15 * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
+                    ligneNeighborSouth = (this.getNeighborSouth().bitSet.get(bitSetIndex) ? 1 : 0);
+                }
+                ligneNeighborSouth = ligneNeighborSouth << 16;     
+
+                int ligneNeighborNorth = 0;
+                if (this.getNeighborNorth() != null){
+                    int bitSetIndex = x + y * SubChunk.CHUNKSIZEX + 0 * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
+                    ligneNeighborNorth = (this.getNeighborNorth().bitSet.get(bitSetIndex) ? 1 : 0);
+                }
+                ligneNeighborNorth = ligneNeighborNorth << 31;  
+
+                this.southFace[index] = ligne & ~((ligne << 1) | ligneNeighborSouth); // faces vers le sud  
+                this.northFace[index] = ligne & ~((ligne >>> 1) | ligneNeighborNorth); // faces vers le nord
             }
         }
 
@@ -277,8 +309,20 @@ public class SubChunk extends Node3D{
                     this.upFace[index] |= (this.bitSet.get(bitSetIndex) ? 1 : 0) << (31 - y);
                 }
                 int ligne = this.upFace[index];
-                this.upFace[index] = ligne & ~(ligne << 1); // faces vers le haut
-                this.downFace[index] = ligne & ~(ligne >>> 1); // faces vers le bas  
+                int ligneNeighborUp = 0;
+                if (this.getNeighborUp() != null){
+                    int bitSetIndex = x + 0 * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
+                    ligneNeighborUp = (this.getNeighborUp().bitSet.get(bitSetIndex) ? 1 : 0);
+                }
+                ligneNeighborUp = ligneNeighborUp << 16;
+                int ligneNeighborDown = 0;
+                if (this.getNeighborDown() != null){
+                    int bitSetIndex = x + 15 * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
+                    ligneNeighborDown = (this.getNeighborDown().bitSet.get(bitSetIndex) ? 1 : 0);
+                }
+                ligneNeighborDown = ligneNeighborDown << 31;
+                this.upFace[index] = ligne & ~((ligne << 1) | ligneNeighborUp); // faces vers le haut
+                this.downFace[index] = ligne & ~((ligne >>> 1) | ligneNeighborDown); // faces vers le bas  
             }
         }
     }
@@ -295,12 +339,86 @@ public class SubChunk extends Node3D{
      * Remplis le BitSet du subChunk (cube plein = 1, cube vide = 0)
      */
     @ChunkThread
-    private void fillSubChunkBitSet(){
+    public void fillSubChunkBitSet(){
+        this.bitSet.clear();
         for(int i = 0; i < SubChunk.MAXBLOCK; i++){
             if (this.objects[i] != null){
                 this.bitSet.set(i); // met a 1 l'indice i
             }
         }
+    }
+    
+    /**
+     * Retourne le subChunk voisin Nord
+     * @return SubChunk
+     */
+    public SubChunk getNeighborNorth(){
+        try{
+            Chunk chunk = ChunksManager.getChunk(this.x / SubChunk.CHUNKSIZEX, (this.z / SubChunk.CHUNKSIZEZ) - 1);
+            return chunk.getSubChunk(this.y / SubChunk.CHUNKSIZEY);
+        }catch (IncorrectCoordinates e){
+            return null;
+        }        
+    }
+    /**
+     * Retourne le subChunk voisin Sud
+     * @return SubChunk
+     */
+    public SubChunk getNeighborSouth(){
+        try{
+            Chunk chunk = ChunksManager.getChunk(this.x / SubChunk.CHUNKSIZEX, (this.z / SubChunk.CHUNKSIZEZ) + 1);
+            return chunk.getSubChunk(this.y / SubChunk.CHUNKSIZEY);
+        }catch(IncorrectCoordinates e){
+            return null;
+        }    
+    }
+    /**
+     * Retourne le subChunk voisin Ouest
+     * @return SubChunk
+     */
+    public SubChunk getNeighborWest(){
+        try{
+            Chunk chunk = ChunksManager.getChunk((this.x / SubChunk.CHUNKSIZEX) + 1, this.z / SubChunk.CHUNKSIZEZ);
+            return chunk.getSubChunk(this.y / SubChunk.CHUNKSIZEY);
+        }catch(IncorrectCoordinates e){
+            return null;
+        }    
+    }
+    /**
+     * Retourne le subChunk voisin Est
+     * @return SubChunk
+     */
+    public SubChunk getNeighborEast(){
+        try{
+            Chunk chunk = ChunksManager.getChunk((this.x / SubChunk.CHUNKSIZEX) - 1, this.z / SubChunk.CHUNKSIZEZ);
+            return chunk.getSubChunk(this.y / SubChunk.CHUNKSIZEY);
+        }catch(IncorrectCoordinates e){
+            return null;
+        }    
+    }
+    /**
+     * Retourne le subChunk voisin Haut
+     * @return SubChunk
+     */
+    public SubChunk getNeighborUp(){
+        try{
+            Chunk chunk = ChunksManager.getChunk(this.x / SubChunk.CHUNKSIZEX, this.z / SubChunk.CHUNKSIZEZ);
+            return chunk.getSubChunk((this.y / SubChunk.CHUNKSIZEY) + 1);
+        }catch(IncorrectCoordinates e){
+            return null;
+        }    
+    }
+    /**
+     * Retourne le subChunk voisin Bas
+     * @return SubChunk
+     */
+    public SubChunk getNeighborDown(){
+        try{
+            Chunk chunk = ChunksManager.getChunk(this.x / SubChunk.CHUNKSIZEX, this.z / SubChunk.CHUNKSIZEZ);
+            return chunk.getSubChunk((this.y / SubChunk.CHUNKSIZEY) - 1);
+        }catch(IncorrectCoordinates e){
+            return null;
+        }    
     }
 
     /**
@@ -309,7 +427,7 @@ public class SubChunk extends Node3D{
     @OpenGLThread
     @Override
     public void drawSpecific(){
-        this.mesh.drawChunkMesh(this.buffer);
+        this.mesh.drawSubChunkMesh(this.buffer);
     }
 
     @Override
@@ -317,7 +435,7 @@ public class SubChunk extends Node3D{
         Matrix4f model = new Matrix4f(parentModel)
             .translate(this.x, this.y, this.z);
         model.get(this.buffer);
-        ShaderManager.runModel(this.buffer);
+        ShadersManager.runModel(this.buffer);
         this.drawSpecific();
         // pas d'itération sur les cubes enfants
     }

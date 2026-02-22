@@ -13,8 +13,9 @@ import demo.FileLoader;
 import demo.Annotations.OpenGLThread;
 import demo.Events.InputManager;
 import demo.Geometry.Chunk;
+import demo.Geometry.SubChunk;
 import demo.Managers.BuffersManager;
-import demo.Managers.ShaderManager;
+import demo.Managers.ShadersManager;
 import demo.Managers.TexturesManager;
 import demo.Types.Color4f;
 
@@ -32,7 +33,7 @@ public class Render {
     private static float displayedFps = 0.0f;
 
     public static ConcurrentLinkedQueue<Chunk> chunkQueue = new ConcurrentLinkedQueue<>();
-    public static ConcurrentLinkedQueue<Chunk> dirtyChunks = new ConcurrentLinkedQueue<>();
+    public static ConcurrentLinkedQueue<SubChunk> dirtySubChunks = new ConcurrentLinkedQueue<>();
 
     private static FloatBuffer projBuffer = BufferUtils.createFloatBuffer(16);
 
@@ -67,7 +68,7 @@ public class Render {
         Render.initialize3D(Window.width, Window.height);
 
         // positionne la camera
-        Render.sceneGraph.getCamera().setPosition(0f, 5f, 5f);
+        Render.sceneGraph.getCamera().setPosition(0f, 20f, 0f);
 
         while ( !GLFW.glfwWindowShouldClose(windowRef) ) {  
             // démarre l'enregistrement de performances pour la frame
@@ -87,11 +88,11 @@ public class Render {
             monitor.stopTimer("logic");
             
             // utilise le shader 
-            ShaderManager.useShader();
+            ShadersManager.useShader();
             
             // donne les matrices de camera et perspective au shader
-            ShaderManager.runProjection(Render.calculateProjection(45.0f, (float) Window.width / Window.height, 0.1f, 5000.f)); // donne la perspective de l'ecran
-            ShaderManager.runView(Render.sceneGraph.getCamera().getViewMatrixBuffer()); // donne la vue de la camera
+            ShadersManager.runProjection(Render.calculateProjection(45.0f, (float) Window.width / Window.height, 0.1f, 5000.f)); // donne la perspective de l'ecran
+            ShadersManager.runView(Render.sceneGraph.getCamera().getViewMatrixBuffer()); // donne la vue de la camera
 
             // poll les chunks prêts et upload sur GPU
             Chunk chunk;
@@ -101,9 +102,9 @@ public class Render {
             }
 
             // Chunks modifiés update le VBO existant
-            Chunk dirty;
-            while ((dirty = dirtyChunks.poll()) != null) {
-                dirty.setupChunkVBOVAO();
+            SubChunk dirty;
+            while ((dirty = dirtySubChunks.poll()) != null) {
+                dirty.setupSubChunkVBOVAO();
             }
 
             // enregistre le temps de rendu
@@ -162,8 +163,8 @@ public class Render {
     public static void setChunkQueue(ConcurrentLinkedQueue<Chunk> queue){
         Render.chunkQueue = queue;
     }
-    public static void setDirtyChunkQueue(ConcurrentLinkedQueue<Chunk> queue){
-        Render.dirtyChunks = queue;
+    public static void setDirtyChunkQueue(ConcurrentLinkedQueue<SubChunk> queue){
+        Render.dirtySubChunks = queue;
     }
 
     /**
@@ -214,10 +215,10 @@ public class Render {
         GL11.glCullFace(GL11.GL_FRONT);  
 
         // Créer les shaders
-        ShaderManager.createShader();    
+        ShadersManager.createShader();    
         // récupère les ids des uniformes dans les .glsl
         // pour ne pas à avoir à les re recup à chaque frame
-        ShaderManager.getUniformLocations();    
+        ShadersManager.getUniformLocations();    
     }
     
     /**

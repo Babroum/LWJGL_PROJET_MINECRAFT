@@ -145,7 +145,7 @@ public class SubChunkMesh {
      * Définit la taille du buffer pour les vertexs
      */
     @ChunkThread
-    public void setupChunkBuffers(){
+    public void setupSubChunkBuffers(){
         this.vertexCount = 0;
         this.vertexArrayPack = new int[SubChunk.MAXBLOCK * 4 * 6];
         this.vertexBufferPack = BufferUtils.createIntBuffer(SubChunk.MAXBLOCK * 4 * 6); // 4096 blocks max * 4 sommets (1 int par sommet) * 6 faces
@@ -155,7 +155,7 @@ public class SubChunkMesh {
      * Remplis le buffer avec le tableau de sommet
      */
     @ChunkThread
-    public void fillChunkVertexBufferWithArray(){
+    public void fillSubChunkVertexBufferWithArray(){
         this.vertexBufferPack.clear();
         for(int i = 0; i < this.vertexCount; i++){
             this.vertexBufferPack.put(this.vertexArrayPack[i]);
@@ -168,18 +168,23 @@ public class SubChunkMesh {
      * Définis les ids des buffers créer avec les sommets
      */
     @OpenGLThread
-    public void createChunkVBOVAO(){
+    public void createSubChunkVBOVAO(){
         this.ids = new int[4];
         int[] result = BuffersManager.createChunkVBOVAO(this.vertexBufferPack);
         this.ids[0] = result[0];
         this.ids[1] = result[1];
     }
 
+    @OpenGLThread
+    public void deleteSubChunkVBOVAO(){
+        BuffersManager.deleteVBOVAO(this.ids);
+    }
+
     /**
      * Dessine les bordures d'un chunk avec des lignes
      */
     @OpenGLThread
-    public void createChunkBorderVBOVAO(){      
+    public void createSubChunkBorderVBOVAO(){      
         // 4 sommets du contour du chunk en bas
         int[] lines = {
             // bas
@@ -221,7 +226,7 @@ public class SubChunkMesh {
      */
     @OpenGLThread
     @Deprecated
-    public void updateChunkVBOVAO(){
+    public void updateSubChunkVBOVAO(){
         BuffersManager.updateChunkVBO(this.vertexBufferPack, this.ids[0]);
     }
 
@@ -230,7 +235,7 @@ public class SubChunkMesh {
      * @throws Empty
      */
     @OpenGLThread
-    public void drawChunkMesh(FloatBuffer buffer) throws Empty{   
+    public void drawSubChunkMesh(FloatBuffer buffer) throws Empty{   
         if (this.ids == null) throw new Empty("les vbo et vao ne sont pas initialisé");
         TexturesManager.getTextureRender().draw();
         if(KeyboardInput.isChunkBorderShow){

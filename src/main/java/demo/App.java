@@ -4,6 +4,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import demo.Enum.BlocksType;
 import demo.Geometry.Chunk;
+import demo.Geometry.SubChunk;
+import demo.Managers.ChunksManager;
 import demo.Rendering.Render;
 import demo.Rendering.SceneGraph;
 import demo.Rendering.Window;
@@ -24,22 +26,33 @@ public class App
     public static void draw(SceneGraph scene){
         // ConcurrentLinkedQueue pour passer les chunks prêts au thread OpenGL
         ConcurrentLinkedQueue<Chunk> readyChunks = new ConcurrentLinkedQueue<>();
-        ConcurrentLinkedQueue<Chunk> dirtyChunks = new ConcurrentLinkedQueue<>();
+        ConcurrentLinkedQueue<SubChunk> dirtyChunks = new ConcurrentLinkedQueue<>();
 
         // thread de génération
         Thread generationThread = new Thread(() -> {
-            Chunk chunk = new Chunk();
-            chunk.addFloorToChunk(0, 1, BlocksType.GRASS);
-            chunk.generateChunkMesh();
-            readyChunks.add(chunk);
+            Chunk chunk = ChunksManager.createChunk(0, 0);
+            Chunk chunk2 = ChunksManager.createChunk(-1, 0);
+            Chunk chunk3 = ChunksManager.createChunk(-1, -1);
+            Chunk chunk4 = ChunksManager.createChunk(0, -1);
 
-            Chunk chunk2 = new Chunk();
-            chunk2.setChunkPosition(1, 0, 0);
-            chunk2.addFloorToChunk(3, 1, BlocksType.GRASS);
-            chunk2.addBlockToChunk(BlocksType.MAX, 5, 4, 5);
-            chunk2.addFloorToChunk(16, 1, BlocksType.GRASS);
-            chunk2.generateChunkMesh();
+            chunk.addFloorToChunk(15, 1, BlocksType.GRASS);      
+            chunk.addFloorToChunk(16, 1, BlocksType.GRASS); 
+
+            chunk2.addFloorToChunk(15, 1, BlocksType.GRASS);    
+            chunk2.addFloorToChunk(16, 1, BlocksType.GRASS);  
+
+            chunk3.addFloorToChunk(15, 1, BlocksType.GRASS); 
+            chunk3.addFloorToChunk(16, 1, BlocksType.GRASS);  
+
+            chunk4.addFloorToChunk(15, 1, BlocksType.GRASS);
+            chunk4.addFloorToChunk(16, 1, BlocksType.GRASS);
+
+            ChunksManager.rebuildAllCHunks();
+
+            readyChunks.add(chunk);            
             readyChunks.add(chunk2);
+            readyChunks.add(chunk3);
+            readyChunks.add(chunk4);
         });
         /* EXEMPLE UTILISATION CASSER AJOUTER DANS INPUT MANAGER (pas opti de créer un thread a chaque click, il faudra utiliser un pool de thread)
         if (MouseInput.isLeftClick()) { // casser un bloc
@@ -61,6 +74,13 @@ public class App
                 Render.dirtyChunks.add(chunk);
             }).start();
         }
+        */
+
+        // TODO :
+        /*
+        - face culling partagé entre subchunk
+        - greedy meshing optimisé
+        - vertex pulling
         */
         
         generationThread.start();
