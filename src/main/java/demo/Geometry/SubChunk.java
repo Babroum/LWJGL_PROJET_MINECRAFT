@@ -361,10 +361,8 @@ public class SubChunk extends Node3D{
                 for (int z = 0; z < SubChunk.CHUNKSIZEZ; z++){
                     // En gros je récup tous les bits d'un int d'Axis, que je met en 1er position des int de mask a chaque boucle
                     int northBit = (this.northFaceAxis[y + x * SubChunk.CHUNKSIZEY] >> (16 + z)) & 1; // décalle de 16 bits + z vers la droite puis récupère le 1er bit
-                    if (northBit == 1) System.out.println("north bit placé à z=" + z + " x=" + x + " y=" + y);
                     this.northFaceMask[y + z * SubChunk.CHUNKSIZEZ] |= (northBit << (31 - x));
                     int southBit = (this.southFaceAxis[y + x * SubChunk.CHUNKSIZEY] >> (31 - z)) & 1; // décalle de 31 bits - z vers la droite puis récupère le 1er bit*
-                    if (southBit == 1) System.out.println("south bit placé à z=" + z + " x=" + x + " y=" + y);
                     this.southFaceMask[y + z * SubChunk.CHUNKSIZEZ] |= (southBit << (31 - x));
 
                 }

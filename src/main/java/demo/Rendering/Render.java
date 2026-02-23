@@ -14,6 +14,7 @@ import demo.Annotations.OpenGLThread;
 import demo.Events.InputManager;
 import demo.Geometry.Chunk;
 import demo.Geometry.SubChunk;
+import demo.Managers.AudioManager;
 import demo.Managers.BuffersManager;
 import demo.Managers.ShadersManager;
 import demo.Managers.TexturesManager;
@@ -45,8 +46,11 @@ public class Render {
         // initialise en mémoire les textures des caractères
         TexturesManager.loadTextures();
         try{
+            AudioManager.loadSound("bird", "/Audios/bird.ogg");
+            AudioManager.loadSound("samsung", "/Audios/samsung.ogg");
+            AudioManager.loadSound("fanta", "/Audios/fanta.ogg");
             // initialise en mémoire l'image des caractères
-            Render.textRender = new TextRender(FileLoader.loadImageFromClasspathBB("/Textures/font.png"), 20, 20, 19,
+            Render.textRender = new TextRender(FileLoader.loadFileFromClasspathBB("/Textures/font.png"), 20, 20, 19,
                                         " !\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~");          
         }catch(IOException e){
             System.out.println(e);
@@ -69,6 +73,9 @@ public class Render {
 
         // positionne la camera
         Render.sceneGraph.getCamera().setPosition(0f, 20f, 0f);
+
+        AudioManager.playLoop("bird");
+        AudioManager.setVolume("bird", 10f);
 
         while ( !GLFW.glfwWindowShouldClose(windowRef) ) {  
             // démarre l'enregistrement de performances pour la frame
@@ -106,7 +113,6 @@ public class Render {
             while ((dirty = dirtySubChunks.poll()) != null) {
                 dirty.setupSubChunkVBOVAO();
             }
-
             // enregistre le temps de rendu
             monitor.startTimer("render");
             // Dessine la scène
@@ -153,6 +159,7 @@ public class Render {
             }*/
 
             // termine l'enregistrement de donnée pour la frame
+            AudioManager.cleanupTempSources();
             monitor.endFrame();
 		}
 

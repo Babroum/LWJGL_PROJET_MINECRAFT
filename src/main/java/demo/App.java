@@ -13,11 +13,10 @@ import demo.Rendering.Window;
 public class App 
 {   
     
-    public static void main( String[] args )
+    public static void main( String[] args ) throws Exception
     {
         // création de la fenêtre 
-        new Window(1700,860);
-        
+        new Window(1200,400);
         // donne le draw en paramètre
         // l'exécutera après l'initialisation d'opengl
         Window.startWindow(() -> draw(Window.getSceneGraph()));        
@@ -35,17 +34,14 @@ public class App
             Chunk chunk3 = ChunksManager.createChunk(-1, -1);
             Chunk chunk4 = ChunksManager.createChunk(0, -1);
 
-            chunk.addFloorToChunk(15, 1, BlocksType.GRASS);      
-            chunk.addFloorToChunk(16, 1, BlocksType.GRASS); 
+            chunk.addFloorToChunk(0, 16, BlocksType.HOMER);    
+            chunk.addFloorToChunk(16, 16, BlocksType.HOMER);     
 
-            chunk2.addFloorToChunk(15, 1, BlocksType.GRASS);    
-            chunk2.addFloorToChunk(16, 1, BlocksType.GRASS);  
+            chunk2.addFloorToChunk(0, 1, BlocksType.GRASS);    
 
-            chunk3.addFloorToChunk(15, 1, BlocksType.GRASS); 
-            chunk3.addFloorToChunk(16, 1, BlocksType.GRASS);  
+            chunk3.addFloorToChunk(0, 1, BlocksType.GRASS);   
 
-            chunk4.addFloorToChunk(15, 1, BlocksType.GRASS);
-            chunk4.addFloorToChunk(16, 1, BlocksType.GRASS);
+            chunk4.addFloorToChunk(0, 1, BlocksType.GRASS);
 
             ChunksManager.rebuildAllCHunks();
 

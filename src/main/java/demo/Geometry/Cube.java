@@ -11,10 +11,7 @@ public class Cube extends Object3D{
     }
 
     public Cube(BlocksType type){   
-        this.blockType = type;
-        if (type == BlocksType.AIR){
-            return;
-        }
+
         Face face = new Face();        
         face.direction = Directions.NORTH;
         face.texture = type.getTexture(face.direction);   
