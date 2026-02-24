@@ -13,7 +13,7 @@ import demo.Exceptions.ShaderManagerError;
 /**
  * Gère les shaders
  */
-public abstract class ShaderManager {
+public abstract class ShadersManager {
 
     private static int programId;
     private static int programTextId;
@@ -38,27 +38,27 @@ public abstract class ShaderManager {
             return;
         }
 
-        int[] ids = ShaderManager.create(vertexTextShader, fragmentTextShader);
+        int[] ids = ShadersManager.create(vertexTextShader, fragmentTextShader);
         int vsId = ids[0];
         int fgId = ids[1];
 
         // attacher les shader compilés au programme
-        ShaderManager.programTextId = GL20.glCreateProgram();
-        GL20.glAttachShader(ShaderManager.programTextId, vsId);
-        GL20.glAttachShader(ShaderManager.programTextId, fgId);
+        ShadersManager.programTextId = GL20.glCreateProgram();
+        GL20.glAttachShader(ShadersManager.programTextId, vsId);
+        GL20.glAttachShader(ShadersManager.programTextId, fgId);
 
         // vérifie que les sorties du vertex shader corresponde aux entrées du fragment shader
-        GL20.glLinkProgram(ShaderManager.programTextId);
-        int success = GL20.glGetProgrami(ShaderManager.programTextId, GL20.GL_LINK_STATUS);
+        GL20.glLinkProgram(ShadersManager.programTextId);
+        int success = GL20.glGetProgrami(ShadersManager.programTextId, GL20.GL_LINK_STATUS);
         if (success == GL20.GL_FALSE){
-            throw new ShaderManagerError(GL20.glGetProgramInfoLog(ShaderManager.programTextId));
+            throw new ShaderManagerError(GL20.glGetProgramInfoLog(ShadersManager.programTextId));
         }
 
         // une fois les vertex liés on détache et supprime les shaders
-        GL20.glDetachShader(ShaderManager.programTextId, vsId);
+        GL20.glDetachShader(ShadersManager.programTextId, vsId);
         GL20.glDeleteShader(vsId);
 
-        GL20.glDetachShader(ShaderManager.programTextId, fgId);
+        GL20.glDetachShader(ShadersManager.programTextId, fgId);
         GL20.glDeleteShader(fgId);
     }
 
@@ -78,27 +78,27 @@ public abstract class ShaderManager {
             return;
         }
 
-        int[] ids = ShaderManager.create(vertexShader, fragmentShader);
+        int[] ids = ShadersManager.create(vertexShader, fragmentShader);
         int vsId = ids[0];
         int fgId = ids[1];
         
         // attacher les shader compilés au programme
-        ShaderManager.programId = GL20.glCreateProgram();
-        GL20.glAttachShader(ShaderManager.programId, vsId);
-        GL20.glAttachShader(ShaderManager.programId, fgId);
+        ShadersManager.programId = GL20.glCreateProgram();
+        GL20.glAttachShader(ShadersManager.programId, vsId);
+        GL20.glAttachShader(ShadersManager.programId, fgId);
 
         // vérifie que les sorties du vertex shader corresponde aux entrées du fragment shader
-        GL20.glLinkProgram(ShaderManager.programId);
-        int success = GL20.glGetProgrami(ShaderManager.programId, GL20.GL_LINK_STATUS);
+        GL20.glLinkProgram(ShadersManager.programId);
+        int success = GL20.glGetProgrami(ShadersManager.programId, GL20.GL_LINK_STATUS);
         if (success == GL20.GL_FALSE){
-            throw new ShaderManagerError(GL20.glGetProgramInfoLog(ShaderManager.programId));
+            throw new ShaderManagerError(GL20.glGetProgramInfoLog(ShadersManager.programId));
         }
 
         // une fois les vertex liés on détache et supprime les shaders
-        GL20.glDetachShader(ShaderManager.programId, vsId);
+        GL20.glDetachShader(ShadersManager.programId, vsId);
         GL20.glDeleteShader(vsId);
 
-        GL20.glDetachShader(ShaderManager.programId, fgId);
+        GL20.glDetachShader(ShadersManager.programId, fgId);
         GL20.glDeleteShader(fgId);
     }
 
@@ -137,12 +137,12 @@ public abstract class ShaderManager {
 
     @OpenGLThread
     public static void useShader(){
-        GL20.glUseProgram(ShaderManager.programId);
+        GL20.glUseProgram(ShadersManager.programId);
     }
     
     @OpenGLThread
     public static void useTextShader(){
-        GL20.glUseProgram(ShaderManager.programTextId);
+        GL20.glUseProgram(ShadersManager.programTextId);
     }
 
     /**
@@ -152,7 +152,7 @@ public abstract class ShaderManager {
     @OpenGLThread 
     public static void runProjection(FloatBuffer proj){
         proj.rewind();
-        GL20.glUniformMatrix4fv(ShaderManager.locationProj, false, proj);        
+        GL20.glUniformMatrix4fv(ShadersManager.locationProj, false, proj);        
     }
 
     /**
@@ -162,7 +162,7 @@ public abstract class ShaderManager {
     @OpenGLThread 
     public static void runView(FloatBuffer view){
         view.rewind();
-        GL20.glUniformMatrix4fv(ShaderManager.locationView, false, view);
+        GL20.glUniformMatrix4fv(ShadersManager.locationView, false, view);
     }
     /**
      * Envoie le model des cubes au shader
@@ -171,7 +171,7 @@ public abstract class ShaderManager {
     @OpenGLThread
     public static void runModel(FloatBuffer model){
         model.rewind();
-        GL20.glUniformMatrix4fv(ShaderManager.locationModel, false, model);
+        GL20.glUniformMatrix4fv(ShadersManager.locationModel, false, model);
     }
 
     /**
@@ -188,7 +188,7 @@ public abstract class ShaderManager {
             lastHeight = height;
         }
         textOrthoMatrix.get(buffer);
-        GL20.glUniformMatrix4fv(ShaderManager.locationOrtho, false, buffer);
+        GL20.glUniformMatrix4fv(ShadersManager.locationOrtho, false, buffer);
     }
 
     /**
@@ -200,26 +200,26 @@ public abstract class ShaderManager {
      */
     @OpenGLThread
     public static void runTextFragmentColor(float red, float green, float blue, float alpha){
-        GL20.glUniform4f(ShaderManager.locationTextColor, red, green, blue, alpha);
+        GL20.glUniform4f(ShadersManager.locationTextColor, red, green, blue, alpha);
     }
 
     @OpenGLThread
     public static void closeProgramId(){
-        GL20.glDeleteProgram(ShaderManager.programId);
+        GL20.glDeleteProgram(ShadersManager.programId);
     }
 
     @OpenGLThread
     public static void closeProgramTextId(){
-        GL20.glDeleteProgram(ShaderManager.programTextId);
+        GL20.glDeleteProgram(ShadersManager.programTextId);
     }
 
     @OpenGLThread
     public static int getProgramId(){
-        return ShaderManager.programId;
+        return ShadersManager.programId;
     }
 
     @OpenGLThread
     public static int getProgramTextId(){
-        return ShaderManager.programTextId;
+        return ShadersManager.programTextId;
     }
 }

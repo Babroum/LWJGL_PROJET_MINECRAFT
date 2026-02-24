@@ -8,8 +8,7 @@ import org.lwjgl.BufferUtils;
 import demo.Annotations.OpenGLThread;
 import demo.Exceptions.ArrayFull;
 import demo.Exceptions.Empty;
-import demo.Managers.ShaderManager;
-import demo.Rendering.Render;
+import demo.Managers.ShadersManager;
 
 /**
  * Un nœud définit par des coordonnées, angles et tailles.
@@ -62,7 +61,7 @@ public class Node3D {
     /**
      * Tableau de nœud enfant.
      */
-    private Node3D[] children = new Node3D[Chunk.MAXBLOCK]; // 16 * 16 * 255 = max de bloc par chunk
+    private Node3D[] children = new Node3D[SubChunk.MAXBLOCK]; // 16 * 16 * 16 = max de bloc par subchunk
     public FloatBuffer buffer = BufferUtils.createFloatBuffer(16);
     private int nbChildren;
 
@@ -88,7 +87,6 @@ public class Node3D {
      */
     @OpenGLThread
     public void drawNode(Matrix4f parentModel){
-        Render.monitor.incrementNodeCount();
         // Crée la model matrix   
         // Placement des nœuds enfants relativement à la position de ce nœud
         Matrix4f model = new Matrix4f(parentModel)
@@ -98,7 +96,7 @@ public class Node3D {
             .rotateZ((float) Math.toRadians(this.angleZ)) // Rotation autour de l'axe Z
             .scale(this.scaleX, this.scaleY, this.scaleZ); // Application des facteurs d'échelle
         model.get(this.buffer);
-        ShaderManager.runModel(this.buffer);
+        ShadersManager.runModel(this.buffer);
 
         // Dessin spécifique
         this.drawSpecific();

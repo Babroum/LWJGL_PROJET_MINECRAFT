@@ -7,11 +7,13 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
 
+import demo.Enum.Directions;
+import demo.Annotations.ChunkThread;
 import demo.Annotations.OpenGLThread;
 import demo.Events.KeyboardInput;
 import demo.Exceptions.ArrayEmpty;
 import demo.Exceptions.Empty;
-import demo.Geometry.Chunk;
+import demo.Geometry.SubChunk;
 import demo.Managers.BuffersManager;
 import demo.Managers.TexturesManager;
 import demo.Rendering.Render;
@@ -19,6 +21,7 @@ import demo.Rendering.Render;
 /**
  * Une Maille décrivant l'ensemble des ..
  */
+// PERFORMANCE CALCULER SEULEMENT SUR LE PACKING ET PAS TOUT LE RESTE
 // IL NE VA PLUS AVOIR D'EBO CAR
 // SANS VERTEX PACKING (AVEC EBO) : (AVANT)
 // 4 sommets * 6 ints = 24 ints par faces
@@ -48,12 +51,13 @@ import demo.Rendering.Render;
 // ~8.7 Go utilisés
 
 // meilleur : VERTEX PACKING SANS EBO
-public class ChunkMesh {
+public class SubChunkMesh {
 
     // Tout les sommets de tout les objets en IntBuffer pour opengl pack
     private IntBuffer vertexBufferPack;
     // Tout les sommets de tout les objets avant la transformation en IntBuffer pack
     private int[] vertexArrayPack;
+
     /**
      * Le nombre de sommet dans la maille
      */
@@ -76,6 +80,7 @@ public class ChunkMesh {
     //[ 00000 | 00000000 | 00000 | 0 | 0 | 000 | 000000000 ]
     //    x        y         z     u   v   dir   textureId
     // 512 textures max
+    @ChunkThread
     public void addObjectVertexToArray(int[] array, int cubeX, int cubeY, int cubeZ) throws ArrayEmpty{
         if (array.length < 7){
             throw new ArrayEmpty();
@@ -85,6 +90,7 @@ public class ChunkMesh {
             int packed = 0;
             // |= c'est le OU permet de combiner sans supprimer les valeurs
             // & c'est un ET il applique un masque pour la sécurité au cas ou par exemple on recoit 6 bits au lieu de 5
+
             packed |= ((array[i]   + cubeX) & 0x1F) << 27; // 5 bits, décale de 27 bits (donc prend les 5 premiers bits, 32 - 27 = 5)
             packed |= ((array[i+1] + cubeY) & 0xFF) << 19; // 8 bits
             packed |= ((array[i+2] + cubeZ) & 0x1F) << 14; // 5 bits
@@ -102,18 +108,56 @@ public class ChunkMesh {
     }
 
     /**
+     * Ajoute les mailles d'un cube à la maille du chunk <br>
+     * <b>Vertex Packing Ici</b>
+     * @param array
+     * @param cubeX
+     * @param cubeY
+     * @param cubeZ
+     */
+    //[ 00000 | 00000000 | 00000 | 0 | 0 | 000 | 000000000 ]
+    //    x        y         z     u   v   dir   textureId
+    // 512 textures max
+    @ChunkThread
+    public void addObjectFaceVertexToArray(int[] array, int cubeX, int cubeY, int cubeZ) throws ArrayEmpty{
+        if (array.length < 7){
+            throw new ArrayEmpty();
+        }
+        // on garde la face
+        for(int i = 0; i < array.length; i += 7){
+            int packed = 0;
+            // |= c'est le OU permet de combiner sans supprimer les valeurs
+            // & c'est un ET il applique un masque pour la sécurité au cas ou par exemple on recoit 6 bits au lieu de 5
+            packed |= ((array[i]   + cubeX) & 0x1F) << 27; // 5 bits, décale de 27 bits (donc prend les 5 premiers bits, 32 - 27 = 5)
+            packed |= ((array[i+1] + cubeY) & 0xFF) << 19; // 8 bits
+            packed |= ((array[i+2] + cubeZ) & 0x1F) << 14; // 5 bits
+            packed |= (array[i+3] & 0x1)            << 13; // 1 bit
+            packed |= (array[i+4] & 0x1)            << 12; // 1 bit
+            packed |= (array[i+5] & 0x7)   << 9;  // 3 bits
+            packed |= (array[i+6] & 0x1FF);                // 9 bits
+
+            this.vertexArrayPack[this.vertexCount] = packed;
+
+            this.vertexCount++;;
+        }    
+        this.faceCount++;
+    }
+
+    /**
      * Définit la taille du buffer pour les vertexs
      */
-    public void setupChunkBuffers(){
+    @ChunkThread
+    public void setupSubChunkBuffers(){
         this.vertexCount = 0;
-        this.vertexArrayPack = new int[Chunk.MAXBLOCK * 4 * 6];
-        this.vertexBufferPack = BufferUtils.createIntBuffer(Chunk.MAXBLOCK * 4 * 6); // 65536 blocks max * 4 sommets (1 int par sommet) * 6 faces
+        this.vertexArrayPack = new int[SubChunk.MAXBLOCK * 4 * 6];
+        this.vertexBufferPack = BufferUtils.createIntBuffer(SubChunk.MAXBLOCK * 4 * 6); // 4096 blocks max * 4 sommets (1 int par sommet) * 6 faces
     }
 
     /**
      * Remplis le buffer avec le tableau de sommet
      */
-    public void fillChunkVertexBufferWithArray(){
+    @ChunkThread
+    public void fillSubChunkVertexBufferWithArray(){
         this.vertexBufferPack.clear();
         for(int i = 0; i < this.vertexCount; i++){
             this.vertexBufferPack.put(this.vertexArrayPack[i]);
@@ -122,36 +166,27 @@ public class ChunkMesh {
     }
 
     /**
-     * Permet d'ajouter un bloc et de vider puis remplir le buffer du chunk <br>
-     * <b>Les données ne doivent pas être packé !</b>
-     * @param array int[], la maille d'un bloc à ajouté
-     * @param cubeX
-     * @param cubeY
-     * @param cubeZ
-     */
-    public void updateChunkVertexBufferWithArray(int[] array, int cubeX, int cubeY, int cubeZ){
-        this.addObjectVertexToArray(array, cubeX, cubeY, cubeZ);
-        this.fillChunkVertexBufferWithArray();
-        this.updateChunkVBOVAO();
-    }
-
-    /**
      * Créer les buffers sur la CG <br>
      * Définis les ids des buffers créer avec les sommets
      */
     @OpenGLThread
-    public void createChunkVBOVAO(){
+    public void createSubChunkVBOVAO(){
         this.ids = new int[4];
         int[] result = BuffersManager.createChunkVBOVAO(this.vertexBufferPack);
         this.ids[0] = result[0];
         this.ids[1] = result[1];
     }
 
+    @OpenGLThread
+    public void deleteSubChunkVBOVAO(){
+        BuffersManager.deleteVBOVAO(this.ids);
+    }
+
     /**
      * Dessine les bordures d'un chunk avec des lignes
      */
     @OpenGLThread
-    public void createChunkBorderVBOVAO(){      
+    public void createSubChunkBorderVBOVAO(){      
         // 4 sommets du contour du chunk en bas
         int[] lines = {
             // bas
@@ -160,15 +195,15 @@ public class ChunkMesh {
             16, 0, 16,  0, 0, 16,
             0, 0, 16,   0, 0, 0,
             // verticales
-            0, 0, 0,    0, 255, 0,
-            16, 0, 0,   16, 255, 0,
-            16, 0, 16,  16, 255, 16,
-            0, 0, 16,   0, 255, 16,
+            0, 0, 0,    0, 16, 0,
+            16, 0, 0,   16, 16, 0,
+            16, 0, 16,  16, 16, 16,
+            0, 0, 16,   0, 16, 16,
             // haut
-            0, 255, 0,  16, 255, 0,
-            16, 255, 0, 16, 255, 16,
-            16, 255, 16,0, 255, 16,
-            0, 255, 16, 0, 255, 0
+            0, 16, 0,  16, 16, 0,
+            16, 16, 0, 16, 16, 16,
+            16, 16, 16,0, 16, 16,
+            0, 16, 16, 0, 16, 0
         };   
         
         IntBuffer linesBuffer = BufferUtils.createIntBuffer(lines.length);
@@ -189,9 +224,11 @@ public class ChunkMesh {
 
     /**
      * Met à jour le vbo du chunk
+     * Pas utile pour l'instant
      */
     @OpenGLThread
-    public void updateChunkVBOVAO(){
+    @Deprecated
+    public void updateSubChunkVBOVAO(){
         BuffersManager.updateChunkVBO(this.vertexBufferPack, this.ids[0]);
     }
 
@@ -200,7 +237,7 @@ public class ChunkMesh {
      * @throws Empty
      */
     @OpenGLThread
-    public void drawChunkMesh(FloatBuffer buffer) throws Empty{   
+    public void drawSubChunkMesh(FloatBuffer buffer) throws Empty{   
         if (this.ids == null) throw new Empty("les vbo et vao ne sont pas initialisé");
         TexturesManager.getTextureRender().draw();
         if(KeyboardInput.isChunkBorderShow){

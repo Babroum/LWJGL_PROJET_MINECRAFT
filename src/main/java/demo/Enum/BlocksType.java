@@ -1,9 +1,12 @@
 package demo.Enum;
 
+import demo.Geometry.Cube;
+
 /**
  * Liste de blocks qui existent
  */
 public enum BlocksType {
+    AIR,
     GRASS,
     COBBLESTONE,
     STONE,
@@ -11,6 +14,15 @@ public enum BlocksType {
     MAX,
     HOMER,
     NULL;
+
+    private Cube cube;
+
+    public Cube getCube(){
+        if (this.cube == null && this != AIR){
+            this.cube = new Cube(this);
+        }
+        return this.cube;
+    }
 
     public TexturesType getTexture(Directions direction){
         switch(this){ // this = le type de bloc ex: GRASS

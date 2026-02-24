@@ -10,23 +10,24 @@ public class Cube extends Object3D{
         this(BlocksType.NULL);
     }
 
-    public Cube(BlocksType texture){   
+    public Cube(BlocksType type){   
+
         Face face = new Face();        
-        face.direction = Directions.SOUTH;
-        face.texture = texture.getTexture(face.direction);   
+        face.direction = Directions.NORTH;
+        face.texture = type.getTexture(face.direction);   
         // triangle 1
-        face.addVertex(0, 0, 0);
-        face.addVertex(1, 0, 0);
-        face.addVertex(1, 1, 0);
+        face.addVertex(0, 0, 0); // 1
+        face.addVertex(1, 0, 0); // 2
+        face.addVertex(1, 1, 0); // 3
         // triangle 2
-        face.addVertex(1, 1, 0);
-        face.addVertex(0, 1, 0);
-        face.addVertex(0, 0, 0);   
+        face.addVertex(1, 1, 0); // 3
+        face.addVertex(0, 1, 0); // 4
+        face.addVertex(0, 0, 0); // 1 
         this.mesh.addFaces(face);
 
         face = new Face();
-        face.direction = Directions.NORTH;
-        face.texture = texture.getTexture(face.direction);
+        face.direction = Directions.SOUTH;
+        face.texture = type.getTexture(face.direction);
         face.addVertex(1, 0, 1);
         face.addVertex(0, 0, 1);
         face.addVertex(0, 1, 1);
@@ -38,7 +39,7 @@ public class Cube extends Object3D{
 
         face = new Face();
         face.direction = Directions.WEST;
-        face.texture = texture.getTexture(face.direction);
+        face.texture = type.getTexture(face.direction);
         face.addVertex(1, 0, 0);
         face.addVertex(1, 0, 1);
         face.addVertex(1, 1, 1);
@@ -50,7 +51,7 @@ public class Cube extends Object3D{
 
         face = new Face();
         face.direction = Directions.EAST;
-        face.texture = texture.getTexture(face.direction);
+        face.texture = type.getTexture(face.direction);
         face.addVertex(0, 0, 1);
         face.addVertex(0, 0, 0);
         face.addVertex(0, 1, 0);
@@ -62,7 +63,7 @@ public class Cube extends Object3D{
 
         face = new Face();
         face.direction = Directions.UP;
-        face.texture = texture.getTexture(face.direction);
+        face.texture = type.getTexture(face.direction);
         face.addVertex(0, 1, 0);
         face.addVertex(1, 1, 0);
         face.addVertex(1, 1, 1);
@@ -74,7 +75,7 @@ public class Cube extends Object3D{
 
         face = new Face();
         face.direction = Directions.DOWN;
-        face.texture = texture.getTexture(face.direction);
+        face.texture = type.getTexture(face.direction);
         face.addVertex(0, 0, 1);
         face.addVertex(1, 0, 1);
         face.addVertex(1, 0, 0);

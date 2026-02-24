@@ -10,7 +10,7 @@ import org.lwjgl.stb.STBImage;
 
 import demo.Annotations.OpenGLThread;
 import demo.Enum.TexturesType;
-import demo.Managers.ShaderManager;
+import demo.Managers.ShadersManager;
 
 public class TextureRender {
     private int textureId;
@@ -52,6 +52,6 @@ public class TextureRender {
         if(this.textureId < 0){System.out.println("TextureRender: draw: pas de textureId"); return;}
         GL30.glActiveTexture(GL30.GL_TEXTURE0);
         GL11.glBindTexture(GL30.GL_TEXTURE_2D_ARRAY, this.textureId);
-        GL30.glUniform1i(GL30.glGetUniformLocation(ShaderManager.getProgramId(), "tex"), 0);
+        GL30.glUniform1i(GL30.glGetUniformLocation(ShadersManager.getProgramId(), "tex"), 0);
     }
 }

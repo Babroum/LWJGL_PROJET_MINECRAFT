@@ -2,6 +2,7 @@ package demo.Rendering;
 
 import java.io.IOException;
 import java.nio.FloatBuffer;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.joml.Matrix4f;
 import org.lwjgl.BufferUtils;
@@ -11,8 +12,11 @@ import org.lwjgl.opengl.GL11;
 import demo.FileLoader;
 import demo.Annotations.OpenGLThread;
 import demo.Events.InputManager;
+import demo.Geometry.Chunk;
+import demo.Geometry.SubChunk;
+import demo.Managers.AudioManager;
 import demo.Managers.BuffersManager;
-import demo.Managers.ShaderManager;
+import demo.Managers.ShadersManager;
 import demo.Managers.TexturesManager;
 import demo.Types.Color4f;
 
@@ -29,6 +33,9 @@ public class Render {
     private static int frameCount;
     private static float displayedFps = 0.0f;
 
+    public static ConcurrentLinkedQueue<Chunk> chunkQueue = new ConcurrentLinkedQueue<>();
+    public static ConcurrentLinkedQueue<SubChunk> dirtySubChunks = new ConcurrentLinkedQueue<>();
+
     private static FloatBuffer projBuffer = BufferUtils.createFloatBuffer(16);
 
     /**
@@ -39,8 +46,11 @@ public class Render {
         // initialise en mémoire les textures des caractères
         TexturesManager.loadTextures();
         try{
+            AudioManager.loadSound("bird", "/Audios/bird.ogg");
+            AudioManager.loadSound("samsung", "/Audios/samsung.ogg");
+            AudioManager.loadSound("fanta", "/Audios/fanta.ogg");
             // initialise en mémoire l'image des caractères
-            Render.textRender = new TextRender(FileLoader.loadImageFromClasspathBB("/Textures/font.png"), 20, 20, 19,
+            Render.textRender = new TextRender(FileLoader.loadFileFromClasspathBB("/Textures/font.png"), 20, 20, 19,
                                         " !\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~");          
         }catch(IOException e){
             System.out.println(e);
@@ -62,7 +72,10 @@ public class Render {
         Render.initialize3D(Window.width, Window.height);
 
         // positionne la camera
-        Render.sceneGraph.getCamera().setPosition(0f, 5f, 5f);
+        Render.sceneGraph.getCamera().setPosition(0f, 20f, 0f);
+
+        AudioManager.playLoop("bird");
+        AudioManager.setVolume("bird", 10f);
 
         while ( !GLFW.glfwWindowShouldClose(windowRef) ) {  
             // démarre l'enregistrement de performances pour la frame
@@ -82,12 +95,24 @@ public class Render {
             monitor.stopTimer("logic");
             
             // utilise le shader 
-            ShaderManager.useShader();
+            ShadersManager.useShader();
             
             // donne les matrices de camera et perspective au shader
-            ShaderManager.runProjection(Render.calculateProjection(45.0f, (float) Window.width / Window.height, 0.1f, 5000.f)); // donne la perspective de l'ecran
-            ShaderManager.runView(Render.sceneGraph.getCamera().getViewMatrixBuffer()); // donne la vue de la camera
+            ShadersManager.runProjection(Render.calculateProjection(45.0f, (float) Window.width / Window.height, 0.1f, 5000.f)); // donne la perspective de l'ecran
+            ShadersManager.runView(Render.sceneGraph.getCamera().getViewMatrixBuffer()); // donne la vue de la camera
 
+            // poll les chunks prêts et upload sur GPU
+            Chunk chunk;
+            while((chunk = Render.chunkQueue.poll()) != null){
+                chunk.setupChunkVBOVAO();
+                Render.sceneGraph.root.addChild(chunk);
+            }
+
+            // Chunks modifiés update le VBO existant
+            SubChunk dirty;
+            while ((dirty = dirtySubChunks.poll()) != null) {
+                dirty.setupSubChunkVBOVAO();
+            }
             // enregistre le temps de rendu
             monitor.startTimer("render");
             // Dessine la scène
@@ -134,11 +159,19 @@ public class Render {
             }*/
 
             // termine l'enregistrement de donnée pour la frame
+            AudioManager.cleanupTempSources();
             monitor.endFrame();
 		}
 
         // ferme le fenêtre quand la boucle de rendu est fini
         Window.exitWindow();
+    }
+
+    public static void setChunkQueue(ConcurrentLinkedQueue<Chunk> queue){
+        Render.chunkQueue = queue;
+    }
+    public static void setDirtyChunkQueue(ConcurrentLinkedQueue<SubChunk> queue){
+        Render.dirtySubChunks = queue;
     }
 
     /**
@@ -189,10 +222,10 @@ public class Render {
         GL11.glCullFace(GL11.GL_FRONT);  
 
         // Créer les shaders
-        ShaderManager.createShader();    
+        ShadersManager.createShader();    
         // récupère les ids des uniformes dans les .glsl
         // pour ne pas à avoir à les re recup à chaque frame
-        ShaderManager.getUniformLocations();    
+        ShadersManager.getUniformLocations();    
     }
     
     /**

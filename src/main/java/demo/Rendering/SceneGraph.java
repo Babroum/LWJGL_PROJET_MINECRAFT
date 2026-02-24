@@ -7,6 +7,7 @@ import demo.Annotations.OpenGLThread;
 import demo.Geometry.Clone3D;
 import demo.Geometry.Node3D;
 import demo.Geometry.Object3D;
+import demo.Managers.ChunksManager;
 import demo.Types.Color4f;
 
 /**
@@ -17,6 +18,8 @@ public class SceneGraph {
     public final Node3D root = new Node3D();
     private Color4f backGroundColor = Color4f.WHITE;    
     private Camera camera = new Camera();
+    // a replacer dans une autre class
+    private ChunksManager chunksManager = new ChunksManager();
 
     /**
      * Définis la couleur de la scène
@@ -40,6 +43,14 @@ public class SceneGraph {
      */
     public Camera getCamera(){
         return this.camera;
+    }
+
+    /**
+     * Retourne la camera de la scène
+     * @return Camera
+     */
+    public ChunksManager getChunksManager(){
+        return this.chunksManager;
     }
 
     /**

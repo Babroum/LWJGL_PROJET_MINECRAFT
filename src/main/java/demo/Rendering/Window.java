@@ -13,8 +13,8 @@ import org.lwjgl.system.MemoryUtil;
 import demo.Annotations.OpenGLThread;
 import demo.Events.InputManager;
 import demo.Events.WindowCloseEventManager;
-import demo.Managers.BuffersManager;
-import demo.Managers.ShaderManager;
+import demo.Managers.AudioManager;
+import demo.Managers.ShadersManager;
 
 /**
  * La fenêtre géré par GLFW
@@ -98,12 +98,11 @@ public class Window {
 
         GL.createCapabilities(); // Will let lwjgl know we want to use this context as the context to draw with
 
+        AudioManager.init();
+
         Render.setupBeforeRendering();
 
         if(Window.onReady != null) Window.onReady.run(); // attend que le thread est fini de créer opengl avant de lancer le code
-
-        // définis les buffers pour chaque chunk avant le rendu
-        BuffersManager.setupVBOVAOEBORecursive(Window.getSceneGraph().root);
         
         //callback pour redimension de fenetre en gros quand fenetre est redimensionnee executer ce code
         GLFW.glfwSetFramebufferSizeCallback(Window.window, new GLFWFramebufferSizeCallbackI(){
@@ -126,11 +125,12 @@ public class Window {
         GLFW.glfwDestroyWindow(Window.window);
         // On ferme les événements GLFW
         Window.closeGLFW();
+        AudioManager.cleanup();
         System.exit(0);
     }
 
     public static void closeWindow(){
-        ShaderManager.closeProgramId();
+        ShadersManager.closeProgramId();
         Window.windowCloseEventManager.closeWidow(Window.window);
     }
 

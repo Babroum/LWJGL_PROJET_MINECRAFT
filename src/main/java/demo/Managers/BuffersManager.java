@@ -8,9 +8,6 @@ import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
 
 import demo.Annotations.OpenGLThread;
-import demo.Geometry.Chunk;
-import demo.Geometry.Node3D;
-import demo.Geometry.Object3D;
 
 /**
  * Gère les buffers tel que VBO VAO EBO
@@ -127,24 +124,5 @@ public class BuffersManager {
         GL30.glDeleteVertexArrays(ids[0]); // vao
         GL20.glDeleteBuffers(ids[1]); // vbo
         activeVAOCount--;
-    }
-
-    @OpenGLThread
-    public static void setupVBOVAOEBORecursive(Node3D node){
-        if (node == null) return;
-        if (node.getChildren() == null) return;
-
-        // on récursive sur les enfants
-        for(Node3D child : node.getChildren()){
-            setupVBOVAOEBORecursive(child);
-        }
-
-        if (node instanceof Object3D){
-            ((Object3D)node).setupObjectBuffers();
-        }
-        
-        if (node instanceof Chunk){
-            ((Chunk)node).setupChunkBuffers();
-        }
     }
 }

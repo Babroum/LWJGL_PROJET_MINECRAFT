@@ -2,73 +2,61 @@ package demo.Geometry;
 
 import org.joml.Matrix4f;
 
+import demo.Annotations.ChunkThread;
 import demo.Annotations.OpenGLThread;
 import demo.Enum.BlocksType;
 import demo.Exceptions.IncorrectCoordinates;
-import demo.Managers.ShaderManager;
-import demo.Meshing.ChunkMesh;
+import demo.Rendering.Render;
 
+/**
+ * Un chunk, contient des SubChunks
+ */
 public class Chunk extends Node3D{
-
-    public static final int CHUNKSIZEX = 16;
-    public static final int CHUNKSIZEY = 255;
-    public static final int CHUNKSIZEZ = 16;
-    public static final int MAXBLOCK = 65280;
-
-    public ChunkMesh mesh = new ChunkMesh();
-    private Object3D[] objects;
-    private int objectCount;
-
-    public Chunk(){
-        this.objects = new Object3D[Chunk.MAXBLOCK];
-        this.objectCount = 0;
-        // définit la taille du buffer et du tableau de vertex
-        this.mesh.setupChunkBuffers();
-    }
-
+    
+    public static final int SUBCHUNKCOUNT = 16;
+    public SubChunk[] subChunks;
+    public String name;
+    
     /**
-     * Place le chunk avec des coordonnées par rapport au autres chunk
-     * @param chunkX
-     * @param chunkY
-     * @param chunkZ
+     * Initialise les subChunks du chunks
      */
-    public void setChunkPosition(int chunkX, int chunkY, int chunkZ){
-        this.x = chunkX * Chunk.CHUNKSIZEX;
-        this.y = chunkY * Chunk.CHUNKSIZEY;
-        this.z = chunkZ * Chunk.CHUNKSIZEZ;
+    @ChunkThread
+    public Chunk(String name){
+        this.subChunks = new SubChunk[Chunk.SUBCHUNKCOUNT];
+        for (int i = 0; i < this.subChunks.length; i++){
+            this.subChunks[i] = new SubChunk();
+            this.subChunks[i].setSubChunkPosition(0, i * SubChunk.CHUNKSIZEY, 0);
+            this.subChunks[i].name = name + "," + i;
+            Render.monitor.addSubChunkCount();
+        }
+        Render.monitor.addChunkCount();
     }
 
     /**
-     * Remplis le vbo avec les données des objets avant le rendu
+     * Définis la position du chunk
+     * @param chunkX int
+     * @param chunkZ int
      */
-    public void setupChunkBuffers(){
-        // envoie la maille des objets à la maille
-        this.uploadMesh();
-        // rempli le buffer de la maille avec les données pack (vertex packing)
-        this.mesh.fillChunkVertexBufferWithArray();
-        // créer les vbo vao avec le buffer rempli
-        this.mesh.createChunkVBOVAO();
-        this.mesh.createChunkBorderVBOVAO();
+    @ChunkThread
+    public void setChunkPosition(int chunkX, int chunkZ){
+        this.x = chunkX * SubChunk.CHUNKSIZEX;
+        this.z = chunkZ * SubChunk.CHUNKSIZEZ;
+        for (int i = 0; i < this.subChunks.length; i++){
+            this.subChunks[i].setSubChunkPosition(this.x, i * SubChunk.CHUNKSIZEY, this.z);
+        }
     }
 
     /**
-     * Ajoute un sol 
+     * Ajoute un sol au chunk
      * @param y int, hauteur du sol
      * @param nbFloor int, épaisseur du sol
      * @param type BlocksType
      */
-    public void addFloor(int Y, int nbFloor, BlocksType type){
-        if (Y < 0 || Y + nbFloor >= Chunk.CHUNKSIZEY
-        ){throw new IncorrectCoordinates("Coordonées dans le chunk invalide");}
-        for(int y = Y; y < Y + nbFloor; y++){
-            for(int x = 0; x < Chunk.CHUNKSIZEX; x++){
-                for (int z = 0; z < Chunk.CHUNKSIZEZ; z++){
-                    this.addBlock(type, x, y, z);          
-                }    
-            }
-        }  
+    @ChunkThread
+    public void addFloorToChunk(int y, int nbFloor, BlocksType type){
+        this.subChunks[y / SubChunk.CHUNKSIZEY].addFloorToSubChunk(y % SubChunk.CHUNKSIZEY, nbFloor % (SubChunk.CHUNKSIZEY + 1), type);
     }
-
+    
     /**
      * Ajoute un block dans le chunk <br> 
      * (coordonnées locales du chunk)
@@ -76,55 +64,70 @@ public class Chunk extends Node3D{
      * @param x int
      * @param y int
      * @param z int
+     * @throws IncorrectCoordinates
      */
-    public void addBlock(BlocksType type, int x, int y, int z) throws IncorrectCoordinates{
-        if (x < 0 || x >= Chunk.CHUNKSIZEX ||
-            y < 0 || y >= Chunk.CHUNKSIZEY ||
-            z < 0 || z >= Chunk.CHUNKSIZEZ
+    @ChunkThread
+    public void addBlockToChunk(BlocksType type, int x, int y, int z) throws IncorrectCoordinates{
+        if (x < 0 || x >= SubChunk.CHUNKSIZEX ||
+            y < 0 || y >= SubChunk.CHUNKSIZEY * Chunk.SUBCHUNKCOUNT ||
+            z < 0 || z >= SubChunk.CHUNKSIZEZ
         ){throw new IncorrectCoordinates("Coordonées dans le chunk invalide");}
-        // créer un cube et l'ajoute à la liste
-        this.objects[objectCount] = new Cube(type);
-        // ajoute le cube en temps que enfant du chunk
-        this.addChild(this.objects[objectCount]);
-        // définit la position du cube
-        this.objects[objectCount].x = x;
-        this.objects[objectCount].y = y;
-        this.objects[objectCount].z = z;
-        this.objectCount++;
+        this.subChunks[y / SubChunk.CHUNKSIZEY].addBlockToSubChunk(type, x, y % SubChunk.CHUNKSIZEY, z);
     }
 
     /**
-     * Envoie la maille de chaque bloc à la maille du chunk
+     * Retire un block dans le chunk <br>
+     * (coordonnées locales du subChunk)
+     * @param x int
+     * @param y int
+     * @param z int
+     * @throws IncorrectCoordinates
      */
-    public void uploadMesh(){
-        for (int i = 0; i < this.objectCount; i++){
-            int cubeX =this.objects[i].x;
-            int cubeY =this.objects[i].y;
-            int cubeZ =this.objects[i].z;
-            this.mesh.addObjectVertexToArray(this.objects[i].mesh.getVertexArray(), cubeX, cubeY, cubeZ);
+    @ChunkThread
+    public void removeBlockFromChunk(int x, int y, int z) throws IncorrectCoordinates{
+        if (x < 0 || x >= SubChunk.CHUNKSIZEX ||
+            y < 0 || y >= SubChunk.CHUNKSIZEY * Chunk.SUBCHUNKCOUNT ||
+            z < 0 || z >= SubChunk.CHUNKSIZEZ
+        ){throw new IncorrectCoordinates("Coordonées dans le chunk invalide");}
+        this.subChunks[y / SubChunk.CHUNKSIZEY].removeBlockFromSubChunk(x, y % SubChunk.CHUNKSIZEY, z);
+    }
+
+    /**
+     * Génère la maille des subChunks
+     */
+    @ChunkThread
+    public void generateChunkMesh(){
+        for(SubChunk sub : this.subChunks){
+            sub.fillSubChunkBitSet();
+        } 
+        for(SubChunk sub : this.subChunks){
+            sub.generateSubChunkMesh();
         }
     }
 
-    public Object3D[] getChunkObject(){
-        return this.objects;
-    }
-
     /**
-     * Dessine la maille du chunk
+     * Permet d'obtenir le subChunk d'un chunk
+     * @param y int 
+     * @throws IncorrectCoordinates
+     * @return SubChunk
+     */
+    @ChunkThread
+    public SubChunk getSubChunk(int y) throws IncorrectCoordinates{ 
+        if (y < 0 || y >= Chunk.SUBCHUNKCOUNT) throw new IncorrectCoordinates("Les coordonées sont incorrects (0 pour le subChunk n°0, 1 ... n°1, etc...");
+        return this.subChunks[y];
+    }
+    /**
+     * Remplis les vbo des subChunks avec les données des objets avant le rendu
      */
     @OpenGLThread
-    @Override
-    public void drawSpecific(){
-        this.mesh.drawChunkMesh(this.buffer);
+    public void setupChunkVBOVAO(){
+        for(SubChunk sub : this.subChunks) sub.setupSubChunkVBOVAO();
     }
 
     @Override
     public void drawNode(Matrix4f parentModel){
-        Matrix4f model = new Matrix4f(parentModel)
-            .translate(this.x, this.y, this.z);
-        model.get(this.buffer);
-        ShaderManager.runModel(this.buffer);
-        this.drawSpecific();
-        // pas d'itération sur les cubes enfants
+        for (SubChunk sub : subChunks){
+            sub.drawNode(parentModel);
+        }
     }
 }
