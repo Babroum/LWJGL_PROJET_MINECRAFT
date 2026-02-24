@@ -19,11 +19,11 @@ void main()
 {
     // unpack les données 
     // donc décale tout et applique un masque pour ne pas récupèrer les valeurs des autres variables
-    int x = (packedData >> 28) & 0xF;
-    int y = (packedData >> 24) & 0xF;
-    int z = (packedData >> 20) & 0xF;
-    int u = (packedData >> 16) & 0xF;
-    int v = (packedData >> 12) & 0xF;
+    int x = (packedData >> 27) & 0x1F;
+    int y = (packedData >> 19) & 0xFF;
+    int z = (packedData >> 14) & 0x1F;
+    int u = (packedData >> 13) & 0x1;
+    int v = (packedData >> 12) & 0x1;
     dir   = (packedData >> 9)  & 0x7;
     texId =  packedData        & 0x1FF;
 

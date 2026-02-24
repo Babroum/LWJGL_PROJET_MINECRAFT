@@ -16,7 +16,7 @@ public class App
     public static void main( String[] args ) throws Exception
     {
         // création de la fenêtre 
-        new Window(1200,400);
+        new Window(1200,800);
         // donne le draw en paramètre
         // l'exécutera après l'initialisation d'opengl
         Window.startWindow(() -> draw(Window.getSceneGraph()));        

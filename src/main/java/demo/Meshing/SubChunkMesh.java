@@ -91,13 +91,13 @@ public class SubChunkMesh {
             // |= c'est le OU permet de combiner sans supprimer les valeurs
             // & c'est un ET il applique un masque pour la sécurité au cas ou par exemple on recoit 6 bits au lieu de 5
 
-            packed |= ((array[i]   + cubeX) & 0xF) << 28; // 4 bits, 32 - 4 = 28
-            packed |= ((array[i+1] + cubeY) & 0xF) << 24; // 4 bits
-            packed |= ((array[i+2] + cubeZ) & 0xF) << 20; // 4 bits
-            packed |= (array[i+3] & 0xF)           << 16; // 4 bits UV u
-            packed |= (array[i+4] & 0xF)           << 12; // 4 bits UV v
-            packed |= (array[i+5] & 0x7)           << 9;  // 3 bits direction
-            packed |= (array[i+6] & 0x1FF);               // 9 bits textureId
+            packed |= ((array[i]   + cubeX) & 0x1F) << 27; // 5 bits, décale de 27 bits (donc prend les 5 premiers bits, 32 - 27 = 5)
+            packed |= ((array[i+1] + cubeY) & 0xFF) << 19; // 8 bits
+            packed |= ((array[i+2] + cubeZ) & 0x1F) << 14; // 5 bits
+            packed |= (array[i+3] & 0x1)            << 13; // 1 bit
+            packed |= (array[i+4] & 0x1)            << 12; // 1 bit
+            packed |= (array[i+5] & 0x7)            << 9;  // 3 bits
+            packed |= (array[i+6] & 0x1FF);                // 9 bits
 
             this.vertexArrayPack[this.vertexCount] = packed;
 
@@ -105,101 +105,6 @@ public class SubChunkMesh {
             addedVertices++;
         }    
         this.faceCount += addedVertices / 6; // /6 car 6 sommets par face
-    }
-
-    /**
-     * Calcule les sommets du quad
-     * @param quad
-     * @param textureId
-     */
-    @ChunkThread
-    public void addQuadVertexToArray(Quad quad, int textureId){
-        int x = quad.x;
-        int y = quad.y;
-        int z = quad.z;
-        int w = quad.width;
-        int h = quad.height;
-        int dir = quad.direction.ordinal();
-        // on ne peut plus utilisé cube car la taille varie
-        int[][] vertices;
-        switch(quad.direction){
-            case NORTH:
-                vertices = new int[][]{
-                    {x,     y,     z, 0, h, dir, textureId},
-                    {x + w, y,     z, w, h, dir, textureId},
-                    {x + w, y + h, z, w, 0, dir, textureId},
-                    {x + w, y + h, z, w, 0, dir, textureId},
-                    {x,     y + h, z, 0, 0, dir, textureId},
-                    {x,     y,     z, 0, h, dir, textureId}
-                };
-                break;
-            case SOUTH:
-                vertices = new int[][]{
-                    {x + w, y,     z, 0, h, dir, textureId},
-                    {x,     y,     z, w, h, dir, textureId},
-                    {x,     y + h, z, w, 0, dir, textureId},
-                    {x,     y + h, z, w, 0, dir, textureId},
-                    {x + w, y + h, z, 0, 0, dir, textureId},
-                    {x + w, y,     z, 0, h, dir, textureId}
-                };
-                break;
-            case EAST:
-                vertices = new int[][]{
-                    {x, y,     z,     0, h, dir, textureId},
-                    {x, y,     z + w, w, h, dir, textureId},
-                    {x, y + h, z + w, w, 0, dir, textureId},
-                    {x, y + h, z + w, w, 0, dir, textureId},
-                    {x, y + h, z,     0, 0, dir, textureId},
-                    {x, y,     z,     0, h, dir, textureId}
-                };
-                break;
-            case WEST:
-                vertices = new int[][]{
-                    {x, y,     z + w, 0, h, dir, textureId},
-                    {x, y,     z,     w, h, dir, textureId},
-                    {x, y + h, z,     w, 0, dir, textureId},
-                    {x, y + h, z,     w, 0, dir, textureId},
-                    {x, y + h, z + w, 0, 0, dir, textureId},
-                    {x, y,     z + w, 0, h, dir, textureId}
-                };
-                break;
-            case UP:
-                vertices = new int[][]{
-                    {x,     y, z,     0, h, dir, textureId},
-                    {x + w, y, z,     w, h, dir, textureId},
-                    {x + w, y, z + h, w, 0, dir, textureId},
-                    {x + w, y, z + h, w, 0, dir, textureId},
-                    {x,     y, z + h, 0, 0, dir, textureId},
-                    {x,     y, z,     0, h, dir, textureId}
-                };
-                break;
-            case DOWN:
-                vertices = new int[][]{
-                    {x + w, y, z,     0, h, dir, textureId},
-                    {x,     y, z,     w, h, dir, textureId},
-                    {x,     y, z + h, w, 0, dir, textureId},
-                    {x,     y, z + h, w, 0, dir, textureId},
-                    {x + w, y, z + h, 0, 0, dir, textureId},
-                    {x + w, y, z,     0, h, dir, textureId}
-                };
-                break;
-            default:
-                return;
-        }
-
-        for(int[] v : vertices){
-            int packed = 0;
-            packed |= (v[0] & 0xF) << 28;
-            packed |= (v[1] & 0xF) << 24;
-            packed |= (v[2] & 0xF) << 20;
-            packed |= (v[3] & 0xF) << 16;
-            packed |= (v[4] & 0xF) << 12;
-            packed |= (v[5] & 0x7) << 9;
-            packed |= (v[6] & 0x1FF);
-            this.vertexArrayPack[this.vertexCount] = packed;
-            this.vertexCount++;
-        }
-        this.faceCount++;
     }
 
     /**

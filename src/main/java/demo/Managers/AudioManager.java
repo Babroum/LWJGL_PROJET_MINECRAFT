@@ -129,8 +129,7 @@ public class AudioManager {
             buffers.put(name, buffer);
             sources.put(name, source);
 
-            System.out.println("Son chargé : " + name 
-                + " (" + channels + "ch, " + info.sample_rate() + "Hz)");
+            //System.out.println("Son chargé : " + name + " (" + channels + "ch, " + info.sample_rate() + "Hz)");
 
         } catch (Exception e) {
             System.out.println("Erreur chargement son '" + name + "' : " + e.getMessage());
@@ -252,7 +251,7 @@ public class AudioManager {
         
         // Vérifier que ça a bien été appliqué
         float check = alGetSourcef(source, AL_GAIN);
-        System.out.println("Gain appliqué : " + check);
+        //System.out.println("Gain appliqué : " + check);
         
         // Vérifier les erreurs OpenAL
         int error = alGetError();

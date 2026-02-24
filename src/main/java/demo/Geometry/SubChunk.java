@@ -15,7 +15,6 @@ import demo.Exceptions.IncorrectCoordinates;
 import demo.Managers.ChunksManager;
 import demo.Managers.ShadersManager;
 import demo.Meshing.SubChunkMesh;
-import demo.Meshing.Quad;
 import demo.Managers.TexturesManager;
 
 public class SubChunk extends Node3D{
@@ -34,18 +33,8 @@ public class SubChunk extends Node3D{
     private int[] upFaceAxis    = new int[SubChunk.CHUNKSIZEZ * SubChunk.CHUNKSIZEX]; 
     private int[] downFaceAxis  = new int[SubChunk.CHUNKSIZEZ * SubChunk.CHUNKSIZEX]; 
 
-    // Lignes de faces visibles perpendiculaires à la direction (ex: ligne X = 16 bits, 1 = face visible ici)
-    // Utilisé pour fusionner les faces adjacentes (binary greedy meshing)
-    private int[] northFaceMask = new int[SubChunk.CHUNKSIZEY * SubChunk.CHUNKSIZEZ]; 
-    private int[] southFaceMask = new int[SubChunk.CHUNKSIZEY * SubChunk.CHUNKSIZEZ]; 
-    private int[] westFaceMask  = new int[SubChunk.CHUNKSIZEY * SubChunk.CHUNKSIZEX]; 
-    private int[] eastFaceMask  = new int[SubChunk.CHUNKSIZEY * SubChunk.CHUNKSIZEX]; 
-    private int[] upFaceMask    = new int[SubChunk.CHUNKSIZEZ * SubChunk.CHUNKSIZEX]; 
-    private int[] downFaceMask  = new int[SubChunk.CHUNKSIZEZ * SubChunk.CHUNKSIZEX]; 
-
     // donne au mesh le subChunk au quel il appartient
     public SubChunkMesh mesh = new SubChunkMesh();
-    private List<Quad> quads = new ArrayList<>();
     private Object3D[] objects;
     public String name;
 
@@ -78,25 +67,14 @@ public class SubChunk extends Node3D{
     @ChunkThread
     public void generateSubChunkMesh(){
         // reset tout
-        this.quads.clear();
         Arrays.fill(northFaceAxis, 0);
         Arrays.fill(southFaceAxis, 0);
         Arrays.fill(eastFaceAxis, 0);
         Arrays.fill(westFaceAxis, 0);
         Arrays.fill(upFaceAxis, 0);
         Arrays.fill(downFaceAxis, 0);
-        Arrays.fill(northFaceMask, 0);
-        Arrays.fill(southFaceMask, 0);
-        Arrays.fill(eastFaceMask, 0);
-        Arrays.fill(westFaceMask, 0);
-        Arrays.fill(upFaceMask, 0);
-        Arrays.fill(downFaceMask, 0);
         // calcule le face culling
         this.calculateSubChunkFaceCulling();
-        int count = 0;
-        for (int v : upFaceAxis) count += Integer.bitCount(v);
-        // calcule le greedy meshing
-        this.calculateSubChunkBinaryGreedyMeshing();
         // envoie la maille des objets à la maille
         this.uploadSubChunkMesh();
         // rempli le buffer de la maille avec les données pack (vertex packing)
@@ -185,16 +163,6 @@ public class SubChunk extends Node3D{
      */
     @ChunkThread
     private void uploadSubChunkMesh(){
-        for(Quad quad : this.quads){
-            int objectIndex = quad.x + quad.y * SubChunk.CHUNKSIZEX + quad.z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
-            if(this.objects[objectIndex] == null) continue;
-            BlocksType type = this.objects[objectIndex].blockType;
-            int textureId = TexturesManager.getIndex(type.getTexture(quad.direction));
-            this.mesh.addQuadVertexToArray(quad, textureId);
-        }
-        //System.out.println("quads count : " + this.quads.size());
-    
-        /*
         // Ouest Est
         for (int y = 0; y < SubChunk.CHUNKSIZEY; y++){
             for (int z = 0; z < SubChunk.CHUNKSIZEZ; z++){
@@ -275,7 +243,7 @@ public class SubChunk extends Node3D{
                     ligneDown &= ~(1 << (31 - y));
                 }
             }
-        }*/
+        }
     }
 
     /**
@@ -347,129 +315,29 @@ public class SubChunk extends Node3D{
             }
         }
         // Récup haut bas
-        for (int y = 0; y < SubChunk.CHUNKSIZEY; y++){
-            for (int z = 0; z < SubChunk.CHUNKSIZEZ; z++){
-                int index = y + z * SubChunk.CHUNKSIZEY;
-                for (int x = 0; x < SubChunk.CHUNKSIZEX; x++){
+        for (int z = 0; z < SubChunk.CHUNKSIZEZ; z++){
+            for (int x = 0; x < SubChunk.CHUNKSIZEX; x++){
+                int index = z + x * SubChunk.CHUNKSIZEZ;
+                for (int y = 0; y < SubChunk.CHUNKSIZEY; y++){
                     int bitSetIndex = x + y * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
-                    this.upFaceAxis[index] |= (this.bitSet.get(bitSetIndex) ? 1 : 0) << (31 - x);
+                    this.upFaceAxis[index] |= (this.bitSet.get(bitSetIndex) ? 1 : 0) << (31 - y);
                 }
                 int ligne = this.upFaceAxis[index];
                 int ligneNeighborUp = 0;
                 if (this.getNeighborUp() != null){
-                    for (int x = 0; x < SubChunk.CHUNKSIZEX; x++){
-                        int bitSetIndex = x + 0 * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
-                        ligneNeighborUp |= (this.getNeighborUp().bitSet.get(bitSetIndex) ? 1 : 0) << (31 - x);
-                    }
+                    int bitSetIndex = x + 0 * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
+                    ligneNeighborUp = (this.getNeighborUp().bitSet.get(bitSetIndex) ? 1 : 0);
                 }
+                ligneNeighborUp = ligneNeighborUp << 16;
                 int ligneNeighborDown = 0;
                 if (this.getNeighborDown() != null){
-                    for (int x = 0; x < SubChunk.CHUNKSIZEX; x++){
-                        int bitSetIndex = x + 15 * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
-                        ligneNeighborDown |= (this.getNeighborDown().bitSet.get(bitSetIndex) ? 1 : 0) << (31 - x);
-                    }
+                    int bitSetIndex = x + 15 * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
+                    ligneNeighborDown = (this.getNeighborDown().bitSet.get(bitSetIndex) ? 1 : 0);
                 }
-                ligneNeighborDown = ligneNeighborDown << 16;
-                this.upFaceAxis[index] = ligne & ~((ligne >>> 1) | ligneNeighborUp);
-                this.downFaceAxis[index] = ligne & ~((ligne << 1) | ligneNeighborDown);
+                ligneNeighborDown = ligneNeighborDown << 31;
+                this.upFaceAxis[index] = ligne & ~((ligne << 1) | ligneNeighborUp); // faces vers le haut
+                this.downFaceAxis[index] = ligne & ~((ligne >>> 1) | ligneNeighborDown); // faces vers le bas  
             }
-        }
-    }
-
-    /**
-     * Peut pas faire plus simple comme nom
-     */
-    private void calculateSubChunkBinaryGreedyMeshing(){
-        // rempli les masques avec les infos du face culling
-        for (int y = 0; y < SubChunk.CHUNKSIZEY; y++){
-            for (int z = 0; z < SubChunk.CHUNKSIZEZ; z++){                
-                for (int x = 0; x < SubChunk.CHUNKSIZEX; x++){
-                    int westBit = (this.westFaceAxis[y + z * SubChunk.CHUNKSIZEY] >> (16 + x)) & 1;
-                    this.westFaceMask[y + x * SubChunk.CHUNKSIZEX] |= (westBit << (31 - z));  
-                    int eastBit = (this.eastFaceAxis[y + z * SubChunk.CHUNKSIZEY] >> (31 - x)) & 1;
-                    this.eastFaceMask[y + x * SubChunk.CHUNKSIZEX] |= (eastBit << (31 - z));
-                }
-            }
-        }        
-        for (int y = 0; y < SubChunk.CHUNKSIZEY; y++){
-            for (int x = 0; x < SubChunk.CHUNKSIZEX; x++){
-                for (int z = 0; z < SubChunk.CHUNKSIZEZ; z++){
-                    // En gros je récup tous les bits d'un int d'Axis, que je met en 1er position des int de mask a chaque boucle
-                    int northBit = (this.northFaceAxis[y + x * SubChunk.CHUNKSIZEY] >> (16 + z)) & 1; // décalle de 16 bits + z vers la droite puis récupère le 1er bit
-                    this.northFaceMask[y + z * SubChunk.CHUNKSIZEZ] |= (northBit << (31 - x));
-                    int southBit = (this.southFaceAxis[y + x * SubChunk.CHUNKSIZEY] >> (31 - z)) & 1; // décalle de 31 bits - z vers la droite puis récupère le 1er bit*
-                    this.southFaceMask[y + z * SubChunk.CHUNKSIZEZ] |= (southBit << (31 - x));
-
-                }
-            }
-        }
-        for (int y = 0; y < SubChunk.CHUNKSIZEY; y++){
-            for (int z = 0; z < SubChunk.CHUNKSIZEZ; z++){
-                for (int x = 0; x < SubChunk.CHUNKSIZEX; x++){
-                    this.upFaceMask[y + z * SubChunk.CHUNKSIZEY] = this.upFaceAxis[y + z * SubChunk.CHUNKSIZEY];
-                    this.downFaceMask[y + z * SubChunk.CHUNKSIZEY] = this.downFaceAxis[y + z * SubChunk.CHUNKSIZEY];
-                }
-            }
-        }
-
-        this.greedyMeshingPerFace(westFaceMask, Directions.WEST);
-        this.greedyMeshingPerFace(eastFaceMask, Directions.EAST);
-        this.greedyMeshingPerFace(northFaceMask, Directions.NORTH);
-        this.greedyMeshingPerFace(southFaceMask, Directions.SOUTH);
-        this.greedyMeshingPerFace(upFaceMask, Directions.UP);
-        this.greedyMeshingPerFace(downFaceMask, Directions.DOWN);
-    }
-
-    // fait le greedy pour chaque face
-    private void greedyMeshingPerFace(int[] faceMask, Directions dir){
-        for(int ligne = 0; ligne < faceMask.length; ligne++){
-            //System.out.println("ligne " + ligne + " : " + String.format("%32s", Integer.toBinaryString(faceMask[ligne])).replace(' ', '0'));
-            int i = 0; // indice en largeur byte car dépasse pas 15
-            while(i < SubChunk.CHUNKSIZEX){              
-                if (faceMask[ligne] == 0) break; // si il n'y a pas de face           
-                int j = 1; // indice en longueur/hauteur
-
-                int[] coord = new int[3]; // point de départ, fin quad en x, fin quad en y
-                while((i < SubChunk.CHUNKSIZEX) && ((faceMask[ligne] << (16 - i) & 1)) != 1){ // tant que l'on a pas trouvé la 1er face pleine
-                    i++;
-                }
-                coord[0] = i;// x commence à i
-                while((i < SubChunk.CHUNKSIZEX) && ((faceMask[ligne]  << (16 - i) & 1)) != 0){ // tant que l'on a pas trouvé la 1er face vide
-                    i++;
-                }
-                coord[1] = i;// x se termine à i
-                 
-                if (coord[0] >= coord[1]){
-                    i++;
-                    continue;
-                }
-                // exemple x=2 x=5 (5 - (2 - 1)) = 4 largeur
-                //        1 << 4 = 00010000
-                //  (1 << 4) - 1 = 00001111
-                // 00001111 << 2 = 00111100
-                int mask = ((1 << coord[1] - coord[0] + 1) - 1) << coord[0];
-                faceMask[ligne] = faceMask[ligne] & ~mask;
-                
-                // parcourt en hauteur 
-                // si la ligne en dessous a les même bits entre les 2 x à 1 alors on la récup 
-                while((ligne + j < faceMask.length) && (faceMask[ligne + j] & mask) == mask){
-                    faceMask[ligne + j] = faceMask[ligne + j] & ~mask; // garde tout les bits sauf ceux qui sont parcourut
-                    j++;
-                }
-                // le quad descent de j
-                coord[2] = j;       
-
-                if (coord[0] < coord[1]){
-                    this.quads.add(new Quad(
-                        coord[0], // x
-                        ligne % SubChunk.CHUNKSIZEX, // y
-                        ligne / SubChunk.CHUNKSIZEZ, // z
-                        coord[1] - coord[0] + 1, // largeur
-                        coord[2], // hauteur
-                        dir // direction
-                    )); 
-                }   
-            }           
         }
     }
 
