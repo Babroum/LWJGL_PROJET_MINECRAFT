@@ -3,6 +3,7 @@ package demo.Events;
 import org.lwjgl.glfw.GLFW;
 
 import demo.Annotations.OpenGLThread;
+import demo.Managers.AudioManager;
 import demo.Rendering.Camera;
 
 /**
@@ -46,6 +47,18 @@ public class KeyboardInput {
 
                 case GLFW.GLFW_KEY_B:
                     KeyboardInput.isChunkBorderShow = !KeyboardInput.isChunkBorderShow;
+                    break;
+
+                case GLFW.GLFW_KEY_KP_ADD:
+                    AudioManager.setMasterVolume(AudioManager.getMasterVolume() + 1);
+                    break;
+
+                case GLFW.GLFW_KEY_KP_SUBTRACT:
+                    AudioManager.setMasterVolume(AudioManager.getMasterVolume() - 1);
+                    break;
+
+                case GLFW.GLFW_KEY_SEMICOLON:
+                    AudioManager.playOnce("fanta");
                     break;
 
                 default:

@@ -13,6 +13,7 @@ import org.lwjgl.system.MemoryUtil;
 import demo.Annotations.OpenGLThread;
 import demo.Events.InputManager;
 import demo.Events.WindowCloseEventManager;
+import demo.Managers.AudioManager;
 import demo.Managers.ShadersManager;
 
 /**
@@ -97,6 +98,8 @@ public class Window {
 
         GL.createCapabilities(); // Will let lwjgl know we want to use this context as the context to draw with
 
+        AudioManager.init();
+
         Render.setupBeforeRendering();
 
         if(Window.onReady != null) Window.onReady.run(); // attend que le thread est fini de créer opengl avant de lancer le code
@@ -122,6 +125,7 @@ public class Window {
         GLFW.glfwDestroyWindow(Window.window);
         // On ferme les événements GLFW
         Window.closeGLFW();
+        AudioManager.cleanup();
         System.exit(0);
     }
 
