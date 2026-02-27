@@ -5,6 +5,9 @@ import java.nio.FloatBuffer;
 import org.joml.*;
 import org.lwjgl.BufferUtils;
 
+import demo.Geometry.Object3D;
+import demo.Managers.ChunksManager;
+
 // source : https://ahbejarano.gitbook.io/lwjglgamedev/chapter-08
 /**
  * Une camera
@@ -55,6 +58,33 @@ public class Camera {
     }
 
     /**
+     * Fonctionne comme un raycast
+     * @param distance
+     * @return
+     */
+    public Vector3f getLookAt(float distance){
+        Vector3f pos = new Vector3f(this.position); // copie de la position de la caméra
+        Vector3f step = new Vector3f(this.direction).mul(0.5f); // vecteur de 0.5 dans la direction du regard
+
+        // à chaque itération on avance pos d'un pas jusqu'a distance
+        for (float i = 0; i < distance; i += 0.5f) {
+            pos.add(step);
+            try {
+                // récupère le block en poss
+                Object3D block = ChunksManager.getBlock((int)pos.x, (int)pos.y, (int)pos.z);
+                // si il existe
+                if (block != null) {
+                    return new Vector3f(pos); // on retourne la position flottante du point de contact
+                }
+            } catch (Exception e) {
+                System.out.println("[raycast] : hors de du monde");
+            }
+        }
+        return null; // on a parcouru toute la distance sans trouver de bloc
+
+    }
+
+    /**
      * Retourne la matrice sous forme de FloatBuffer pour OpenGL
      * @return FloatBuffer
      */
@@ -71,6 +101,7 @@ public class Camera {
      */
     public void moveBackwards(float inc){
         this.viewMatrix.positiveZ(this.direction).negate().mul(inc);
+        this.direction.y = 0; // pour bouger comme un joueur 
         this.position.sub(this.direction);
         this.recalculate();
     }
@@ -93,6 +124,7 @@ public class Camera {
      */
     public void moveForward(float inc){
         this.viewMatrix.positiveZ(this.direction).negate().mul(inc);
+        this.direction.y = 0; // pour bouger comme un joueur 
         this.position.add(this.direction);
         this.recalculate();
     }
@@ -135,7 +167,8 @@ public class Camera {
      * @param inc float
      */
     private void recalculate(){
-        viewMatrix.identity().rotateX(this.rotation.x).rotateY(this.rotation.y).translate(-position.x, -position.y, -position.z);
+        this.viewMatrix.identity().rotateX(this.rotation.x).rotateY(this.rotation.y).translate(-position.x, -position.y, -position.z);
+        this.viewMatrix.positiveZ(this.direction).negate(); // met à jour la direction
     }
 
     /**

@@ -4,6 +4,7 @@ import org.joml.Vector2f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.glfw.GLFW;
 
+import demo.Managers.PlayersManager;
 import demo.Annotations.OpenGLThread;
 import demo.Rendering.Camera;
 import demo.Rendering.SceneGraph;
@@ -39,10 +40,10 @@ public class InputManager {
 
         // Récupère les inputs clavier/souris
         float move = deltaTime * InputManager.MOVEMENTSPEED;
-        Camera camera = sceneGraph.getCamera();
+        Camera camera = PlayersManager.player.getCamera();
 
         // détecte les appuie continues
-        KeyboardInput.keyPressedContinue(windowRef, camera, move);
+        KeyboardInput.keyPressedContinue(windowRef, camera, move, PlayersManager.player);
 
         // Active/désactive le wireframe/cull face
         if (KeyboardInput.isWireFrameMode){
@@ -56,6 +57,12 @@ public class InputManager {
         // Ferme la fenêtre
         if (KeyboardInput.isCloseWindow){
             Window.closeWindow();
+        }
+
+        // Si le joueur saute
+        if (KeyboardInput.isJumping){
+            KeyboardInput.isJumping = false;
+            PlayersManager.player.jump();
         }
 
         // Déplace la caméra avec la souris et la bloque au milieu, desactive si pas sélectionné ou la souris débloqué

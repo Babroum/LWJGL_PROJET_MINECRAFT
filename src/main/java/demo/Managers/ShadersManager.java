@@ -6,9 +6,9 @@ import java.nio.FloatBuffer;
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL20;
 
-import demo.FileLoader;
 import demo.Annotations.OpenGLThread;
 import demo.Exceptions.ShaderManagerError;
+import demo.Others.FileLoader;
 
 /**
  * Gère les shaders

@@ -9,7 +9,7 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL11;
 
-import demo.FileLoader;
+import demo.GameLoop;
 import demo.Annotations.OpenGLThread;
 import demo.Events.InputManager;
 import demo.Geometry.Chunk;
@@ -18,7 +18,9 @@ import demo.Managers.AudioManager;
 import demo.Managers.BuffersManager;
 import demo.Managers.ShadersManager;
 import demo.Managers.TexturesManager;
+import demo.Others.FileLoader;
 import demo.Types.Color4f;
+import demo.Managers.PlayersManager;
 
 public class Render {
     
@@ -71,11 +73,7 @@ public class Render {
         // Prépare la 3D
         Render.initialize3D(Window.width, Window.height);
 
-        // positionne la camera
-        Render.sceneGraph.getCamera().setPosition(0f, 20f, 0f);
-
-        AudioManager.playLoop("bird");
-        AudioManager.setVolume("bird", 10f);
+        GameLoop.init();
 
         while ( !GLFW.glfwWindowShouldClose(windowRef) ) {  
             // démarre l'enregistrement de performances pour la frame
@@ -93,13 +91,13 @@ public class Render {
             // Modifie le déplacement de la caméra 
             InputManager.run(windowRef, sceneGraph, nowMs - lastTimeMs);
             monitor.stopTimer("logic");
-            
+
             // utilise le shader 
             ShadersManager.useShader();
             
             // donne les matrices de camera et perspective au shader
             ShadersManager.runProjection(Render.calculateProjection(45.0f, (float) Window.width / Window.height, 0.1f, 5000.f)); // donne la perspective de l'ecran
-            ShadersManager.runView(Render.sceneGraph.getCamera().getViewMatrixBuffer()); // donne la vue de la camera
+            ShadersManager.runView(PlayersManager.player.getCamera().getViewMatrixBuffer()); // donne la vue de la camera
 
             // poll les chunks prêts et upload sur GPU
             Chunk chunk;
@@ -113,6 +111,7 @@ public class Render {
             while ((dirty = dirtySubChunks.poll()) != null) {
                 dirty.setupSubChunkVBOVAO();
             }
+
             // enregistre le temps de rendu
             monitor.startTimer("render");
             // Dessine la scène
@@ -126,12 +125,10 @@ public class Render {
             double delta = (nowNano - lastTimeNano) / 1_000_000_000.0;
             Render.calculateFPS(delta);
 
-            // Affiche le nombre de vertex à l'écran
-            Render.getTextRender().drawText("Vertex count : " + Render.sceneGraph.getTotalVertexCount(), 0, 20, 20, Color4f.BLUE);   
             // Affiche la touche à appuyer pour toggle le wireframe
-            Render.getTextRender().drawText("Toggle WireFrameMode : E", 0, 40, 15, Color4f.YELLOW);
-            Render.getTextRender().drawText("Toggle MouseLock : P", 0, 60, 15, Color4f.YELLOW);       
-            Render.getTextRender().drawText("Toggle ChunkBorder : B", 0, 80, 15, Color4f.YELLOW);       
+            Render.getTextRender().drawText("Toggle WireFrameMode : E", 0, 20, 15, Color4f.YELLOW);
+            Render.getTextRender().drawText("Toggle MouseLock : P", 0, 40, 15, Color4f.YELLOW);       
+            Render.getTextRender().drawText("Toggle ChunkBorder : B", 0, 60, 15, Color4f.YELLOW);       
 
             // Affiche le nombre de nœud à l'écran
             Render.getTextRender().drawText("Node3D count : " + Render.sceneGraph.getTotalNodeCount(), 0, 100, 15, Color4f.PURPLE);         
@@ -144,10 +141,13 @@ public class Render {
                 }
             }
 
+            GameLoop.run(nowMs - lastTimeMs);
+
             // Rends la fenêtre en buffer dessinée visible à l’écran
             GLFW.glfwSwapBuffers(windowRef);		
 
             GLFW.glfwPollEvents();
+
             lastTimeMs = nowMs;           
             lastTimeNano = nowNano; 
 
@@ -157,9 +157,7 @@ public class Render {
                 System.gc();
                 System.out.println("RAM après GC: " + (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / (1024*1024) + " MB");
             }*/
-
-            // termine l'enregistrement de donnée pour la frame
-            AudioManager.cleanupTempSources();
+            GameLoop.quit();
             monitor.endFrame();
 		}
 

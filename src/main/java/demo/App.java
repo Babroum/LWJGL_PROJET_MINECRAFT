@@ -34,8 +34,7 @@ public class App
             Chunk chunk3 = ChunksManager.createChunk(-1, -1);
             Chunk chunk4 = ChunksManager.createChunk(0, -1);
 
-            chunk.addFloorToChunk(0, 16, BlocksType.HOMER);    
-            chunk.addFloorToChunk(16, 16, BlocksType.HOMER);     
+            chunk.addFloorToChunk(0, 1, BlocksType.GRASS);       
 
             chunk2.addFloorToChunk(0, 1, BlocksType.GRASS);    
 

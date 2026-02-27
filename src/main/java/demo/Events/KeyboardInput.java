@@ -5,6 +5,7 @@ import org.lwjgl.glfw.GLFW;
 import demo.Annotations.OpenGLThread;
 import demo.Managers.AudioManager;
 import demo.Rendering.Camera;
+import demo.Player;
 
 /**
  * Définis les listeners GLFW
@@ -19,6 +20,7 @@ public class KeyboardInput {
     public static boolean isCursorHidden = true;
     public static boolean isMouseLock = true;
     public static boolean isChunkBorderShow;
+    public static boolean isJumping;
 
     @OpenGLThread
     public KeyboardInput(long windowRef){
@@ -61,6 +63,9 @@ public class KeyboardInput {
                     AudioManager.playOnce("fanta");
                     break;
 
+                case GLFW.GLFW_KEY_SPACE:
+                    KeyboardInput.isJumping = true;
+
                 default:
                     break;
             }
@@ -70,23 +75,25 @@ public class KeyboardInput {
     // utiliser pour toutes les touches avec appui continue
     // Principalement pour les mouvements
     @OpenGLThread
-    public static void keyPressedContinue(long windowRef, Camera camera, float move) {
+    public static void keyPressedContinue(long windowRef, Camera camera, float move, Player player) {
         
         // Mouvement devant, derrière, gauche, droite, haut, bas
         if (GLFW.glfwGetKey(KeyboardInput.windowRef, GLFW.GLFW_KEY_W) == GLFW.GLFW_PRESS) {
-            camera.moveForward(move);
+            player.moveForward(move);
         } else if (GLFW.glfwGetKey(KeyboardInput.windowRef, GLFW.GLFW_KEY_S) == GLFW.GLFW_PRESS) {
-            camera.moveBackwards(move);
+            player.moveBackwards(move);
         }
         if (GLFW.glfwGetKey(KeyboardInput.windowRef, GLFW.GLFW_KEY_A) == GLFW.GLFW_PRESS) {
-            camera.moveLeft(move);
+            player.moveLeft(move);
         } else if (GLFW.glfwGetKey(KeyboardInput.windowRef, GLFW.GLFW_KEY_D) == GLFW.GLFW_PRESS) {
-            camera.moveRight(move);
+            player.moveRight(move);
         }
+
+        /* Plus valable pour un joueur 
         if (GLFW.glfwGetKey(KeyboardInput.windowRef, GLFW.GLFW_KEY_LEFT_SHIFT) == GLFW.GLFW_PRESS) {
             camera.moveUp(move);
         } else if (GLFW.glfwGetKey(KeyboardInput.windowRef, GLFW.GLFW_KEY_LEFT_CONTROL) == GLFW.GLFW_PRESS) {
             camera.moveDown(move);
-        }    
+        }  */  
     }
 }

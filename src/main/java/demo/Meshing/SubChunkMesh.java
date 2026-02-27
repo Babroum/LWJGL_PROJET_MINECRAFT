@@ -7,12 +7,12 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
 
-import demo.Enum.Directions;
 import demo.Annotations.ChunkThread;
 import demo.Annotations.OpenGLThread;
 import demo.Events.KeyboardInput;
 import demo.Exceptions.ArrayEmpty;
 import demo.Exceptions.Empty;
+import demo.Geometry.Object3D;
 import demo.Geometry.SubChunk;
 import demo.Managers.BuffersManager;
 import demo.Managers.TexturesManager;
@@ -141,6 +141,14 @@ public class SubChunkMesh {
             this.vertexCount++;;
         }    
         this.faceCount++;
+    }
+
+    /**
+     * Retourne le nombre de sommets dans le chunk
+     * @return
+     */
+    public int getVertexCount(){
+        return this.vertexCount;
     }
 
     /**

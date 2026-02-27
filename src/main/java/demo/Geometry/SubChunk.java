@@ -1,9 +1,7 @@
 package demo.Geometry;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
-import java.util.List;
 
 import org.joml.Matrix4f;
 
@@ -15,7 +13,6 @@ import demo.Exceptions.IncorrectCoordinates;
 import demo.Managers.ChunksManager;
 import demo.Managers.ShadersManager;
 import demo.Meshing.SubChunkMesh;
-import demo.Managers.TexturesManager;
 
 public class SubChunk extends Node3D{
 
@@ -80,6 +77,32 @@ public class SubChunk extends Node3D{
         // rempli le buffer de la maille avec les données pack (vertex packing)
         this.mesh.fillSubChunkVertexBufferWithArray();
     }
+
+    /**
+     * Retourne un block dans le subChunk <br>
+     * Les coordonées doivent être locales
+     * @param x int
+     * @param y int
+     * @param z int
+     * @return
+     */
+    public Object3D getBlock(int x, int y, int z){
+        if (x < 0 || x >= SubChunk.CHUNKSIZEX ||
+            y < 0 || y >= SubChunk.CHUNKSIZEY ||
+            z < 0 || z >= SubChunk.CHUNKSIZEZ
+        ){throw new IncorrectCoordinates("Coordonées dans le subChunk invalide");}
+        int index = x + y * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
+        return this.objects[index];
+    }
+
+    /**
+     * Retourne tout les blocks du sous chunk
+     * @return Object3D[]
+     */
+    public Object3D[] getAllBlocks(){
+        return this.objects;
+    }
+   
 
     /**
      * Remplis le vbo avec les données des objets avant le rendu
