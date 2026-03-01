@@ -17,12 +17,13 @@ public class BuffersManager {
     public static int activeVAOCount = 0;
     
     /**
-     * Créer les buffers en les remplissant avant les données données
+     * Créer les buffers en les remplissant <br>
+     * Chaque int est une donnée (vertex packing)
      * @param vertex IntBuffer, sommet à affiché
      * @return
      */
     @OpenGLThread
-    public static int[] createChunkVBOVAO(IntBuffer vertex){
+    public static int[] createVBOVAO(IntBuffer vertex){
         // VAO = configuration de comment lire un vbo
         // 1. VAO, créer, binder et uploader
         int vao = GL30.glGenVertexArrays();

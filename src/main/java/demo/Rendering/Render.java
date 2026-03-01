@@ -125,6 +125,8 @@ public class Render {
             double delta = (nowNano - lastTimeNano) / 1_000_000_000.0;
             Render.calculateFPS(delta);
 
+            Render.getTextRender().drawText("+", Window.width / 2, Window.height / 2, 15, Color4f.BLACK);
+
             // Affiche la touche à appuyer pour toggle le wireframe
             Render.getTextRender().drawText("Toggle WireFrameMode : E", 0, 20, 15, Color4f.YELLOW);
             Render.getTextRender().drawText("Toggle MouseLock : P", 0, 40, 15, Color4f.YELLOW);       
@@ -220,7 +222,9 @@ public class Render {
         GL11.glCullFace(GL11.GL_FRONT);  
 
         // Créer les shaders
-        ShadersManager.createShader();    
+        ShadersManager.createShader();   
+        ShadersManager.createBlockBorderShader();
+         
         // récupère les ids des uniformes dans les .glsl
         // pour ne pas à avoir à les re recup à chaque frame
         ShadersManager.getUniformLocations();    

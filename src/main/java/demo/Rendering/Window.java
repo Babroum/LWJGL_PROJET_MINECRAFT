@@ -125,12 +125,21 @@ public class Window {
         GLFW.glfwDestroyWindow(Window.window);
         // On ferme les événements GLFW
         Window.closeGLFW();
+
+        ShadersManager.closeProgramId();
+        ShadersManager.closeProgramTextId();
+        ShadersManager.closeProgramBlockBorderId();
+        
         AudioManager.cleanup();
+
         System.exit(0);
     }
 
     public static void closeWindow(){
-        ShadersManager.closeProgramId();
+        ShadersManager.closeProgramId();        
+        ShadersManager.closeProgramTextId();
+        ShadersManager.closeProgramBlockBorderId();
+        AudioManager.cleanup();
         Window.windowCloseEventManager.closeWidow(Window.window);
     }
 

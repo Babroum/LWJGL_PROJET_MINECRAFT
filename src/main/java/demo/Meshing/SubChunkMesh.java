@@ -12,7 +12,6 @@ import demo.Annotations.OpenGLThread;
 import demo.Events.KeyboardInput;
 import demo.Exceptions.ArrayEmpty;
 import demo.Exceptions.Empty;
-import demo.Geometry.Object3D;
 import demo.Geometry.SubChunk;
 import demo.Managers.BuffersManager;
 import demo.Managers.TexturesManager;
@@ -180,14 +179,18 @@ public class SubChunkMesh {
     @OpenGLThread
     public void createSubChunkVBOVAO(){
         this.ids = new int[4];
-        int[] result = BuffersManager.createChunkVBOVAO(this.vertexBufferPack);
+        int[] result = BuffersManager.createVBOVAO(this.vertexBufferPack);
         this.ids[0] = result[0];
         this.ids[1] = result[1];
     }
 
     @OpenGLThread
     public void deleteSubChunkVBOVAO(){
-        BuffersManager.deleteVBOVAO(this.ids);
+        int[] idsChunk = new int[]{this.ids[0], this.ids[1]};
+        int[] idsChunkBorder = new int[]{this.ids[2], this.ids[3]};
+
+        BuffersManager.deleteVBOVAO(idsChunk);
+        BuffersManager.deleteVBOVAO(idsChunkBorder);
     }
 
     /**
@@ -198,20 +201,20 @@ public class SubChunkMesh {
         // 4 sommets du contour du chunk en bas
         int[] lines = {
             // bas
-            0, 0, 0,    16, 0, 0,
-            16, 0, 0,   16, 0, 16,
-            16, 0, 16,  0, 0, 16,
-            0, 0, 16,   0, 0, 0,
+            0 , 0, 0 ,   16, 0, 0,
+            16, 0, 0 ,   16, 0, 16,
+            16, 0, 16,   0 , 0, 16,
+            0 , 0, 16,   0 , 0, 0,
             // verticales
-            0, 0, 0,    0, 16, 0,
-            16, 0, 0,   16, 16, 0,
-            16, 0, 16,  16, 16, 16,
-            0, 0, 16,   0, 16, 16,
+            0 , 0, 0 ,   0 , 16, 0,
+            16, 0, 0 ,   16, 16, 0,
+            16, 0, 16,   16, 16, 16,
+            0 , 0, 16,   0 , 16, 16,
             // haut
-            0, 16, 0,  16, 16, 0,
-            16, 16, 0, 16, 16, 16,
-            16, 16, 16,0, 16, 16,
-            0, 16, 16, 0, 16, 0
+            0 , 16, 0 ,  16, 16, 0,
+            16, 16, 0 ,  16, 16, 16,
+            16, 16, 16,  0 , 16, 16,
+            0 , 16, 16,  0 , 16, 0
         };   
         
         IntBuffer linesBuffer = BufferUtils.createIntBuffer(lines.length);
@@ -225,7 +228,7 @@ public class SubChunkMesh {
         }
         linesBuffer.flip();
 
-        int[] chunkBorderIds = BuffersManager.createChunkVBOVAO(linesBuffer);
+        int[] chunkBorderIds = BuffersManager.createVBOVAO(linesBuffer);
         this.ids[2] = chunkBorderIds[0];
         this.ids[3] = chunkBorderIds[1];
     }

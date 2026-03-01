@@ -64,7 +64,7 @@ public class Camera {
      */
     public Vector3f getLookAt(float distance){
         Vector3f pos = new Vector3f(this.position); // copie de la position de la caméra
-        Vector3f step = new Vector3f(this.direction).mul(0.5f); // vecteur de 0.5 dans la direction du regard
+        Vector3f step = new Vector3f(this.direction).mul(0.2f); // vecteur de 0.2 dans la direction du regard
 
         // à chaque itération on avance pos d'un pas jusqu'a distance
         for (float i = 0; i < distance; i += 0.5f) {
@@ -77,7 +77,7 @@ public class Camera {
                     return new Vector3f(pos); // on retourne la position flottante du point de contact
                 }
             } catch (Exception e) {
-                System.out.println("[raycast] : hors de du monde");
+                // ray cast en dehors du monde
             }
         }
         return null; // on a parcouru toute la distance sans trouver de bloc
