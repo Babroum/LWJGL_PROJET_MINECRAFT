@@ -1,25 +1,18 @@
 package demo.Events;
 
 import org.joml.Vector2f;
+import org.joml.Vector3f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.glfw.GLFW;
 
 import demo.Managers.PlayersManager;
+import demo.Player;
 import demo.Annotations.OpenGLThread;
 import demo.Rendering.Camera;
 import demo.Rendering.SceneGraph;
 import demo.Rendering.Window;
 
 public class InputManager {
-
-    /**
-     * Vitesse de déplacement de la caméra
-     */
-    public static final float MOVEMENTSPEED = 0.005f;
-    /**
-     * Sensibilité de la souris
-     */
-    public static final float MOUSESENS = 0.1f;
 
     @OpenGLThread
     public static void create(long windowRef){
@@ -39,7 +32,7 @@ public class InputManager {
         MouseInput.input();
 
         // Récupère les inputs clavier/souris
-        float move = deltaTime * InputManager.MOVEMENTSPEED;
+        float move = deltaTime * Player.MOVEMENTSPEED;
         Camera camera = PlayersManager.player.getCamera();
 
         // détecte les appuie continues
@@ -65,11 +58,17 @@ public class InputManager {
             PlayersManager.player.jump();
         }
 
+        // Si le joueur veut se téléporter
+        if (KeyboardInput.isTeleportActive){
+            KeyboardInput.isTeleportActive = false;
+            PlayersManager.player.setPosition(new Vector3f(0, 15, 0));
+        }
+
         // Déplace la caméra avec la souris et la bloque au milieu, desactive si pas sélectionné ou la souris débloqué
         if (GLFW.glfwGetWindowAttrib(Window.getWindow(),GLFW.GLFW_FOCUSED) == 1 && KeyboardInput.isMouseLock){
             Vector2f displVec = MouseInput.getDisplVec();
-            camera.addRotation((float) Math.toRadians(displVec.x * InputManager.MOUSESENS),
-                            (float) Math.toRadians(displVec.y * InputManager.MOUSESENS));
+            camera.addRotation((float) Math.toRadians(displVec.x * Player.MOUSESENS),
+                            (float) Math.toRadians(displVec.y * Player.MOUSESENS));
         }
 
         // si le curseur est bloqué sur l'écran

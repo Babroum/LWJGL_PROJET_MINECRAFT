@@ -10,6 +10,7 @@ import demo.Types.Color4f;
  * Peut servir pour les arbres, mobs, ...
  */
 // A modifier 
+@Deprecated
 public class Clone3D extends Node3D {
     private Color4f color = Color4f.WHITE;
     private final Object3D cloned;

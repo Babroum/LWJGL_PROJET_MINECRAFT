@@ -108,29 +108,45 @@ public class ChunksManager {
      * @param y int
      * @param z int
      * @return Object3D
-     * @throws 
+     * @throws IncorrectCoordinates
      */
     public static Object3D getBlock(int x, int y, int z) throws IncorrectCoordinates{
-        //System.out.println("-------------------------------------------------------------");
-        //System.out.println("[getBlock] global: x=" + x + " y=" + y + " z=" + z);
         if (y < 0 || y >= SubChunk.CHUNKSIZEY * Chunk.SUBCHUNKCOUNT){throw new IncorrectCoordinates("Valeur en Y incorrect");}
 
         int chunkX = (int) Math.floor((float) x / SubChunk.CHUNKSIZEX);
         int chunkZ = (int) Math.floor((float) z / SubChunk.CHUNKSIZEZ);
-        //System.out.println("[getBlock] chunk: chunkX=" + chunkX + " chunkZ=" + chunkZ);
 
         Chunk chunk = ChunksManager.getChunk(chunkX, chunkZ);
 
-        //System.out.println("[getBlock] subChunk index: " + y / SubChunk.CHUNKSIZEY);
         SubChunk sub = chunk.getSubChunk(y / SubChunk.CHUNKSIZEY);
 
-        // Math.floorMod pour avoir un modulo toujours positif
         int localX = ChunksManager.floorMod(x, SubChunk.CHUNKSIZEX);
         int localY = ChunksManager.floorMod(y, SubChunk.CHUNKSIZEY);
         int localZ = ChunksManager.floorMod(z, SubChunk.CHUNKSIZEZ);
-        //System.out.println("[getBlock] local: x=" + localX + " y=" + localY + " z=" + localZ);
   
         return sub.getBlock(localX, localY, localZ);
+    }
+
+    /**
+     * Retourne un subChunk dans l'un des chunks
+     * Coordonnée global
+     * @param x int
+     * @param y int
+     * @param z int
+     * @return SubChunk
+     * @throws IncorrectCoordinates
+     */
+    public static SubChunk getSubChunk(int x, int y, int z) throws IncorrectCoordinates{
+        if (y < 0 || y >= SubChunk.CHUNKSIZEY * Chunk.SUBCHUNKCOUNT){throw new IncorrectCoordinates("Valeur en Y incorrect");}
+
+        int chunkX = (int) Math.floor((float) x / SubChunk.CHUNKSIZEX);
+        int chunkZ = (int) Math.floor((float) z / SubChunk.CHUNKSIZEZ);
+
+        Chunk chunk = ChunksManager.getChunk(chunkX, chunkZ);
+
+        SubChunk sub = chunk.getSubChunk(y / SubChunk.CHUNKSIZEY);
+
+        return sub;
     }
 
     private static int floorMod(int x, int mod) {

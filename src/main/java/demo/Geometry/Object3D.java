@@ -39,8 +39,8 @@ public class Object3D extends Node3D{
         this.ids = new int[2]; 
         // 4 sommets du contour du chunk en bas
         int[] lines = {
-            // bas
-            0, 0, 1,   1, 0, 0,
+             // bas
+            0, 0, 0,   1, 0, 0,
             1, 0, 0,   1, 0, 1,
             1, 0, 1,   0, 0, 1,
             0, 0, 1,   0, 0, 0,
@@ -50,10 +50,10 @@ public class Object3D extends Node3D{
             1, 0, 1,   1, 1, 1,
             0, 0, 1,   0, 1, 1,
             // haut
-            0, 1, 0,   1, 1, 0,
-            1, 1, 0,   1, 1, 1,
-            1, 1, 1,   0, 1, 1,
-            0, 1, 1,   0, 1, 0
+            0, 1, 0,  1, 1, 0,
+            1, 1, 0,  1, 1, 1,
+            1, 1, 1,  0, 1, 1,
+            0, 1, 1,  0, 1, 0
         };
         
         IntBuffer linesBuffer = BufferUtils.createIntBuffer(lines.length);

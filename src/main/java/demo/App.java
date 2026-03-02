@@ -34,16 +34,21 @@ public class App
             Chunk chunk3 = ChunksManager.createChunk(-1, -1);
             Chunk chunk4 = ChunksManager.createChunk(0, -1);
 
+            // sol pour se repérer
             chunk.addFloorToChunk(0, 1, BlocksType.GRASS);       
-
             chunk2.addFloorToChunk(0, 1, BlocksType.GRASS);    
-
             chunk3.addFloorToChunk(0, 1, BlocksType.GRASS);   
-
             chunk4.addFloorToChunk(0, 1, BlocksType.GRASS);
 
-            ChunksManager.rebuildAllCHunks();
+            // Tour de 3x3 au centre des 4 chunks (autour de x=0, z=0)
+            for (int y = 0; y < 5; y++){
+                chunk.addBlockToChunk(BlocksType.GRASS, 0, y, 0);
+                chunk2.addBlockToChunk(BlocksType.GRASS, 15, y, 0);
+                chunk3.addBlockToChunk(BlocksType.GRASS, 15, y, 15);
+                chunk4.addBlockToChunk(BlocksType.GRASS, 0, y, 15);
+            }
 
+            ChunksManager.rebuildAllCHunks();
             readyChunks.add(chunk);            
             readyChunks.add(chunk2);
             readyChunks.add(chunk3);
@@ -71,12 +76,6 @@ public class App
         }
         */
 
-        // TODO :
-        /*
-        - face culling partagé entre subchunk
-        - greedy meshing optimisé
-        - vertex pulling
-        */
         
         generationThread.start();
         Render.setChunkQueue(readyChunks);

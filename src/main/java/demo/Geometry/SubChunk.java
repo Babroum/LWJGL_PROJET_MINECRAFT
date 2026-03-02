@@ -13,6 +13,7 @@ import demo.Exceptions.IncorrectCoordinates;
 import demo.Managers.ChunksManager;
 import demo.Managers.ShadersManager;
 import demo.Meshing.SubChunkMesh;
+import demo.Rendering.Render;
 
 public class SubChunk extends Node3D{
 
@@ -161,6 +162,7 @@ public class SubChunk extends Node3D{
         this.objects[index].y = y;
         this.objects[index].z = z;
         this.objects[index].setupObjectBuffers();
+        this.rebuildSubChunk();
     }
 
     /**
@@ -179,6 +181,68 @@ public class SubChunk extends Node3D{
         ){throw new IncorrectCoordinates("Coordonées dans le subChunk invalide");}
         int index = x + y * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
         this.objects[index] = null;
+        this.fillSubChunkBitSet();
+
+        // rebuild les voisins si le bloc est en bordure
+        if (x == SubChunk.CHUNKSIZEX - 1 && this.getNeighborWest() != null) { 
+            this.getNeighborWest().rebuildSubChunk(); 
+        }
+        if (x == 0 && this.getNeighborEast() != null) { 
+            this.getNeighborEast().rebuildSubChunk(); 
+        }
+        if (z == 0 && this.getNeighborNorth() != null) { 
+            this.getNeighborNorth().rebuildSubChunk(); 
+        }
+        if (z == SubChunk.CHUNKSIZEZ - 1 && this.getNeighborSouth() != null) { 
+            this.getNeighborSouth().rebuildSubChunk(); 
+        }
+        if (y == 0 && this.getNeighborDown() != null) { 
+            this.getNeighborDown().rebuildSubChunk(); 
+        }
+        if (y == SubChunk.CHUNKSIZEY - 1 && this.getNeighborUp() != null) { 
+            this.getNeighborUp().rebuildSubChunk(); 
+        }
+        this.rebuildSubChunk();
+    }
+
+    /**
+     * Retire un block dans le subChunk <br>
+     * @param obj Object3D
+     */
+    @ChunkThread
+    public void removeBlockFromSubChunk(Object3D obj){
+        int index = obj.x + obj.y * SubChunk.CHUNKSIZEX + obj.z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
+        this.objects[index] = null;
+
+        this.fillSubChunkBitSet();
+
+        // rebuild les voisins si le bloc est en bordure
+        if (obj.x == SubChunk.CHUNKSIZEX - 1 && this.getNeighborWest() != null) { 
+            this.getNeighborWest().rebuildSubChunk(); 
+        }
+        if (obj.x == 0 && this.getNeighborEast() != null) { 
+            this.getNeighborEast().rebuildSubChunk(); 
+        }
+        if (obj.z == 0 && this.getNeighborNorth() != null) { 
+            this.getNeighborNorth().rebuildSubChunk(); 
+        }
+        if (obj.z == SubChunk.CHUNKSIZEZ - 1 && this.getNeighborSouth() != null) { 
+            this.getNeighborSouth().rebuildSubChunk(); 
+        }
+        if (obj.y == 0 && this.getNeighborDown() != null) { 
+            this.getNeighborDown().rebuildSubChunk(); 
+        }
+        if (obj.y == SubChunk.CHUNKSIZEY - 1 && this.getNeighborUp() != null) { 
+            this.getNeighborUp().rebuildSubChunk(); 
+        }
+        this.rebuildSubChunk();
+    }
+
+    private void rebuildSubChunk(){
+        this.fillSubChunkBitSet();
+        this.mesh.setupSubChunkBuffers();
+        this.generateSubChunkMesh();
+        Render.dirtySubChunks.add(this);
     }
 
     /**
@@ -386,36 +450,14 @@ public class SubChunk extends Node3D{
     }
     
     /**
-     * Retourne le subChunk voisin Nord
-     * @return SubChunk
-     */
-    public SubChunk getNeighborNorth(){
-        try{
-            Chunk chunk = ChunksManager.getChunk(this.x / SubChunk.CHUNKSIZEX, (this.z / SubChunk.CHUNKSIZEZ) - 1);
-            return chunk.getSubChunk(this.y / SubChunk.CHUNKSIZEY);
-        }catch (IncorrectCoordinates e){
-            return null;
-        }        
-    }
-    /**
-     * Retourne le subChunk voisin Sud
-     * @return SubChunk
-     */
-    public SubChunk getNeighborSouth(){
-        try{
-            Chunk chunk = ChunksManager.getChunk(this.x / SubChunk.CHUNKSIZEX, (this.z / SubChunk.CHUNKSIZEZ) + 1);
-            return chunk.getSubChunk(this.y / SubChunk.CHUNKSIZEY);
-        }catch(IncorrectCoordinates e){
-            return null;
-        }    
-    }
-    /**
      * Retourne le subChunk voisin Ouest
      * @return SubChunk
      */
     public SubChunk getNeighborWest(){
         try{
-            Chunk chunk = ChunksManager.getChunk((this.x / SubChunk.CHUNKSIZEX) + 1, this.z / SubChunk.CHUNKSIZEZ);
+            int chunkX = (int) Math.floor((float)this.x / SubChunk.CHUNKSIZEX);
+            int chunkZ = (int) Math.floor((float)this.z / SubChunk.CHUNKSIZEZ);
+            Chunk chunk = ChunksManager.getChunk(chunkX + 1, chunkZ);
             return chunk.getSubChunk(this.y / SubChunk.CHUNKSIZEY);
         }catch(IncorrectCoordinates e){
             return null;
@@ -427,7 +469,34 @@ public class SubChunk extends Node3D{
      */
     public SubChunk getNeighborEast(){
         try{
-            Chunk chunk = ChunksManager.getChunk((this.x / SubChunk.CHUNKSIZEX) - 1, this.z / SubChunk.CHUNKSIZEZ);
+            int chunkX = (int) Math.floor((float)this.x / SubChunk.CHUNKSIZEX);
+            int chunkZ = (int) Math.floor((float)this.z / SubChunk.CHUNKSIZEZ);
+            Chunk chunk = ChunksManager.getChunk(chunkX - 1, chunkZ);
+            return chunk.getSubChunk(this.y / SubChunk.CHUNKSIZEY);
+        }catch(IncorrectCoordinates e){
+            return null;
+        }    
+    }
+    /**
+     * Retourne le subChunk voisin Nord
+     * @return SubChunk
+     */
+    public SubChunk getNeighborNorth(){
+        try{
+            int chunkX = (int) Math.floor((float)this.x / SubChunk.CHUNKSIZEX);
+            int chunkZ = (int) Math.floor((float)this.z / SubChunk.CHUNKSIZEZ);
+            Chunk chunk = ChunksManager.getChunk(chunkX, chunkZ - 1);
+            return chunk.getSubChunk(this.y / SubChunk.CHUNKSIZEY);
+        }catch(IncorrectCoordinates e){
+            return null;
+        }        
+    }
+
+    public SubChunk getNeighborSouth(){
+        try{
+            int chunkX = (int) Math.floor((float)this.x / SubChunk.CHUNKSIZEX);
+            int chunkZ = (int) Math.floor((float)this.z / SubChunk.CHUNKSIZEZ);
+            Chunk chunk = ChunksManager.getChunk(chunkX, chunkZ + 1);
             return chunk.getSubChunk(this.y / SubChunk.CHUNKSIZEY);
         }catch(IncorrectCoordinates e){
             return null;
@@ -439,7 +508,9 @@ public class SubChunk extends Node3D{
      */
     public SubChunk getNeighborUp(){
         try{
-            Chunk chunk = ChunksManager.getChunk(this.x / SubChunk.CHUNKSIZEX, this.z / SubChunk.CHUNKSIZEZ);
+            int chunkX = (int) Math.floor((float)this.x / SubChunk.CHUNKSIZEX);
+            int chunkZ = (int) Math.floor((float)this.z / SubChunk.CHUNKSIZEZ);
+            Chunk chunk = ChunksManager.getChunk(chunkX, chunkZ);
             return chunk.getSubChunk((this.y / SubChunk.CHUNKSIZEY) + 1);
         }catch(IncorrectCoordinates e){
             return null;
@@ -451,7 +522,9 @@ public class SubChunk extends Node3D{
      */
     public SubChunk getNeighborDown(){
         try{
-            Chunk chunk = ChunksManager.getChunk(this.x / SubChunk.CHUNKSIZEX, this.z / SubChunk.CHUNKSIZEZ);
+            int chunkX = (int) Math.floor((float)this.x / SubChunk.CHUNKSIZEX);
+            int chunkZ = (int) Math.floor((float)this.z / SubChunk.CHUNKSIZEZ);
+            Chunk chunk = ChunksManager.getChunk(chunkX, chunkZ);
             return chunk.getSubChunk((this.y / SubChunk.CHUNKSIZEY) - 1);
         }catch(IncorrectCoordinates e){
             return null;

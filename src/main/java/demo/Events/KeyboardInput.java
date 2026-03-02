@@ -19,6 +19,7 @@ public class KeyboardInput {
     public static boolean isCloseWindow;
     public static boolean isCursorHidden = true;
     public static boolean isMouseLock = true;
+    public static boolean isTeleportActive;
     public static boolean isChunkBorderShow;
     public static boolean isJumping;
 
@@ -50,6 +51,9 @@ public class KeyboardInput {
                 case GLFW.GLFW_KEY_B:
                     KeyboardInput.isChunkBorderShow = !KeyboardInput.isChunkBorderShow;
                     break;
+
+                case GLFW.GLFW_KEY_T:
+                    KeyboardInput.isTeleportActive = true;
 
                 case GLFW.GLFW_KEY_KP_ADD:
                     AudioManager.setMasterVolume(AudioManager.getMasterVolume() + 1);

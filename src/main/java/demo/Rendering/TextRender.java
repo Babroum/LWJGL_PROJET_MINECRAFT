@@ -140,7 +140,7 @@ public class TextRender {
         BuffersManager.updateTextVBOEBO(vertexsBuffer, indicesBuffer, this.ids[0], this.ids[2]);
 
         GL30.glBindVertexArray(ids[1]);
-        GL11.glDrawElements(GL11.GL_TRIANGLES, indices.length, GL11.GL_UNSIGNED_INT, 0);
+        GL11.glDrawElements(GL11.GL_TRIANGLES, text.length() * 6, GL11.GL_UNSIGNED_INT, 0);
         GL30.glBindVertexArray(0);
 
         GL11.glEnable(GL11.GL_DEPTH_TEST);

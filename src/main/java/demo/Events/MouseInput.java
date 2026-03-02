@@ -85,10 +85,10 @@ public class MouseInput {
             boolean rotateX = deltax != 0;
             boolean rotateY = deltay != 0;
             if (rotateX) {
-                MouseInput.displVec.y = (float) deltax;
+                MouseInput.displVec.x = (float) deltax;
             }
             if (rotateY) {
-                MouseInput.displVec.x = (float) deltay;
+                MouseInput.displVec.y = (float) deltay;
             }
         }
         MouseInput.previousPos.x = MouseInput.currentPos.x;

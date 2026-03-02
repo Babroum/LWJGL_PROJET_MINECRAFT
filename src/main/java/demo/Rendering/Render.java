@@ -125,7 +125,8 @@ public class Render {
             double delta = (nowNano - lastTimeNano) / 1_000_000_000.0;
             Render.calculateFPS(delta);
 
-            Render.getTextRender().drawText("+", Window.width / 2, Window.height / 2, 15, Color4f.BLACK);
+            // crosshair simple
+            Render.getTextRender().drawText("+", Window.width / 2, Window.height / 2, 30, Color4f.BLACK);
 
             // Affiche la touche à appuyer pour toggle le wireframe
             Render.getTextRender().drawText("Toggle WireFrameMode : E", 0, 20, 15, Color4f.YELLOW);

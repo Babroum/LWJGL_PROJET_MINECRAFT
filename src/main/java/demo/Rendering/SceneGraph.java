@@ -5,9 +5,7 @@ import org.lwjgl.opengl.GL11;
 
 import demo.Annotations.OpenGLThread;
 import demo.Geometry.Chunk;
-import demo.Geometry.Clone3D;
 import demo.Geometry.Node3D;
-import demo.Geometry.Object3D;
 import demo.Geometry.SubChunk;
 import demo.Managers.ChunksManager;
 import demo.Types.Color4f;
