@@ -6,7 +6,7 @@ import java.lang.Math;
 import org.joml.*;
 import org.lwjgl.BufferUtils;
 
-import demo.Geometry.Object3D;
+import demo.Enum.BlocksType;
 import demo.Managers.ChunksManager;
 
 /**
@@ -120,9 +120,9 @@ public class Camera {
             }
             
             try {
-                Object3D block = ChunksManager.getBlock(bx, by, bz);
+                BlocksType block = ChunksManager.getBlock(bx, by, bz);
                 // dès qu'on trouve un bloc on retourne sa position entière exacte
-                if (block != null){
+                if (block != BlocksType.NULL){
                     int placeX = bx - (lastAxis == 0 ? stepX : 0);
                     int placeY = by - (lastAxis == 1 ? stepY : 0);
                     int placeZ = bz - (lastAxis == 2 ? stepZ : 0);

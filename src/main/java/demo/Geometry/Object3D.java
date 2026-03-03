@@ -21,16 +21,6 @@ public class Object3D extends Node3D{
     public BlocksType blockType;
     public int[] ids;
 
-    @OpenGLThread
-    /**
-     * Remplit les buffer avec les vertex et indice <br>
-     * Puis créer les vbo vao ebo avec les buffers précédement remplit
-     */
-    public void setupObjectBuffers(){
-        this.mesh.setupArray();
-        this.mesh.fillVertexArray();
-    }
-
     /**
      * Dessine les bordures d'un block avec des lignes
      */

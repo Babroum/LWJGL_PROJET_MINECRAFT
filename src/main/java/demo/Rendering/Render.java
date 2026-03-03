@@ -46,6 +46,7 @@ public class Render {
      */
     @OpenGLThread
     public static void setupBeforeRendering(){
+        BlockBorderRenderer.init();
         // initialise en mémoire les textures des caractères
         TexturesManager.loadTextures();
         try{
@@ -105,8 +106,7 @@ public class Render {
             // poll les chunks prêts et upload sur GPU
             Chunk chunk;
             while((chunk = Render.chunkQueue.poll()) != null){
-                chunk.setupChunkVBOVAO();
-                Render.sceneGraph.root.addChild(chunk);
+                Render.sceneGraph.root.addChild(chunk); // ← plus de setupChunkVBOVAO() ici
             }
 
             // Chunks modifiés update le VBO existant

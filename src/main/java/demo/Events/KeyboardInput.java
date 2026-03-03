@@ -3,7 +3,10 @@ package demo.Events;
 import org.lwjgl.glfw.GLFW;
 
 import demo.Annotations.OpenGLThread;
+import demo.Geometry.Chunk;
+import demo.Geometry.SubChunk;
 import demo.Managers.AudioManager;
+import demo.Managers.ChunksManager;
 import demo.Rendering.Camera;
 import demo.Player;
 
@@ -50,6 +53,21 @@ public class KeyboardInput {
 
                 case GLFW.GLFW_KEY_B:
                     KeyboardInput.isChunkBorderShow = !KeyboardInput.isChunkBorderShow;
+                    if (KeyboardInput.isChunkBorderShow){
+                        for (Chunk chunk : ChunksManager.getAllChunks()){
+                            for (SubChunk sub : chunk.subChunks){
+                                if (sub.mesh.getBorderVAO() == 0 && sub.mesh.getVertexCount() > 0){
+                                    sub.mesh.createSubChunkBorderVBOVAO();
+                                }
+                            }
+                        }
+                    } else {
+                        for (Chunk chunk : ChunksManager.getAllChunks()){
+                            for (SubChunk sub : chunk.subChunks){
+                                sub.mesh.deleteSubChunkBorderVBOVAO();
+                            }
+                        }
+                    }
                     break;
 
                 case GLFW.GLFW_KEY_T:

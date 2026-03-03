@@ -54,7 +54,11 @@ public class Chunk extends Node3D{
      */
     @ChunkThread
     public void addFloorToChunk(int y, int nbFloor, BlocksType type){
-        this.subChunks[y / SubChunk.CHUNKSIZEY].addFloorToSubChunk(y % SubChunk.CHUNKSIZEY, nbFloor % (SubChunk.CHUNKSIZEY + 1), type);
+        int subIndex = y / SubChunk.CHUNKSIZEY;
+        // Bloque les rebuilds pendant qu'on remplit les blocs
+        this.subChunks[subIndex].setGenerating(true);
+        this.subChunks[subIndex].addFloorToSubChunk(y % SubChunk.CHUNKSIZEY, nbFloor % (SubChunk.CHUNKSIZEY + 1), type);
+        this.subChunks[subIndex].setGenerating(false);
     }
     
     /**

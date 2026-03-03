@@ -6,15 +6,27 @@ import demo.Geometry.Cube;
  * Liste de blocks qui existent
  */
 public enum BlocksType {
-    GRASS,
-    COBBLESTONE,
-    STONE,
-    DIRT,
-    MAX,
-    HOMER,
-    NULL;
+    GRASS(1),
+    COBBLESTONE(2),
+    STONE(3),
+    DIRT(4),
+    MAX(5),
+    HOMER(6),
+    NULL(0);
 
     private Cube cube;
+    private final int id;
+
+    BlocksType(int id) { this.id = id; }
+
+    public int getId() { return id; }
+
+    public static BlocksType fromId(int id) {
+        for (BlocksType t : values()) {
+            if (t.id == id) return t;
+        }
+        return NULL;
+    }
 
     public Cube getCube(){
         if (this.cube == null){

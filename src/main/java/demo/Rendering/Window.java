@@ -131,6 +131,7 @@ public class Window {
         ShadersManager.closeProgramBlockBorderId();
         
         AudioManager.cleanup();
+        BlockBorderRenderer.cleanup();
         
         Window.windowCloseEventManager.closeWidow(Window.window);
 

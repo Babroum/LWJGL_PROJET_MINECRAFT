@@ -3,6 +3,7 @@ package demo.Meshing;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 
+import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
@@ -61,10 +62,7 @@ public class SubChunkMesh {
      * Le nombre de sommet dans la maille
      */
     private int vertexCount;
-    /**
-     * Le nombre de face dans la maille
-     */
-    private int faceCount;
+
     // ids des vao vbo, et le vbo et vao du chunkborder
     private int[] ids; 
 
@@ -84,7 +82,6 @@ public class SubChunkMesh {
         if (array.length < 7){
             throw new ArrayEmpty();
         }
-        int addedVertices = 0; // compte les vertices ajoutés lors de cet appel
         for(int i = 0; i < array.length; i += 7){
             int packed = 0;
             // |= c'est le OU permet de combiner sans supprimer les valeurs
@@ -101,9 +98,7 @@ public class SubChunkMesh {
             this.vertexArrayPack[this.vertexCount] = packed;
 
             this.vertexCount++;
-            addedVertices++;
         }    
-        this.faceCount += addedVertices / 6; // /6 car 6 sommets par face
     }
 
     /**
@@ -139,7 +134,6 @@ public class SubChunkMesh {
 
             this.vertexCount++;;
         }    
-        this.faceCount++;
     }
 
     /**
@@ -156,8 +150,9 @@ public class SubChunkMesh {
     @ChunkThread
     public synchronized void setupSubChunkBuffers(){
         this.vertexCount = 0;
-        this.vertexArrayPack = new int[SubChunk.MAXBLOCK * 4 * 6];
-        this.vertexBufferPack = BufferUtils.createIntBuffer(SubChunk.MAXBLOCK * 4 * 6); // 4096 blocks max * 4 sommets (1 int par sommet) * 6 faces
+        this.vertexArrayPack = new int[SubChunk.MAXBLOCK * 4 * 6]; // A MODIF
+        // Plus d'allocation du IntBuffer ici — sera fait dans fillSubChunkVertexBufferWithArray()
+        this.vertexBufferPack = null;
     }
 
     /**
@@ -165,11 +160,23 @@ public class SubChunkMesh {
      */
     @ChunkThread
     public synchronized void fillSubChunkVertexBufferWithArray(){
-        this.vertexBufferPack.clear();
+        // Libère l'ancien buffer off-heap s'il existe encore
+        if (this.vertexBufferPack != null){
+            MemoryUtil.memFree(this.vertexBufferPack);
+            this.vertexBufferPack = null;
+        }
+        if (this.vertexCount == 0){
+            this.vertexArrayPack = null; // libère le tableau Java aussi
+            return;
+        }
+        // Alloue EXACTEMENT la taille nécessaire, off-heap
+        this.vertexBufferPack = MemoryUtil.memAllocInt(this.vertexCount);
         for(int i = 0; i < this.vertexCount; i++){
             this.vertexBufferPack.put(this.vertexArrayPack[i]);
         }
         this.vertexBufferPack.flip(); // remet la position du buffer à 0, sinon il lirai de la fin des données à la fin du buffer
+        // Le tableau Java temporaire n'est plus nécessaire
+        this.vertexArrayPack = null;
     }
 
     /**
@@ -181,22 +188,29 @@ public class SubChunkMesh {
         if (this.ids == null){
             this.ids = new int[4];
         }
-        int[] result = BuffersManager.createVBOVAO(this.vertexBufferPack);
-        // pour opengl 0 = pas initialisé
+        // Supprime les anciens buffers GPU avant d'en créer de nouveaux
         if (this.ids[0] != 0){ 
             BuffersManager.deleteVBOVAO(new int[]{this.ids[0], this.ids[1]});
+            this.ids[0] = 0;
+            this.ids[1] = 0;
         }
+        // ids est initialisé, on peut return si chunk vide
+        if (this.vertexBufferPack == null){
+            return;
+        }
+        int[] result = BuffersManager.createVBOVAO(this.vertexBufferPack);
         this.ids[0] = result[0];
         this.ids[1] = result[1];
+
+        MemoryUtil.memFree(this.vertexBufferPack);
+        this.vertexBufferPack = null;
     }
 
     @OpenGLThread
     public void deleteSubChunkVBOVAO(){
-        int[] idsChunk = new int[]{this.ids[0], this.ids[1]};
-        int[] idsChunkBorder = new int[]{this.ids[2], this.ids[3]};
-
-        BuffersManager.deleteVBOVAO(idsChunk);
-        BuffersManager.deleteVBOVAO(idsChunkBorder);
+        // ids[0]=vbo, ids[1]=vao, ids[2]=vbo border, ids[3]=vao border
+        BuffersManager.deleteVBOVAO(new int[]{this.ids[0], this.ids[1]});
+        this.deleteSubChunkBorderVBOVAO();
     }
 
     /**
@@ -239,6 +253,16 @@ public class SubChunkMesh {
         this.ids[3] = chunkBorderIds[1];
     }
 
+    @OpenGLThread
+    public void deleteSubChunkBorderVBOVAO(){
+        if (this.ids == null) return;
+        if (this.ids[2] != 0){
+            BuffersManager.deleteVBOVAO(new int[]{this.ids[2], this.ids[3]});
+            this.ids[2] = 0;
+            this.ids[3] = 0;
+        }
+    }
+
     /**
      * Retourne le l'id du vao si il existe
      * @return int
@@ -248,14 +272,25 @@ public class SubChunkMesh {
     }
 
     /**
+     * Retourne le buffer avec les sommets packés
+     * @return IntBuffer
+     */
+    public IntBuffer getVertexBufferPack(){
+        return this.vertexBufferPack;
+    }
+
+    /**
      * Dessine la maille si les vbo et vao ont bien étaient initialisé
      * @throws Empty
      */
     @OpenGLThread
     public synchronized void drawSubChunkMesh(FloatBuffer buffer) throws Empty{   
         if (this.ids == null) throw new Empty("les vbo et vao ne sont pas initialisé");
+        if (this.ids[1] == 0) return; // sub-chunk vide, rien à dessiner
         TexturesManager.getTextureRender().draw();
-        if(KeyboardInput.isChunkBorderShow){
+
+        // Vérifie que le border VAO existe avant de le dessiner
+        if(KeyboardInput.isChunkBorderShow && this.ids[3] != 0){
             GL30.glBindVertexArray(ids[3]);
             GL11.glDrawArrays(GL11.GL_LINES, 0, 24);
             GL30.glBindVertexArray(0);  
@@ -266,6 +301,15 @@ public class SubChunkMesh {
         // enregistre le nombre d'appele de dessin 
         Render.monitor.incrementDrawCalls();
         // et le nombre de triangle dessiné
-        Render.monitor.addTriangles(this.faceCount * 2); // nb face * nb triangle par face     
+        Render.monitor.addTriangles(this.vertexCount / 3); 
     } 
+
+    // À appeler si le SubChunk est détruit avant que son buffer ait été uploadé
+    public synchronized void freeBuffer(){
+        if (this.vertexBufferPack != null){
+            MemoryUtil.memFree(this.vertexBufferPack);
+            this.vertexBufferPack = null;
+        }
+        this.vertexArrayPack = null;
+    }
 }

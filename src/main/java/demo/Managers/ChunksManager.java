@@ -6,11 +6,11 @@ import java.util.LinkedHashMap;
 import org.joml.Math;
 
 import demo.Annotations.ChunkThread;
+import demo.Enum.BlocksType;
 import demo.Exceptions.IncorrectCoordinates;
 import demo.Geometry.Chunk;
 import demo.Geometry.SubChunk;
 import demo.Rendering.Render;
-import demo.Geometry.Object3D;
 
 public class ChunksManager {
 
@@ -34,9 +34,21 @@ public class ChunksManager {
         // il faut tout créer avant de généré la mesh ça évite de devoir la regénérer
         // sauf pour les test on s'en fout
         ChunksManager.chunks.put(coord, chunk);
-        chunk.generateChunkMesh();
-
         return chunk;
+    }
+
+    /**
+     * Finalise la construction du chunk
+     * @param chunk Chunk
+     */
+    @ChunkThread
+    public static void finalizeChunk(Chunk chunk){
+        for(SubChunk sub : chunk.subChunks){
+            sub.mesh.setupSubChunkBuffers(); // recrée vertexArrayPack avant de générer
+            sub.generateSubChunkMesh();
+            Render.dirtySubChunks.add(sub);
+        }
+        Render.chunkQueue.add(chunk);
     }
 
     /**
@@ -86,18 +98,9 @@ public class ChunksManager {
      * Reconstruit tout les chunks <br>
      * Pas optimal
      */
-    public static void rebuildAllCHunks(){
+    public static void finalizeAllChunk(){
         for(Chunk chunk : ChunksManager.chunks.values()){
-            for(SubChunk sub : chunk.subChunks){
-                sub.fillSubChunkBitSet();
-            }
-        }
-        for(Chunk chunk : ChunksManager.chunks.values()){
-            for(SubChunk sub : chunk.subChunks){
-                sub.mesh.setupSubChunkBuffers();
-                sub.generateSubChunkMesh();
-                Render.dirtySubChunks.add(sub);
-            }
+            ChunksManager.finalizeChunk(chunk);
         }
     }
 
@@ -110,7 +113,7 @@ public class ChunksManager {
      * @return Object3D
      * @throws IncorrectCoordinates
      */
-    public static Object3D getBlock(int x, int y, int z) throws IncorrectCoordinates{
+    public static BlocksType getBlock(int x, int y, int z) throws IncorrectCoordinates{
         if (y < 0 || y >= SubChunk.CHUNKSIZEY * Chunk.SUBCHUNKCOUNT){throw new IncorrectCoordinates("Valeur en Y incorrect");}
 
         int chunkX = (int) Math.floor((float) x / SubChunk.CHUNKSIZEX);
