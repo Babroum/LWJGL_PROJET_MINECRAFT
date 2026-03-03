@@ -178,6 +178,10 @@ public class SubChunkMesh {
      */
     @OpenGLThread
     public void createSubChunkVBOVAO(){
+        // pour opengl 0 = pas initialisé
+        if (this.ids != null && this.ids[0] != 0){
+            BuffersManager.deleteVBOVAO(new int[]{this.ids[0], this.ids[1]});
+        }
         this.ids = new int[4];
         int[] result = BuffersManager.createVBOVAO(this.vertexBufferPack);
         this.ids[0] = result[0];
@@ -227,6 +231,10 @@ public class SubChunkMesh {
             linesBuffer.put(packed);
         }
         linesBuffer.flip();
+
+        if (this.ids != null && this.ids[2] != 0){
+            BuffersManager.deleteVBOVAO(new int[]{this.ids[2], this.ids[3]});
+        }
 
         int[] chunkBorderIds = BuffersManager.createVBOVAO(linesBuffer);
         this.ids[2] = chunkBorderIds[0];

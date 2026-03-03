@@ -8,6 +8,7 @@ import demo.Managers.ChunksManager;
 import demo.Managers.PlayersManager;
 import demo.Rendering.Camera;
 import demo.Enum.BlocksType;
+import demo.Events.KeyboardInput;
 import demo.Events.MouseInput;
 import demo.Geometry.Object3D;
 import demo.Geometry.SubChunk;
@@ -29,7 +30,7 @@ public class Player {
     private Camera camera = new Camera();
 
     public Vector3f position;
-    private float playerHeight = 1.5f;
+    private float playerHeight = 1.5f; // si le joueur est grand ou pas
     private float playerRadius = 0.3f; // si le joueur est gros ou pas
     private boolean isFalling = false; 
     private float velocityY = 0f; // Vitesse de chute/saut
@@ -76,8 +77,7 @@ public class Player {
             this.position.z = nextZ;
         }
         
-        // On met à jour la caméra après les deux tests
-        this.camera.setPosition(this.position.x, this.position.y, this.position.z);
+        this.setPosition(new Vector3f(this.position.x, this.position.y, this.position.z));
     }
 
     private boolean canMoveToWithBuffer(float x, float z, float radius) {
@@ -103,8 +103,8 @@ public class Player {
 
     public void jump(){
         // Si le joueur ne tombe pas
-        if (!this.isFalling){
-            this.velocityY = 5f; // valeur arbitraire, force du saut
+        if (!this.isFalling  && !isBlockCeiling()){
+            this.velocityY = 4.95f; // force de saut comme dans minecraft :)
             this.isFalling = true;
         }
     }
@@ -123,32 +123,57 @@ public class Player {
             return;
         }
 
+        // si le joueur monte et touche un plafond
+        if (this.velocityY > 0 && this.isBlockCeiling()){
+            this.velocityY = 0f; // stoppe la montée
+        }
+
         // si il y a un block et que l'on tombe, on arrête de tombé
         if (this.isOnGround() && this.velocityY <= 0) {
-            this.position.y = (int)(this.position.y - this.playerHeight) + 1 + this.playerHeight;
             this.velocityY = 0f;
             this.isFalling = false;
+            this.position.y = (int)Math.floor(this.position.y - this.playerHeight - 0.01f) + 1 + this.playerHeight;
         } else {
             // sinon on tombe
             this.isFalling = true;
         }
-
-        this.camera.setPosition(this.position.x, this.position.y, this.position.z);
+        this.setPosition(new Vector3f(this.position.x, this.position.y, this.position.z));
     }
 
-    public boolean isOnGround() {
-        float radius = 0.3f; // Même rayon que pour les murs
+    private boolean isInsidePlayer(int px, int py, int pz){
+        // vérifie si le bloc chevauche la boite de collision du joueur
+        float minX = this.position.x - this.playerRadius;
+        float maxX = this.position.x + this.playerRadius;
+        float minZ = this.position.z - this.playerRadius;
+        float maxZ = this.position.z + this.playerRadius;
+        float minY = this.position.y - this.playerHeight;
+        float maxY = this.position.y;
+        
+        // le bloc occupe de px à px+1, py à py+1, pz à pz+1
+        return px + 1 > minX && px < maxX &&
+            py + 1 > minY && py < maxY &&
+            pz + 1 > minZ && pz < maxZ;
+    }
+
+    private boolean isOnGround() {
         // On vérifie sous les pieds à la position Y actuelle (légèrement décalée vers le bas)
         float footY = this.position.y - this.playerHeight - 0.01f; 
 
         // On teste les 4 coins de la boîte de collision
-        return isBlockAt(this.position.x + radius, footY, this.position.z + radius) ||
-            isBlockAt(this.position.x - radius, footY, this.position.z + radius) ||
-            isBlockAt(this.position.x + radius, footY, this.position.z - radius) ||
-            isBlockAt(this.position.x - radius, footY, this.position.z - radius);
+        return isBlockAt(this.position.x + this.playerRadius, footY, this.position.z + this.playerRadius) ||
+            isBlockAt(this.position.x - this.playerRadius, footY, this.position.z + this.playerRadius) ||
+            isBlockAt(this.position.x + this.playerRadius, footY, this.position.z - this.playerRadius) ||
+            isBlockAt(this.position.x - this.playerRadius, footY, this.position.z - this.playerRadius);
     }
 
-    // Petite méthode utilitaire pour simplifier ton try/catch
+    private boolean isBlockCeiling(){
+        float headY = this.position.y + 0.1f;
+        return isBlockAt(this.position.x + this.playerRadius, headY, this.position.z + this.playerRadius) ||
+            isBlockAt(this.position.x - this.playerRadius, headY, this.position.z + this.playerRadius) ||
+            isBlockAt(this.position.x + this.playerRadius, headY, this.position.z - this.playerRadius) ||
+            isBlockAt(this.position.x - this.playerRadius, headY, this.position.z - this.playerRadius);
+    }
+
     private boolean isBlockAt(float x, float y, float z) {
         try {
             int bx = (int) Math.floor(x);
@@ -188,11 +213,19 @@ public class Player {
                 // pareil pour le chunk
                 sub = ChunksManager.getSubChunk(bx, by, bz);
 
-                // si on clique gauche, on casse le block si il existe
-                if (MouseInput.isLeftButtonPressed()) {
+                // si on clique gauche et que la souris n'est pas débloqué, on casse le block si il existe
+                if (MouseInput.isLeftButtonPressed() && KeyboardInput.isMouseLock) {
                     // Si on a un bloc et que le cooldown est prêt
                     if (block != null && this.breakCooldown <= 0f) {
-                        sub.removeBlockFromSubChunk(block);
+                        // le thread ne prend que des constantes, donc on copie 
+                        final SubChunk subToModify = sub;
+                        final Object3D blockToRemove = block;
+                        block = null; // l'original a null
+                        Thread t = new Thread(() -> {
+                            subToModify.removeBlockFromSubChunk(blockToRemove);
+                        });
+                        t.setDaemon(true);
+                        t.start();
                         this.breakCooldown = this.breakPlaceDelay;
                         block = null; 
                     }
@@ -200,20 +233,24 @@ public class Player {
                     this.breakCooldown = 0;
                 }  
                 
-                // si on clique droit, on pose le block
-                if (MouseInput.isRightButtonPressed()) {
+                // si on clique droit et que la souris n'est pas débloqué, on pose le block
+                if (MouseInput.isRightButtonPressed() && KeyboardInput.isMouseLock) {
                     int px = (int) Math.floor(place.x);
                     int py = (int) Math.floor(place.y);
                     int pz = (int) Math.floor(place.z);
                     // on vérifie pour etre sur qu'il n'y ait pas de bloc
-                    if (ChunksManager.getBlock(px, py, pz) == null && this.placeCooldown <= 0f){
+                    if (ChunksManager.getBlock(px, py, pz) == null && this.placeCooldown <= 0f && !this.isInsidePlayer(px, py, pz)){
                         try {
-                            SubChunk sub2 = ChunksManager.getSubChunk(px, py, pz);
+                            final SubChunk sub2 = ChunksManager.getSubChunk(px, py, pz);
                             // convertir en coordonnées locales du subchunk
                             int localX = ChunksManager.floorMod(px, SubChunk.CHUNKSIZEX);
                             int localY = ChunksManager.floorMod(py, SubChunk.CHUNKSIZEY);
                             int localZ = ChunksManager.floorMod(pz, SubChunk.CHUNKSIZEZ);
-                            sub2.addBlockToSubChunk(BlocksType.GRASS, localX, localY, localZ);
+                            Thread t = new Thread(() -> {
+                                sub2.addBlockToSubChunk(BlocksType.STONE, localX, localY, localZ);
+                            });
+                            t.setDaemon(true);
+                            t.start();
                             this.placeCooldown = this.breakPlaceDelay;
                         } catch (Exception e) {
                             // hors du monde
@@ -272,6 +309,6 @@ public class Player {
      */
     public void setPosition(Vector3f pos){
         this.position = pos;
-        this.camera.setPosition(this.position.x, this.position.y, this.position.z);
+        this.camera.setPosition(pos.x, pos.y, pos.z);
     }
 }

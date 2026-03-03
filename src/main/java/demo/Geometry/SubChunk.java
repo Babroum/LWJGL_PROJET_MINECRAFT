@@ -491,7 +491,10 @@ public class SubChunk extends Node3D{
             return null;
         }        
     }
-
+    /**
+     * Retourne le subChunk voisin Sud
+     * @return SubChunk
+     */
     public SubChunk getNeighborSouth(){
         try{
             int chunkX = (int) Math.floor((float)this.x / SubChunk.CHUNKSIZEX);

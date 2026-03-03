@@ -49,7 +49,7 @@ public class InputManager {
 
         // Ferme la fenêtre
         if (KeyboardInput.isCloseWindow){
-            Window.closeWindow();
+            Window.exitWindow();
         }
 
         // Si le joueur saute

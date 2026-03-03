@@ -61,7 +61,7 @@ public class AudioManager {
         // 1.0f = volume normal, 2.0f = double, etc.
         alListenerf(AL_GAIN, 1.0f);
 
-        System.out.println("AudioManager initialisé");
+        //System.out.println("AudioManager initialisé");
     }
 
     /**
@@ -333,6 +333,6 @@ public class AudioManager {
         alcDestroyContext(context);
         alcCloseDevice(device);
 
-        System.out.println("AudioManager nettoyé");
+        //System.out.println("AudioManager nettoyé");
     }
 }

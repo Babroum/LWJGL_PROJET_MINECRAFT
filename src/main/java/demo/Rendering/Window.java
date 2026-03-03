@@ -131,16 +131,10 @@ public class Window {
         ShadersManager.closeProgramBlockBorderId();
         
         AudioManager.cleanup();
+        
+        Window.windowCloseEventManager.closeWidow(Window.window);
 
         System.exit(0);
-    }
-
-    public static void closeWindow(){
-        ShadersManager.closeProgramId();        
-        ShadersManager.closeProgramTextId();
-        ShadersManager.closeProgramBlockBorderId();
-        AudioManager.cleanup();
-        Window.windowCloseEventManager.closeWidow(Window.window);
     }
 
     private static void closeGLFW()

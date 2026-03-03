@@ -40,43 +40,14 @@ public class App
             chunk3.addFloorToChunk(0, 1, BlocksType.GRASS);   
             chunk4.addFloorToChunk(0, 1, BlocksType.GRASS);
 
-            // Tour de 3x3 au centre des 4 chunks (autour de x=0, z=0)
-            for (int y = 0; y < 5; y++){
-                chunk.addBlockToChunk(BlocksType.GRASS, 0, y, 0);
-                chunk2.addBlockToChunk(BlocksType.GRASS, 15, y, 0);
-                chunk3.addBlockToChunk(BlocksType.GRASS, 15, y, 15);
-                chunk4.addBlockToChunk(BlocksType.GRASS, 0, y, 15);
-            }
-
             ChunksManager.rebuildAllCHunks();
             readyChunks.add(chunk);            
             readyChunks.add(chunk2);
             readyChunks.add(chunk3);
             readyChunks.add(chunk4);
-        });
-        /* EXEMPLE UTILISATION CASSER AJOUTER DANS INPUT MANAGER (pas opti de créer un thread a chaque click, il faudra utiliser un pool de thread)
-        if (MouseInput.isLeftClick()) { // casser un bloc
-            Chunk chunk = getChunkAtCursor(); // existe pas
-            int[] pos = getBlockAtCursor(); // existe pas
-            new Thread(() -> {
-                chunk.removeBlock(pos[0], pos[1], pos[2]);
-                chunk.rebuildMesh();
-                Render.dirtyChunks.add(chunk);
-            }).start();
-        }
-
-        if (MouseInput.isRightClick()) { // placer un bloc
-            Chunk chunk = getChunkAtCursor(); // existe pas
-            int[] pos = getBlockAtCursor(); // existe pas
-            new Thread(() -> {
-                chunk.addBlock(BlocksType.GRASS, pos[0], pos[1], pos[2]);
-                chunk.rebuildMesh();
-                Render.dirtyChunks.add(chunk);
-            }).start();
-        }
-        */
-
-        
+        });        
+        // daemon pour que le thread se ferme à la fermeture de la jvm
+        generationThread.setDaemon(true);
         generationThread.start();
         Render.setChunkQueue(readyChunks);
         Render.setDirtyChunkQueue(dirtyChunks);
