@@ -34,51 +34,20 @@ public class App
             Chunk chunk3 = ChunksManager.createChunk(-1, -1);
             Chunk chunk4 = ChunksManager.createChunk(0, -1);
 
-            chunk.addFloorToChunk(0, 16, BlocksType.HOMER);    
-            chunk.addFloorToChunk(16, 16, BlocksType.HOMER);     
-
+            // sol pour se repérer
+            chunk.addFloorToChunk(0, 1, BlocksType.GRASS);       
             chunk2.addFloorToChunk(0, 1, BlocksType.GRASS);    
-
             chunk3.addFloorToChunk(0, 1, BlocksType.GRASS);   
-
             chunk4.addFloorToChunk(0, 1, BlocksType.GRASS);
 
             ChunksManager.rebuildAllCHunks();
-
             readyChunks.add(chunk);            
             readyChunks.add(chunk2);
             readyChunks.add(chunk3);
             readyChunks.add(chunk4);
-        });
-        /* EXEMPLE UTILISATION CASSER AJOUTER DANS INPUT MANAGER (pas opti de créer un thread a chaque click, il faudra utiliser un pool de thread)
-        if (MouseInput.isLeftClick()) { // casser un bloc
-            Chunk chunk = getChunkAtCursor(); // existe pas
-            int[] pos = getBlockAtCursor(); // existe pas
-            new Thread(() -> {
-                chunk.removeBlock(pos[0], pos[1], pos[2]);
-                chunk.rebuildMesh();
-                Render.dirtyChunks.add(chunk);
-            }).start();
-        }
-
-        if (MouseInput.isRightClick()) { // placer un bloc
-            Chunk chunk = getChunkAtCursor(); // existe pas
-            int[] pos = getBlockAtCursor(); // existe pas
-            new Thread(() -> {
-                chunk.addBlock(BlocksType.GRASS, pos[0], pos[1], pos[2]);
-                chunk.rebuildMesh();
-                Render.dirtyChunks.add(chunk);
-            }).start();
-        }
-        */
-
-        // TODO :
-        /*
-        - face culling partagé entre subchunk
-        - greedy meshing optimisé
-        - vertex pulling
-        */
-        
+        });        
+        // daemon pour que le thread se ferme à la fermeture de la jvm
+        generationThread.setDaemon(true);
         generationThread.start();
         Render.setChunkQueue(readyChunks);
         Render.setDirtyChunkQueue(dirtyChunks);

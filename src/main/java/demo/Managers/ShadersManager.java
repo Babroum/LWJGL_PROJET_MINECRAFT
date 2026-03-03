@@ -6,9 +6,9 @@ import java.nio.FloatBuffer;
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL20;
 
-import demo.FileLoader;
 import demo.Annotations.OpenGLThread;
 import demo.Exceptions.ShaderManagerError;
+import demo.Others.FileLoader;
 
 /**
  * Gère les shaders
@@ -16,16 +16,20 @@ import demo.Exceptions.ShaderManagerError;
 public abstract class ShadersManager {
 
     private static int programId;
+    private static int programBlockBorderId;
     private static int programTextId;
 
     private static int locationProj, locationView, locationModel;
+    private static int locationProjBlockBorder, locationViewBlockBorder, locationBlockPosBlockBorder;
     private static int locationOrtho, locationTextColor;
 
     private static final Matrix4f textOrthoMatrix = new Matrix4f();
     private static int lastWidth = 0, lastHeight = 0;
 
     
-    // pareil mais pour les shaders de texte
+    /**
+     * Initialise les shaders pour le texte
+     */
     @OpenGLThread
     public static void createTextShader() throws ShaderManagerError{
         String vertexTextShader;
@@ -63,7 +67,7 @@ public abstract class ShadersManager {
     }
 
     /**
-     * Créer les shaders
+     * Initialise les shaders pour les chunks
      * @throws ShaderManagerError
      */
     @OpenGLThread
@@ -102,6 +106,52 @@ public abstract class ShadersManager {
         GL20.glDeleteShader(fgId);
     }
 
+    /**
+     * Initialise les shaders pour les bordures de blocks
+     * @throws ShaderManagerError
+     */
+    @OpenGLThread
+    public static void createBlockBorderShader() throws ShaderManagerError{
+        String vertexShader;
+        String fragmentShader;
+        try{
+            vertexShader = FileLoader.loadShaderFromClasspathS("/Shaders/vertex_block_border.glsl");
+            fragmentShader = FileLoader.loadShaderFromClasspathS("/Shaders/fragment_block_border.glsl");
+        }catch(IOException e){
+            e.printStackTrace();
+            return;
+        }
+
+        int[] ids = ShadersManager.create(vertexShader, fragmentShader);
+        int vsId = ids[0];
+        int fgId = ids[1];
+        
+        // attacher les shader compilés au programme
+        ShadersManager.programBlockBorderId = GL20.glCreateProgram();
+        GL20.glAttachShader(ShadersManager.programBlockBorderId, vsId);
+        GL20.glAttachShader(ShadersManager.programBlockBorderId, fgId);
+
+        // vérifie que les sorties du vertex shader corresponde aux entrées du fragment shader
+        GL20.glLinkProgram(ShadersManager.programBlockBorderId);
+        int success = GL20.glGetProgrami(ShadersManager.programBlockBorderId, GL20.GL_LINK_STATUS);
+        if (success == GL20.GL_FALSE){
+            throw new ShaderManagerError(GL20.glGetProgramInfoLog(ShadersManager.programBlockBorderId));
+        }
+
+        // une fois les vertex liés on détache et supprime les shaders
+        GL20.glDetachShader(ShadersManager.programBlockBorderId, vsId);
+        GL20.glDeleteShader(vsId);
+
+        GL20.glDetachShader(ShadersManager.programBlockBorderId, fgId);
+        GL20.glDeleteShader(fgId);
+    }
+
+    /**
+     * Initialise les shaders
+     * @param vertexShader
+     * @param fragmentShader
+     * @return
+     */
     @OpenGLThread
     private static int[] create(String vertexShader, String fragmentShader){
         // creation de l'object shader
@@ -131,6 +181,11 @@ public abstract class ShadersManager {
         locationProj = GL20.glGetUniformLocation(programId, "projection");
         locationView = GL20.glGetUniformLocation(programId, "view");
         locationModel = GL20.glGetUniformLocation(programId, "model");
+        
+        locationProjBlockBorder = GL20.glGetUniformLocation(programBlockBorderId, "projection");
+        locationViewBlockBorder = GL20.glGetUniformLocation(programBlockBorderId, "view");
+        locationBlockPosBlockBorder = GL20.glGetUniformLocation(programBlockBorderId, "blockPos");
+
         locationOrtho = GL20.glGetUniformLocation(programTextId, "ortho");
         locationTextColor = GL20.glGetUniformLocation(programTextId, "color");
     }
@@ -138,6 +193,11 @@ public abstract class ShadersManager {
     @OpenGLThread
     public static void useShader(){
         GL20.glUseProgram(ShadersManager.programId);
+    }
+
+    @OpenGLThread
+    public static void useBlockBorderShader(){
+        GL20.glUseProgram(ShadersManager.programBlockBorderId);
     }
     
     @OpenGLThread
@@ -164,6 +224,36 @@ public abstract class ShadersManager {
         view.rewind();
         GL20.glUniformMatrix4fv(ShadersManager.locationView, false, view);
     }
+
+    /**
+     * Envoie la projection au shader des bordures de blocks
+     * @param proj FloatBuffer
+     */
+    @OpenGLThread 
+    public static void runProjectionBlockBorder(FloatBuffer proj){
+        proj.rewind();
+        GL20.glUniformMatrix4fv(ShadersManager.locationProjBlockBorder, false, proj);        
+    }
+
+    /**
+     * Envoie la viewMatrix de la caméra au shader des bordures de blocks
+     * @param proj FloatBuffer
+     */
+    @OpenGLThread 
+    public static void runViewBlockBorder(FloatBuffer view){
+        view.rewind();
+        GL20.glUniformMatrix4fv(ShadersManager.locationViewBlockBorder, false, view);
+    }
+
+    /**
+     * Envoie la pos des lignes du block au shader des bordures de blocks
+     * @param proj FloatBuffer
+     */
+    @OpenGLThread 
+    public static void runBlockPosBlockBorder(int x, int y, int z){
+        GL20.glUniform3f(ShadersManager.locationBlockPosBlockBorder, x, y, z);
+    }
+
     /**
      * Envoie le model des cubes au shader
      * @param proj FloatBuffer
@@ -208,6 +298,11 @@ public abstract class ShadersManager {
         GL20.glDeleteProgram(ShadersManager.programId);
     }
 
+   @OpenGLThread
+    public static void closeProgramBlockBorderId(){
+        GL20.glDeleteProgram(ShadersManager.programBlockBorderId);
+    }  
+
     @OpenGLThread
     public static void closeProgramTextId(){
         GL20.glDeleteProgram(ShadersManager.programTextId);
@@ -216,6 +311,11 @@ public abstract class ShadersManager {
     @OpenGLThread
     public static int getProgramId(){
         return ShadersManager.programId;
+    }
+
+    @OpenGLThread
+    public static int getProgramBlockBorderId(){
+        return ShadersManager.programBlockBorderId;
     }
 
     @OpenGLThread

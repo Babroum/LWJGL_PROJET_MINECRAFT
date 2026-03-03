@@ -4,7 +4,8 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.openal.*;
 import org.lwjgl.stb.*;
 import org.lwjgl.system.MemoryUtil;
-import demo.FileLoader;
+
+import demo.Others.FileLoader;
 
 import java.nio.*;
 import java.util.ArrayList;
@@ -60,7 +61,7 @@ public class AudioManager {
         // 1.0f = volume normal, 2.0f = double, etc.
         alListenerf(AL_GAIN, 1.0f);
 
-        System.out.println("AudioManager initialisé");
+        //System.out.println("AudioManager initialisé");
     }
 
     /**
@@ -250,7 +251,7 @@ public class AudioManager {
         alSourcef(source, AL_GAIN, volume);
         
         // Vérifier que ça a bien été appliqué
-        float check = alGetSourcef(source, AL_GAIN);
+        //float check = alGetSourcef(source, AL_GAIN);
         //System.out.println("Gain appliqué : " + check);
         
         // Vérifier les erreurs OpenAL
@@ -332,6 +333,6 @@ public class AudioManager {
         alcDestroyContext(context);
         alcCloseDevice(device);
 
-        System.out.println("AudioManager nettoyé");
+        //System.out.println("AudioManager nettoyé");
     }
 }

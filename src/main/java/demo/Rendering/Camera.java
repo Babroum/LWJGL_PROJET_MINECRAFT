@@ -1,40 +1,47 @@
 package demo.Rendering;
 
 import java.nio.FloatBuffer;
+import java.lang.Math;
 
 import org.joml.*;
 import org.lwjgl.BufferUtils;
 
-// source : https://ahbejarano.gitbook.io/lwjglgamedev/chapter-08
+import demo.Geometry.Object3D;
+import demo.Managers.ChunksManager;
+
 /**
  * Une camera
  */
 public class Camera {
     
-    private Vector3f direction;
     private Vector3f position;
-    private Vector3f right;
-    private Vector2f rotation;
-    private Vector3f up;
+    private Vector3f direction;
     private Matrix4f viewMatrix;
     private FloatBuffer matrixBuffer = BufferUtils.createFloatBuffer(16);
+    private float yaw = 0;   // Rotation gauche/droite
+    private float pitch = 0; // Rotation haut/bas
 
     public Camera() {
         this.direction = new Vector3f();
-        this.right = new Vector3f();
-        this.up = new Vector3f();
         this.position = new Vector3f();
         this.viewMatrix = new Matrix4f();
-        this.rotation = new Vector2f();
     }
 
     /**
      * Ajoute une rotation au vecteur de rotation
-     * @param x float
-     * @param y float
+     * @param rx float
+     * @param ry float
      */
-    public void addRotation(float x, float y){
-        this.rotation.add(x, y);
+    public void addRotation(float rx, float ry) {
+        // rx correspond souvent au mouvement horizontal de la souris (Yaw)
+        // ry au mouvement vertical (Pitch)
+        this.yaw += Math.toDegrees(rx);
+        this.pitch += Math.toDegrees(ry);
+
+        // bloque la vue verticale pour éviter de se retourner
+        if (pitch > 89f) pitch = 89f;
+        if (pitch < -89f) pitch = -89f;
+        
         this.recalculate();
     }
 
@@ -55,6 +62,83 @@ public class Camera {
     }
 
     /**
+     * Fonctionne comme un raycast <br>
+     * Raycast DDA (Digital Differential Analysis)
+     * @param distance
+     * @return Vector3f[], [0] bloc visé et [1] où poser
+     */
+    public Vector3f[] getLookAt(float distance){
+        Vector3f pos = new Vector3f(this.position);
+        Vector3f dir = new Vector3f(this.direction);
+        
+        // bloc de départ : la case dans laquelle se trouve la caméra
+        int bx = (int) Math.floor(pos.x);
+        int by = (int) Math.floor(pos.y);
+        int bz = (int) Math.floor(pos.z);
+        
+        // direction du pas : +1 ou -1 selon le sens du regard sur chaque axe
+        int stepX = dir.x > 0 ? 1 : -1;
+        int stepY = dir.y > 0 ? 1 : -1;
+        int stepZ = dir.z > 0 ? 1 : -1;
+        
+        // tMaxX/Y/Z : distance le long du rayon jusqu'à la PROCHAINE frontière de bloc sur chaque axe
+        // si on regarde vers +X depuis x=2.3, la prochaine frontière X est à x=3.0
+        // si on regarde vers -X depuis x=2.3, la prochaine frontière X est à x=2.0
+        // (stepX > 0 ? 1 : 0) choisit la bonne frontière selon le sens
+        float tMaxX = (dir.x != 0) ? Math.abs((bx + (stepX > 0 ? 1 : 0) - pos.x) / dir.x) : Float.MAX_VALUE;
+        float tMaxY = (dir.y != 0) ? Math.abs((by + (stepY > 0 ? 1 : 0) - pos.y) / dir.y) : Float.MAX_VALUE;
+        float tMaxZ = (dir.z != 0) ? Math.abs((bz + (stepZ > 0 ? 1 : 0) - pos.z) / dir.z) : Float.MAX_VALUE;
+        
+        // tDelta : distance à parcourir sur le rayon pour traverser UN bloc complet sur chaque axe
+        // si dir.x = 0.5, il faut parcourir 1/0.5 = 2 unités du rayon pour avancer d'1 bloc en X
+        float tDeltaX = (dir.x != 0) ? Math.abs(1.0f / dir.x) : Float.MAX_VALUE;
+        float tDeltaY = (dir.y != 0) ? Math.abs(1.0f / dir.y) : Float.MAX_VALUE;
+        float tDeltaZ = (dir.z != 0) ? Math.abs(1.0f / dir.z) : Float.MAX_VALUE;
+
+        int lastAxis = 0;
+        
+        // on continue tant que la prochaine frontière est dans la distance max
+        while (Math.min(tMaxX, Math.min(tMaxY, tMaxZ)) < distance){
+            
+            // on avance vers la frontière la plus proche
+            if (tMaxX < tMaxY && tMaxX < tMaxZ){
+                // la frontière X est la plus proche : on passe dans le bloc voisin en X
+                bx += stepX;
+                // la prochaine frontière X est maintenant à tDeltaX plus loin
+                tMaxX += tDeltaX;
+                lastAxis = 0;
+            } else if (tMaxY < tMaxZ){
+                // la frontière Y est la plus proche
+                by += stepY;
+                tMaxY += tDeltaY;
+                lastAxis = 1;
+            } else {
+                // la frontière Z est la plus proche
+                bz += stepZ;
+                tMaxZ += tDeltaZ;
+                lastAxis = 2;
+            }
+            
+            try {
+                Object3D block = ChunksManager.getBlock(bx, by, bz);
+                // dès qu'on trouve un bloc on retourne sa position entière exacte
+                if (block != null){
+                    int placeX = bx - (lastAxis == 0 ? stepX : 0);
+                    int placeY = by - (lastAxis == 1 ? stepY : 0);
+                    int placeZ = bz - (lastAxis == 2 ? stepZ : 0);
+                    return new Vector3f[]{
+                        new Vector3f(bx, by, bz),      // [0] bloc visé
+                        new Vector3f(placeX, placeY, placeZ) // [1] où poser
+                    };
+                }
+            } catch (Exception e) {
+                // hors du monde chargé
+            }
+        }
+        return null; // aucun bloc trouvé dans la distance
+    }
+
+    /**
      * Retourne la matrice sous forme de FloatBuffer pour OpenGL
      * @return FloatBuffer
      */
@@ -65,69 +149,52 @@ public class Camera {
     }
 
     /**
-     * Permet de reculer
-     * Modifie le vecteur de position qui modifie la viewMatrice
+     * Permet d'obtenir la direction en avant<br>
+     * Ne déplace pas
      * @param inc float
+     * @return Vector3f
      */
-    public void moveBackwards(float inc){
-        this.viewMatrix.positiveZ(this.direction).negate().mul(inc);
-        this.position.sub(this.direction);
-        this.recalculate();
+    public Vector3f getForwardDirection(float inc) {
+        // On utilise le Yaw pour calculer X et Z
+        float rad = (float) Math.toRadians(yaw);
+        
+        // Formule standard : 
+        // sin(yaw) donne le mouvement latéral
+        // cos(yaw) donne le mouvement avant/arrière
+        float dx = (float) Math.sin(rad);
+        float dz = (float) -Math.cos(rad);
+        
+        return new Vector3f(dx * inc, 0, dz * inc);
     }
 
     /**
-     * Permet de descendre
-     * Modifie le vecteur up qui modifie la viewMatrice
+     * Permet d'obtenir la direction sur le côté<br>
+     * Ne déplace pas
      * @param inc float
+     * @return Vector3f
      */
-    public void moveDown(float inc){
-        this.viewMatrix.positiveY(this.up).mul(inc);
-        this.position.sub(this.up);
-        this.recalculate();
+    public Vector3f getRightDirection(float inc) {
+        // Pour la droite, on décale de 90 degrés
+        float rad = (float) Math.toRadians(yaw + 90);
+        
+        float dx = (float) Math.sin(rad);
+        float dz = (float) -Math.cos(rad);
+        
+        return new Vector3f(dx * inc, 0, dz * inc);
     }
 
     /**
-     * Permet d'avancer
-     * Modifie le vecteur de position qui modifie la viewMatrice
+     * Permet d'obtenir la direction sur le dessus<br>
+     * Ne déplace pas
      * @param inc float
+     * @return Vector3f
      */
-    public void moveForward(float inc){
-        this.viewMatrix.positiveZ(this.direction).negate().mul(inc);
-        this.position.add(this.direction);
-        this.recalculate();
+    public Vector3f getUpDirection(float inc){
+        return new Vector3f(0, inc, 0);
     }
 
-    /**
-     * Permet d'aller à gauche
-     * Modifie le vecteur right qui modifie la viewMatrice
-     * @param inc float
-     */
-    public void moveLeft(float inc){
-        this.viewMatrix.positiveX(this.right).mul(inc);
-        this.position.sub(this.right);
-        this.recalculate();
-    }
-
-    /**
-     * Permet d'aller à droite
-     * Modifie le vecteur right qui modifie la viewMatrice
-     * @param inc float
-     */
-    public void moveRight(float inc){
-        this.viewMatrix.positiveX(this.right).mul(inc);
-        this.position.add(this.right);
-        this.recalculate();
-    }
-
-    /**
-     * Permet de monter
-     * Modifie le vecteur up qui modifie la viewMatrice
-     * @param inc float
-     */
-    public void moveUp(float inc){
-        this.viewMatrix.positiveY(this.up).mul(inc);
-        this.position.add(this.up);
-        this.recalculate();
+    public float getYaw() {
+        return yaw;
     }
 
     /**
@@ -135,7 +202,8 @@ public class Camera {
      * @param inc float
      */
     private void recalculate(){
-        viewMatrix.identity().rotateX(this.rotation.x).rotateY(this.rotation.y).translate(-position.x, -position.y, -position.z);
+        this.viewMatrix.identity().rotateX((float) Math.toRadians(pitch)).rotateY((float) Math.toRadians(yaw)).translate(-position.x, -position.y, -position.z);
+        this.viewMatrix.positiveZ(this.direction).negate(); // met à jour la direction
     }
 
     /**
@@ -155,8 +223,10 @@ public class Camera {
      * @param y float 
      * @param z float
      */
-    public void setRotation(float x, float y){
-        this.rotation.set(x, y);
+    public void setRotation(float x, float y) {
+        // Si x et y sont passés en radians, on les convertit
+        this.pitch = (float) Math.toDegrees(x);
+        this.yaw = (float) Math.toDegrees(y);
         this.recalculate();
     }
 }

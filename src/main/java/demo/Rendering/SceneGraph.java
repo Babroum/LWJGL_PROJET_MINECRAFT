@@ -4,9 +4,9 @@ import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL11;
 
 import demo.Annotations.OpenGLThread;
-import demo.Geometry.Clone3D;
+import demo.Geometry.Chunk;
 import demo.Geometry.Node3D;
-import demo.Geometry.Object3D;
+import demo.Geometry.SubChunk;
 import demo.Managers.ChunksManager;
 import demo.Types.Color4f;
 
@@ -17,7 +17,6 @@ public class SceneGraph {
 
     public final Node3D root = new Node3D();
     private Color4f backGroundColor = Color4f.WHITE;    
-    private Camera camera = new Camera();
     // a replacer dans une autre class
     private ChunksManager chunksManager = new ChunksManager();
 
@@ -35,14 +34,6 @@ public class SceneGraph {
      */
     public Color4f getBackGroundColor(){
         return this.backGroundColor;
-    }
-
-    /**
-     * Retourne la camera de la scène
-     * @return Camera
-     */
-    public Camera getCamera(){
-        return this.camera;
     }
 
     /**
@@ -73,16 +64,14 @@ public class SceneGraph {
     private int getNumberOfVertex(Node3D node){
         int count = 0;
         // si le nœud est un object3D/Clone et qu'il a un mesh alors on récupère le nombre de sommet du mesh
-        if (node instanceof Object3D){
-            Object3D obj = (Object3D) node;
-            if (obj.mesh != null){
-                count += obj.mesh.getVertexCount();         
-            }         
-        }else if (node instanceof Clone3D){
-            Clone3D obj = (Clone3D) node;
-            if (obj.getCloned().mesh != null){
-                count += obj.getCloned().mesh.getVertexCount();
-            }
+        if (node instanceof Chunk){
+            for (Chunk chunk : ChunksManager.getAllChunks()){
+                for (SubChunk sub : chunk.getAllSubChunks()){
+                    if (sub.mesh != null){
+                        count += sub.mesh.getVertexCount();
+                    }
+                }
+            }       
         }
 
         // pour chaque enfant du nœud on calcule le nombre de sommet récursivement

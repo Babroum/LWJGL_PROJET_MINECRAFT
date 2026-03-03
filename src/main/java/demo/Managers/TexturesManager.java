@@ -2,8 +2,8 @@ package demo.Managers;
 
 import java.io.IOException;
 
-import demo.FileLoader;
 import demo.Enum.TexturesType;
+import demo.Others.FileLoader;
 import demo.Rendering.TextureRender;
 
 public class TexturesManager {

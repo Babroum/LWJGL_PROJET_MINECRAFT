@@ -5,11 +5,12 @@ import java.nio.FloatBuffer;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.joml.Matrix4f;
+import org.joml.Vector3f;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL11;
 
-import demo.FileLoader;
+import demo.GameLoop;
 import demo.Annotations.OpenGLThread;
 import demo.Events.InputManager;
 import demo.Geometry.Chunk;
@@ -18,7 +19,9 @@ import demo.Managers.AudioManager;
 import demo.Managers.BuffersManager;
 import demo.Managers.ShadersManager;
 import demo.Managers.TexturesManager;
+import demo.Others.FileLoader;
 import demo.Types.Color4f;
+import demo.Managers.PlayersManager;
 
 public class Render {
     
@@ -71,11 +74,7 @@ public class Render {
         // Prépare la 3D
         Render.initialize3D(Window.width, Window.height);
 
-        // positionne la camera
-        Render.sceneGraph.getCamera().setPosition(0f, 20f, 0f);
-
-        AudioManager.playLoop("bird");
-        AudioManager.setVolume("bird", 10f);
+        GameLoop.init();
 
         while ( !GLFW.glfwWindowShouldClose(windowRef) ) {  
             // démarre l'enregistrement de performances pour la frame
@@ -93,13 +92,15 @@ public class Render {
             // Modifie le déplacement de la caméra 
             InputManager.run(windowRef, sceneGraph, nowMs - lastTimeMs);
             monitor.stopTimer("logic");
-            
+
             // utilise le shader 
             ShadersManager.useShader();
             
             // donne les matrices de camera et perspective au shader
             ShadersManager.runProjection(Render.calculateProjection(45.0f, (float) Window.width / Window.height, 0.1f, 5000.f)); // donne la perspective de l'ecran
-            ShadersManager.runView(Render.sceneGraph.getCamera().getViewMatrixBuffer()); // donne la vue de la camera
+            ShadersManager.runView(PlayersManager.player.getCamera().getViewMatrixBuffer()); // donne la vue de la camera
+
+            GameLoop.run(nowMs - lastTimeMs);
 
             // poll les chunks prêts et upload sur GPU
             Chunk chunk;
@@ -113,6 +114,7 @@ public class Render {
             while ((dirty = dirtySubChunks.poll()) != null) {
                 dirty.setupSubChunkVBOVAO();
             }
+
             // enregistre le temps de rendu
             monitor.startTimer("render");
             // Dessine la scène
@@ -126,12 +128,18 @@ public class Render {
             double delta = (nowNano - lastTimeNano) / 1_000_000_000.0;
             Render.calculateFPS(delta);
 
-            // Affiche le nombre de vertex à l'écran
-            Render.getTextRender().drawText("Vertex count : " + Render.sceneGraph.getTotalVertexCount(), 0, 20, 20, Color4f.BLUE);   
+            // crosshair simple
+            Render.getTextRender().drawText("+", Window.width / 2, Window.height / 2, 30, Color4f.BLACK);
+
+            // Affiche la pos du joueur
+            Vector3f pos = PlayersManager.player.getPosition();
+            Render.getTextRender().drawText(String.format("Position: (%.2f, %.2f, %.2f)%n", pos.x, pos.y - 1.5f, pos.z), Window.width / 2,20, 15, Color4f.RED);
+
             // Affiche la touche à appuyer pour toggle le wireframe
-            Render.getTextRender().drawText("Toggle WireFrameMode : E", 0, 40, 15, Color4f.YELLOW);
-            Render.getTextRender().drawText("Toggle MouseLock : P", 0, 60, 15, Color4f.YELLOW);       
-            Render.getTextRender().drawText("Toggle ChunkBorder : B", 0, 80, 15, Color4f.YELLOW);       
+            Render.getTextRender().drawText("Toggle WireFrameMode : E", 0, 20, 15, Color4f.YELLOW);
+            Render.getTextRender().drawText("Toggle MouseLock : P", 0, 40, 15, Color4f.YELLOW);       
+            Render.getTextRender().drawText("Toggle ChunkBorder : B", 0, 60, 15, Color4f.YELLOW);   
+            Render.getTextRender().drawText("Toggle Teleport to (0,10,0): T", 0, 80, 15, Color4f.YELLOW);      
 
             // Affiche le nombre de nœud à l'écran
             Render.getTextRender().drawText("Node3D count : " + Render.sceneGraph.getTotalNodeCount(), 0, 100, 15, Color4f.PURPLE);         
@@ -148,6 +156,7 @@ public class Render {
             GLFW.glfwSwapBuffers(windowRef);		
 
             GLFW.glfwPollEvents();
+
             lastTimeMs = nowMs;           
             lastTimeNano = nowNano; 
 
@@ -157,9 +166,7 @@ public class Render {
                 System.gc();
                 System.out.println("RAM après GC: " + (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / (1024*1024) + " MB");
             }*/
-
-            // termine l'enregistrement de donnée pour la frame
-            AudioManager.cleanupTempSources();
+            GameLoop.quit();
             monitor.endFrame();
 		}
 
@@ -222,7 +229,9 @@ public class Render {
         GL11.glCullFace(GL11.GL_FRONT);  
 
         // Créer les shaders
-        ShadersManager.createShader();    
+        ShadersManager.createShader();   
+        ShadersManager.createBlockBorderShader();
+         
         // récupère les ids des uniformes dans les .glsl
         // pour ne pas à avoir à les re recup à chaque frame
         ShadersManager.getUniformLocations();    

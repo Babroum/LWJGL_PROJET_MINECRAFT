@@ -116,6 +116,15 @@ public class Chunk extends Node3D{
         if (y < 0 || y >= Chunk.SUBCHUNKCOUNT) throw new IncorrectCoordinates("Les coordonées sont incorrects (0 pour le subChunk n°0, 1 ... n°1, etc...");
         return this.subChunks[y];
     }
+
+    /**
+     * Retourne le tableau des sous chunks
+     * @return SubChunk[]
+     */
+    public SubChunk[] getAllSubChunks(){
+        return this.subChunks;
+    }
+
     /**
      * Remplis les vbo des subChunks avec les données des objets avant le rendu
      */

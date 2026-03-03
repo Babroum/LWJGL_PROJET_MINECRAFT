@@ -6,7 +6,6 @@ import demo.Geometry.Cube;
  * Liste de blocks qui existent
  */
 public enum BlocksType {
-    AIR,
     GRASS,
     COBBLESTONE,
     STONE,
@@ -18,7 +17,7 @@ public enum BlocksType {
     private Cube cube;
 
     public Cube getCube(){
-        if (this.cube == null && this != AIR){
+        if (this.cube == null){
             this.cube = new Cube(this);
         }
         return this.cube;

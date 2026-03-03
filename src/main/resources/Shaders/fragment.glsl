@@ -3,19 +3,19 @@
 // Le fragment shader reçoit les données interpolées depuis le vertex shader et calcule une couleur RGBA pour chaque pixel.
 
 #version 330 core
-flat in int texId;
-flat in int dir;
-flat in int isBorder;
-in vec2 uv;
+flat in int texId; // id de texture de la face
+flat in int dir; // direction de la face
+flat in int isBorder; // détermine si c'est les bordures de subchunk à afficher ou non
+in vec2 uv; // coordonnées uv 
 
 out vec4 FragColor;
 
-uniform sampler2DArray tex;
+uniform sampler2DArray tex; // la texture correspondante à l'id
 
 void main()
 {
     if(isBorder == 1){
-        FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+        FragColor = vec4(1.0, 0.0, 0.0, 1.0); // bordure rouge pour les subchunks
         return;
     }
     
@@ -28,7 +28,7 @@ void main()
     else if (dir == 4) light = 1.0; // UP, pleine lumière
     else               light = 0.5; // DOWN, sombre
 
+    // calcule la taille texture par rapport au coordonnées uv et la texture
     vec4 texColor = texture(tex, vec3(uv, float(texId))); 
     FragColor = vec4(texColor.rgb * light, texColor.a);
-    //FragColor = vec4(1.0,0.0,0.0,1.0); // pour test
 }
