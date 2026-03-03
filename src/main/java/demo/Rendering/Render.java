@@ -100,6 +100,8 @@ public class Render {
             ShadersManager.runProjection(Render.calculateProjection(45.0f, (float) Window.width / Window.height, 0.1f, 5000.f)); // donne la perspective de l'ecran
             ShadersManager.runView(PlayersManager.player.getCamera().getViewMatrixBuffer()); // donne la vue de la camera
 
+            GameLoop.run(nowMs - lastTimeMs);
+
             // poll les chunks prêts et upload sur GPU
             Chunk chunk;
             while((chunk = Render.chunkQueue.poll()) != null){
@@ -149,8 +151,6 @@ public class Render {
                     Render.getTextRender().drawText(lines[i], 0, 120 + i * 20, 15, Color4f.PURPLE);
                 }
             }
-
-            GameLoop.run(nowMs - lastTimeMs);
 
             // Rends la fenêtre en buffer dessinée visible à l’écran
             GLFW.glfwSwapBuffers(windowRef);		

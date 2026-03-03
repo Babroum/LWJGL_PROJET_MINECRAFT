@@ -118,7 +118,7 @@ public class SubChunkMesh {
     //    x        y         z     u   v   dir   textureId
     // 512 textures max
     @ChunkThread
-    public void addObjectFaceVertexToArray(int[] array, int cubeX, int cubeY, int cubeZ) throws ArrayEmpty{
+    public synchronized void addObjectFaceVertexToArray(int[] array, int cubeX, int cubeY, int cubeZ) throws ArrayEmpty{
         if (array.length < 7){
             throw new ArrayEmpty();
         }
@@ -154,7 +154,7 @@ public class SubChunkMesh {
      * Définit la taille du buffer pour les vertexs
      */
     @ChunkThread
-    public void setupSubChunkBuffers(){
+    public synchronized void setupSubChunkBuffers(){
         this.vertexCount = 0;
         this.vertexArrayPack = new int[SubChunk.MAXBLOCK * 4 * 6];
         this.vertexBufferPack = BufferUtils.createIntBuffer(SubChunk.MAXBLOCK * 4 * 6); // 4096 blocks max * 4 sommets (1 int par sommet) * 6 faces
@@ -164,7 +164,7 @@ public class SubChunkMesh {
      * Remplis le buffer avec le tableau de sommet
      */
     @ChunkThread
-    public void fillSubChunkVertexBufferWithArray(){
+    public synchronized void fillSubChunkVertexBufferWithArray(){
         this.vertexBufferPack.clear();
         for(int i = 0; i < this.vertexCount; i++){
             this.vertexBufferPack.put(this.vertexArrayPack[i]);
@@ -177,13 +177,15 @@ public class SubChunkMesh {
      * Définis les ids des buffers créer avec les sommets
      */
     @OpenGLThread
-    public void createSubChunkVBOVAO(){
+    public synchronized void createSubChunkVBOVAO(){
+        if (this.ids == null){
+            this.ids = new int[4];
+        }
+        int[] result = BuffersManager.createVBOVAO(this.vertexBufferPack);
         // pour opengl 0 = pas initialisé
-        if (this.ids != null && this.ids[0] != 0){
+        if (this.ids[0] != 0){ 
             BuffersManager.deleteVBOVAO(new int[]{this.ids[0], this.ids[1]});
         }
-        this.ids = new int[4];
-        int[] result = BuffersManager.createVBOVAO(this.vertexBufferPack);
         this.ids[0] = result[0];
         this.ids[1] = result[1];
     }
@@ -232,23 +234,17 @@ public class SubChunkMesh {
         }
         linesBuffer.flip();
 
-        if (this.ids != null && this.ids[2] != 0){
-            BuffersManager.deleteVBOVAO(new int[]{this.ids[2], this.ids[3]});
-        }
-
         int[] chunkBorderIds = BuffersManager.createVBOVAO(linesBuffer);
         this.ids[2] = chunkBorderIds[0];
         this.ids[3] = chunkBorderIds[1];
     }
 
     /**
-     * Met à jour le vbo du chunk
-     * Pas utile pour l'instant
+     * Retourne le l'id du vao si il existe
+     * @return int
      */
-    @OpenGLThread
-    @Deprecated
-    public void updateSubChunkVBOVAO(){
-        BuffersManager.updateChunkVBO(this.vertexBufferPack, this.ids[0]);
+    public int getBorderVAO(){
+        return this.ids == null ? 0 : this.ids[2];
     }
 
     /**
@@ -256,7 +252,7 @@ public class SubChunkMesh {
      * @throws Empty
      */
     @OpenGLThread
-    public void drawSubChunkMesh(FloatBuffer buffer) throws Empty{   
+    public synchronized void drawSubChunkMesh(FloatBuffer buffer) throws Empty{   
         if (this.ids == null) throw new Empty("les vbo et vao ne sont pas initialisé");
         TexturesManager.getTextureRender().draw();
         if(KeyboardInput.isChunkBorderShow){

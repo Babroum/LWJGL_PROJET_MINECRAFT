@@ -112,7 +112,9 @@ public class SubChunk extends Node3D{
     public void setupSubChunkVBOVAO(){
         // créer les vbo vao avec le buffer rempli
         this.mesh.createSubChunkVBOVAO();
-        this.mesh.createSubChunkBorderVBOVAO();
+        if (this.mesh.getBorderVAO() == 0){ // seulement si pas encore créé
+            this.mesh.createSubChunkBorderVBOVAO();
+        }
     }
 
     @OpenGLThread
@@ -240,13 +242,15 @@ public class SubChunk extends Node3D{
 
     private void rebuildSubChunk(){
         this.fillSubChunkBitSet();
-        this.mesh.setupSubChunkBuffers();
-        this.generateSubChunkMesh();
+        synchronized(this.mesh){
+            this.mesh.setupSubChunkBuffers();
+            this.generateSubChunkMesh();
+        }
         Render.dirtySubChunks.add(this);
     }
 
     /**
-     * Envoie les quads à dessiné avec le greedyMeshing
+     * Envoie les quads à dessiné avec le face cullings
      */
     @ChunkThread
     private void uploadSubChunkMesh(){

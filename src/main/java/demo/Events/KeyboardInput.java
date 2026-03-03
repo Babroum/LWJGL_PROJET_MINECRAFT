@@ -54,6 +54,7 @@ public class KeyboardInput {
 
                 case GLFW.GLFW_KEY_T:
                     KeyboardInput.isTeleportActive = true;
+                    break;
 
                 case GLFW.GLFW_KEY_KP_ADD:
                     AudioManager.setMasterVolume(AudioManager.getMasterVolume() + 1);

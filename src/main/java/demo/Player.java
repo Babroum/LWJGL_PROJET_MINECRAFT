@@ -1,5 +1,8 @@
 package demo;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 import org.joml.Vector3f;
 import org.lwjgl.opengl.GL11;
 
@@ -220,12 +223,9 @@ public class Player {
                         // le thread ne prend que des constantes, donc on copie 
                         final SubChunk subToModify = sub;
                         final Object3D blockToRemove = block;
-                        block = null; // l'original a null
-                        Thread t = new Thread(() -> {
+                        chunkModifyThread.submit(() -> {
                             subToModify.removeBlockFromSubChunk(blockToRemove);
                         });
-                        t.setDaemon(true);
-                        t.start();
                         this.breakCooldown = this.breakPlaceDelay;
                         block = null; 
                     }
@@ -246,11 +246,9 @@ public class Player {
                             int localX = ChunksManager.floorMod(px, SubChunk.CHUNKSIZEX);
                             int localY = ChunksManager.floorMod(py, SubChunk.CHUNKSIZEY);
                             int localZ = ChunksManager.floorMod(pz, SubChunk.CHUNKSIZEZ);
-                            Thread t = new Thread(() -> {
+                            chunkModifyThread.submit(() -> {
                                 sub2.addBlockToSubChunk(BlocksType.STONE, localX, localY, localZ);
                             });
-                            t.setDaemon(true);
-                            t.start();
                             this.placeCooldown = this.breakPlaceDelay;
                         } catch (Exception e) {
                             // hors du monde
@@ -286,6 +284,13 @@ public class Player {
 
         this.updateMovement(delta / 1000f); // en seconde
     }
+
+    // un seul thread dédié
+    private static ExecutorService chunkModifyThread = Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r);
+        t.setDaemon(true);
+        return t;
+    });
 
     /**
      * Retourne la camera de la scène
