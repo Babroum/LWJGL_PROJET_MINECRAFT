@@ -67,6 +67,10 @@ public class Object3D extends Node3D{
         }
         linesBuffer.flip();
 
+        if (this.ids != null && this.ids[0] != 0){
+            BuffersManager.deleteVBOVAO(this.ids);
+        }
+
         int[] blockBorderIds = BuffersManager.createVBOVAO(linesBuffer);
         this.ids[0] = blockBorderIds[0];
         this.ids[1] = blockBorderIds[1];
