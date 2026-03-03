@@ -5,6 +5,7 @@ import java.nio.FloatBuffer;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.joml.Matrix4f;
+import org.joml.Vector3f;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL11;
@@ -127,6 +128,10 @@ public class Render {
 
             // crosshair simple
             Render.getTextRender().drawText("+", Window.width / 2, Window.height / 2, 30, Color4f.BLACK);
+
+            // Affiche la pos du joueur
+            Vector3f pos = PlayersManager.player.getPosition();
+            Render.getTextRender().drawText(String.format("Position: (%.2f, %.2f, %.2f)%n", pos.x, pos.y - 1.5f, pos.z), Window.width / 2,20, 15, Color4f.RED);
 
             // Affiche la touche à appuyer pour toggle le wireframe
             Render.getTextRender().drawText("Toggle WireFrameMode : E", 0, 20, 15, Color4f.YELLOW);

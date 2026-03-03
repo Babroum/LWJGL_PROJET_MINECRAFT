@@ -9,7 +9,7 @@ public class PlayersManager {
     
     public static Player player = new Player();
 
-    public static void updateMovement(float delta){
-        PlayersManager.player.updateMovement(delta / 1000f); // en seconde
+    public static void playersLoop(float delta){
+        PlayersManager.player.playerLoop(delta);
     }
 }

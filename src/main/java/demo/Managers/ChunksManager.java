@@ -149,7 +149,13 @@ public class ChunksManager {
         return sub;
     }
 
-    private static int floorMod(int x, int mod) {
+    /**
+     * Calcule le modulo avec toujours un résultat positif 
+     * @param x
+     * @param mod
+     * @return int
+     */
+    public static int floorMod(int x, int mod) {
         return ((x % mod) + mod) % mod;
     }
 }

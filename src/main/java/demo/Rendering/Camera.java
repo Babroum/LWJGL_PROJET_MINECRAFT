@@ -65,9 +65,9 @@ public class Camera {
      * Fonctionne comme un raycast <br>
      * Raycast DDA (Digital Differential Analysis)
      * @param distance
-     * @return
+     * @return Vector3f[], [0] bloc visé et [1] où poser
      */
-    public Vector3f getLookAt(float distance){
+    public Vector3f[] getLookAt(float distance){
         Vector3f pos = new Vector3f(this.position);
         Vector3f dir = new Vector3f(this.direction);
         
@@ -94,6 +94,8 @@ public class Camera {
         float tDeltaX = (dir.x != 0) ? Math.abs(1.0f / dir.x) : Float.MAX_VALUE;
         float tDeltaY = (dir.y != 0) ? Math.abs(1.0f / dir.y) : Float.MAX_VALUE;
         float tDeltaZ = (dir.z != 0) ? Math.abs(1.0f / dir.z) : Float.MAX_VALUE;
+
+        int lastAxis = 0;
         
         // on continue tant que la prochaine frontière est dans la distance max
         while (Math.min(tMaxX, Math.min(tMaxY, tMaxZ)) < distance){
@@ -104,20 +106,31 @@ public class Camera {
                 bx += stepX;
                 // la prochaine frontière X est maintenant à tDeltaX plus loin
                 tMaxX += tDeltaX;
+                lastAxis = 0;
             } else if (tMaxY < tMaxZ){
                 // la frontière Y est la plus proche
                 by += stepY;
                 tMaxY += tDeltaY;
+                lastAxis = 1;
             } else {
                 // la frontière Z est la plus proche
                 bz += stepZ;
                 tMaxZ += tDeltaZ;
+                lastAxis = 2;
             }
             
             try {
                 Object3D block = ChunksManager.getBlock(bx, by, bz);
                 // dès qu'on trouve un bloc on retourne sa position entière exacte
-                if (block != null) return new Vector3f(bx, by, bz);
+                if (block != null){
+                    int placeX = bx - (lastAxis == 0 ? stepX : 0);
+                    int placeY = by - (lastAxis == 1 ? stepY : 0);
+                    int placeZ = bz - (lastAxis == 2 ? stepZ : 0);
+                    return new Vector3f[]{
+                        new Vector3f(bx, by, bz),      // [0] bloc visé
+                        new Vector3f(placeX, placeY, placeZ) // [1] où poser
+                    };
+                }
             } catch (Exception e) {
                 // hors du monde chargé
             }

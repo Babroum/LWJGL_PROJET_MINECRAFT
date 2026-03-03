@@ -190,10 +190,10 @@ public class SubChunk extends Node3D{
         if (x == 0 && this.getNeighborEast() != null) { 
             this.getNeighborEast().rebuildSubChunk(); 
         }
-        if (z == 0 && this.getNeighborNorth() != null) { 
+        if (z == SubChunk.CHUNKSIZEZ - 1 && this.getNeighborNorth() != null) { 
             this.getNeighborNorth().rebuildSubChunk(); 
         }
-        if (z == SubChunk.CHUNKSIZEZ - 1 && this.getNeighborSouth() != null) { 
+        if (z == 0 && this.getNeighborSouth() != null) { 
             this.getNeighborSouth().rebuildSubChunk(); 
         }
         if (y == 0 && this.getNeighborDown() != null) { 
@@ -223,10 +223,10 @@ public class SubChunk extends Node3D{
         if (obj.x == 0 && this.getNeighborEast() != null) { 
             this.getNeighborEast().rebuildSubChunk(); 
         }
-        if (obj.z == 0 && this.getNeighborNorth() != null) { 
+        if (obj.z == SubChunk.CHUNKSIZEZ - 1 && this.getNeighborNorth() != null) { 
             this.getNeighborNorth().rebuildSubChunk(); 
         }
-        if (obj.z == SubChunk.CHUNKSIZEZ - 1 && this.getNeighborSouth() != null) { 
+        if (obj.z == 0 && this.getNeighborSouth() != null) { 
             this.getNeighborSouth().rebuildSubChunk(); 
         }
         if (obj.y == 0 && this.getNeighborDown() != null) { 
@@ -312,15 +312,6 @@ public class SubChunk extends Node3D{
             for (int x = 0; x < SubChunk.CHUNKSIZEX; x++){
                 int index = z + x * SubChunk.CHUNKSIZEZ;        
 
-                int ligneUp = this.upFaceAxis[index];
-                while (ligneUp != 0){
-                    int y = Integer.numberOfLeadingZeros(ligneUp);
-                    int objectIndex = x + y * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
-                    if (this.objects[objectIndex] == null) continue;
-                    this.mesh.addObjectFaceVertexToArray(this.objects[objectIndex].mesh.getFaceVertex(Directions.UP), x, y, z);
-                    ligneUp &= ~(1 << (31 - y));
-                }
-
                 int ligneDown = this.downFaceAxis[index];
                 while (ligneDown != 0){
                     int y = Integer.numberOfLeadingZeros(ligneDown);
@@ -328,6 +319,15 @@ public class SubChunk extends Node3D{
                     if (this.objects[objectIndex] == null) continue;
                     this.mesh.addObjectFaceVertexToArray(this.objects[objectIndex].mesh.getFaceVertex(Directions.DOWN), x, y, z);
                     ligneDown &= ~(1 << (31 - y));
+                }
+
+                int ligneUp = this.upFaceAxis[index];
+                while (ligneUp != 0){
+                    int y = Integer.numberOfLeadingZeros(ligneUp);
+                    int objectIndex = x + y * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
+                    if (this.objects[objectIndex] == null) continue;
+                    this.mesh.addObjectFaceVertexToArray(this.objects[objectIndex].mesh.getFaceVertex(Directions.UP), x, y, z);
+                    ligneUp &= ~(1 << (31 - y));
                 }
             }
         }
@@ -388,17 +388,17 @@ public class SubChunk extends Node3D{
                     int bitSetIndex = x + y * SubChunk.CHUNKSIZEX + 15 * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
                     ligneNeighborSouth = (this.getNeighborSouth().bitSet.get(bitSetIndex) ? 1 : 0);
                 }
-                ligneNeighborSouth = ligneNeighborSouth << 16;     
+                ligneNeighborSouth = ligneNeighborSouth << 31;     
 
                 int ligneNeighborNorth = 0;
                 if (this.getNeighborNorth() != null){
                     int bitSetIndex = x + y * SubChunk.CHUNKSIZEX + 0 * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
                     ligneNeighborNorth = (this.getNeighborNorth().bitSet.get(bitSetIndex) ? 1 : 0);
                 }
-                ligneNeighborNorth = ligneNeighborNorth << 31;  
+                ligneNeighborNorth = ligneNeighborNorth << 16;  
 
-                this.southFaceAxis[index] = ligne & ~((ligne << 1) | ligneNeighborSouth); // faces vers le sud  
-                this.northFaceAxis[index] = ligne & ~((ligne >>> 1) | ligneNeighborNorth); // faces vers le nord
+                this.southFaceAxis[index] = ligne & ~((ligne >>> 1) | ligneNeighborSouth); // faces vers le sud  
+                this.northFaceAxis[index] = ligne & ~((ligne << 1) | ligneNeighborNorth); // faces vers le nord
             }
         }
         // Récup haut bas
@@ -485,7 +485,7 @@ public class SubChunk extends Node3D{
         try{
             int chunkX = (int) Math.floor((float)this.x / SubChunk.CHUNKSIZEX);
             int chunkZ = (int) Math.floor((float)this.z / SubChunk.CHUNKSIZEZ);
-            Chunk chunk = ChunksManager.getChunk(chunkX, chunkZ - 1);
+            Chunk chunk = ChunksManager.getChunk(chunkX, chunkZ + 1);
             return chunk.getSubChunk(this.y / SubChunk.CHUNKSIZEY);
         }catch(IncorrectCoordinates e){
             return null;
@@ -496,7 +496,7 @@ public class SubChunk extends Node3D{
         try{
             int chunkX = (int) Math.floor((float)this.x / SubChunk.CHUNKSIZEX);
             int chunkZ = (int) Math.floor((float)this.z / SubChunk.CHUNKSIZEZ);
-            Chunk chunk = ChunksManager.getChunk(chunkX, chunkZ + 1);
+            Chunk chunk = ChunksManager.getChunk(chunkX, chunkZ - 1);
             return chunk.getSubChunk(this.y / SubChunk.CHUNKSIZEY);
         }catch(IncorrectCoordinates e){
             return null;
