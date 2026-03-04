@@ -2,6 +2,7 @@ package demo.Rendering;
 
 import java.io.IOException;
 import java.nio.FloatBuffer;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.joml.Matrix4f;
@@ -36,8 +37,9 @@ public class Render {
     private static int frameCount;
     private static float displayedFps = 0.0f;
 
-    public static ConcurrentLinkedQueue<Chunk> chunkQueue = new ConcurrentLinkedQueue<>();
-    public static ConcurrentLinkedQueue<SubChunk> dirtySubChunks = new ConcurrentLinkedQueue<>();
+    // Valeur à changé aussi dans App.java
+    public static ArrayBlockingQueue<Chunk> chunkQueue = new ArrayBlockingQueue<>(16);
+    public static ArrayBlockingQueue<SubChunk> dirtySubChunks = new ArrayBlockingQueue<>(64);
 
     private static FloatBuffer projBuffer = BufferUtils.createFloatBuffer(16);
 
@@ -106,7 +108,7 @@ public class Render {
             // poll les chunks prêts et upload sur GPU
             Chunk chunk;
             while((chunk = Render.chunkQueue.poll()) != null){
-                Render.sceneGraph.root.addChild(chunk); // ← plus de setupChunkVBOVAO() ici
+                Render.sceneGraph.root.addChild(chunk);
             }
 
             // Chunks modifiés update le VBO existant
@@ -174,10 +176,10 @@ public class Render {
         Window.exitWindow();
     }
 
-    public static void setChunkQueue(ConcurrentLinkedQueue<Chunk> queue){
+    public static void setChunkQueue(ArrayBlockingQueue<Chunk> queue){
         Render.chunkQueue = queue;
     }
-    public static void setDirtyChunkQueue(ConcurrentLinkedQueue<SubChunk> queue){
+    public static void setDirtyChunkQueue(ArrayBlockingQueue<SubChunk> queue){
         Render.dirtySubChunks = queue;
     }
 

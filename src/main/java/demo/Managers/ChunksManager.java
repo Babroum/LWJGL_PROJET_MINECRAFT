@@ -6,6 +6,7 @@ import java.util.LinkedHashMap;
 import org.joml.Math;
 
 import demo.Annotations.ChunkThread;
+import demo.Annotations.OpenGLThread;
 import demo.Enum.BlocksType;
 import demo.Exceptions.IncorrectCoordinates;
 import demo.Geometry.Chunk;
@@ -47,9 +48,10 @@ public class ChunksManager {
             sub.mesh.setupSubChunkBuffers(sub.bitSet.cardinality()); // recrée vertexArrayPack avant de générer
             sub.generateSubChunkMesh();
             sub.linkNeighbors();
-            Render.dirtySubChunks.add(sub);
+            // met le thread en pause si l'array est plein, le thread se relance automatiquement au moment ou OpenGLThread poll un chunk
+            try { Render.dirtySubChunks.put(sub); } catch(InterruptedException e) { Thread.currentThread().interrupt(); }
         }
-        Render.chunkQueue.add(chunk);
+        try { Render.chunkQueue.put(chunk); } catch(InterruptedException e) { Thread.currentThread().interrupt(); }
     }
 
     /**
@@ -81,7 +83,7 @@ public class ChunksManager {
      * @param z int
      * @throws IncorrectCoordinates
      */
-    @ChunkThread
+    @OpenGLThread
     public static void removeChunk(int x, int z) throws IncorrectCoordinates{
         String coord = String.valueOf(x)+","+String.valueOf(z);
         if (!ChunksManager.chunks.containsKey(coord)){
@@ -96,9 +98,9 @@ public class ChunksManager {
     }
 
     /**
-     * Reconstruit tout les chunks <br>
-     * Pas optimal
+     * Finalise la construction de tout les chunks
      */
+    @ChunkThread
     public static void finalizeAllChunk(){
         for(Chunk chunk : ChunksManager.chunks.values()){
             ChunksManager.finalizeChunk(chunk);
@@ -151,6 +153,18 @@ public class ChunksManager {
         SubChunk sub = chunk.getSubChunk(y / SubChunk.CHUNKSIZEY);
 
         return sub;
+    }
+
+    /**
+     * Supprime tout les subchunks
+     */
+    @OpenGLThread
+    public static void removeAllSubChunk(){
+        for (Chunk chunk : ChunksManager.chunks.values()){
+            for (SubChunk sub : chunk.subChunks){
+                sub.removeSubChunk();
+            }
+        }
     }
 
     /**

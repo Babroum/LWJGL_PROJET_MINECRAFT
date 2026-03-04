@@ -119,12 +119,16 @@ public class SubChunk extends Node3D{
         }
     }
 
+    /**
+     * Supprime le subChunk
+     */
     @OpenGLThread
     public void removeSubChunk(){
         // Libère le buffer CPU off-heap s'il n'a pas encore été uploadé
         this.mesh.freeBuffer();
         // Libère les buffers GPU
         this.mesh.deleteSubChunkVBOVAO();
+        this.cleanup();
     }
 
     /**
@@ -213,6 +217,7 @@ public class SubChunk extends Node3D{
         this.rebuildSubChunk();
     }
 
+    @ChunkThread
     private void rebuildSubChunk(){
         this.fillSubChunkBitSet();
         synchronized(this.mesh){
@@ -220,7 +225,8 @@ public class SubChunk extends Node3D{
             this.generateSubChunkMesh();
             this.linkNeighbors();
         }
-        Render.dirtySubChunks.add(this);
+        // met le thread en pause si l'array est plein, le thread se relance automatiquement au moment ou OpenGLThread poll un chunk
+        try { Render.dirtySubChunks.put(this); } catch(InterruptedException e) { Thread.currentThread().interrupt(); }
     }
 
     /**
@@ -328,6 +334,7 @@ public class SubChunk extends Node3D{
      * Comme son nom l'indique
      * Calcule aussi avec les faces des chunks voisins
      */
+    @ChunkThread
     private void calculateSubChunkFaceCulling(int[] northFaceAxis, int[] southFaceAxis,
                                               int[] eastFaceAxis,  int[] westFaceAxis,
                                               int[] upFaceAxis,    int[] downFaceAxis){
@@ -437,6 +444,7 @@ public class SubChunk extends Node3D{
     /**
      * Récupère tout les voisins du subChunk
      */
+    @ChunkThread
     public void linkNeighbors(){
         // ouest
         try{
@@ -550,6 +558,7 @@ public class SubChunk extends Node3D{
         this.mesh.drawSubChunkMesh(this.buffer);
     }
 
+    @ChunkThread
     @Override
     public void drawNode(Matrix4f parentModel){
         Matrix4f model = new Matrix4f(parentModel)

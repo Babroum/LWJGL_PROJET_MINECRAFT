@@ -1,6 +1,6 @@
 package demo;
 
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ArrayBlockingQueue;
 
 import demo.Enum.BlocksType;
 import demo.Geometry.Chunk;
@@ -22,9 +22,13 @@ public class App
     }
 
     public static void draw(SceneGraph scene){
-        // ConcurrentLinkedQueue pour passer les chunks prêts au thread OpenGL
-        ConcurrentLinkedQueue<Chunk> readyChunks = new ConcurrentLinkedQueue<>();
-        ConcurrentLinkedQueue<SubChunk> dirtyChunks = new ConcurrentLinkedQueue<>();
+
+        // nombre de chunk que le ChunkThread peut mettre avant de s'arreter
+        // le OpenGLThread va lui afficher ce qu'il y a dans l'array et des qu'il affiche 1 chunk il le retire 
+        // du array ce qui permet au ChunkThread de rajouter un nouveau chunk dans l'array
+        // Valeur à changé aussi dans Render.java
+        ArrayBlockingQueue<Chunk> readyChunks = new ArrayBlockingQueue<>(16);
+        ArrayBlockingQueue<SubChunk> dirtyChunks = new ArrayBlockingQueue<>(64);
 
         // thread de génération
         Thread generationThread = new Thread(() -> {
@@ -51,7 +55,7 @@ public class App
                 for (int j = -5; j < 5; j++){
                     Chunk chunk = ChunksManager.getChunk(j, i);
                     ChunksManager.finalizeChunk(chunk);
-                    readyChunks.add(chunk);
+                    try { readyChunks.put(chunk); } catch(InterruptedException e) { Thread.currentThread().interrupt(); }
                 }
             }
 

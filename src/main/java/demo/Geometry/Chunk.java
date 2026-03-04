@@ -115,7 +115,6 @@ public class Chunk extends Node3D{
      * @throws IncorrectCoordinates
      * @return SubChunk
      */
-    @ChunkThread
     public SubChunk getSubChunk(int y) throws IncorrectCoordinates{ 
         if (y < 0 || y >= Chunk.SUBCHUNKCOUNT) throw new IncorrectCoordinates("Les coordonées sont incorrects (0 pour le subChunk n°0, 1 ... n°1, etc...");
         return this.subChunks[y];
@@ -137,6 +136,7 @@ public class Chunk extends Node3D{
         for(SubChunk sub : this.subChunks) sub.setupSubChunkVBOVAO();
     }
 
+    @OpenGLThread
     @Override
     public void drawNode(Matrix4f parentModel){
         for (SubChunk sub : subChunks){

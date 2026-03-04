@@ -111,7 +111,7 @@ public class SubChunkMesh {
     //    x        y         z     u   v   dir   textureId
     // 512 textures max
     @ChunkThread
-    public synchronized void addObjectFaceVertexToArray(int[] array, int cubeX, int cubeY, int cubeZ) throws ArrayEmpty{
+    public void addObjectFaceVertexToArray(int[] array, int cubeX, int cubeY, int cubeZ) throws ArrayEmpty{
         if (array.length < 7){
             throw new ArrayEmpty();
         }
@@ -147,7 +147,7 @@ public class SubChunkMesh {
      * @param blockCount int
      */
     @ChunkThread
-    public synchronized void setupSubChunkBuffers(int blockCount){
+    public void setupSubChunkBuffers(int blockCount){
         this.vertexCount = 0;
         int needed = blockCount > 0 ? blockCount * 36 : 1;
         // Ne réalloue que si le tableau actuel est trop petit
@@ -163,7 +163,7 @@ public class SubChunkMesh {
      * Remplis le buffer avec le tableau de sommet
      */
     @ChunkThread
-    public synchronized void fillSubChunkVertexBufferWithArray(){
+    public void fillSubChunkVertexBufferWithArray(){
         // Libère l'ancien buffer off-heap s'il existe encore
         if (this.vertexBufferPack != null){
             MemoryUtil.memFree(this.vertexBufferPack);
@@ -188,7 +188,7 @@ public class SubChunkMesh {
      * Définis les ids des buffers créer avec les sommets
      */
     @OpenGLThread
-    public synchronized void createSubChunkVBOVAO(){
+    public void createSubChunkVBOVAO(){
         if (this.ids == null){
             this.ids = new int[4];
         }
@@ -289,7 +289,7 @@ public class SubChunkMesh {
      * @throws Empty
      */
     @OpenGLThread
-    public synchronized void drawSubChunkMesh(FloatBuffer buffer) throws Empty{   
+    public void drawSubChunkMesh(FloatBuffer buffer) throws Empty{   
         if (this.ids == null) throw new Empty("les vbo et vao ne sont pas initialisé");
         if (this.ids[1] == 0) return; // sub-chunk vide, rien à dessiner
         TexturesManager.getTextureRender().draw();
@@ -310,7 +310,7 @@ public class SubChunkMesh {
     } 
 
     // À appeler si le SubChunk est détruit avant que son buffer ait été uploadé
-    public synchronized void freeBuffer(){
+    public void freeBuffer(){
         if (this.vertexBufferPack != null){
             MemoryUtil.memFree(this.vertexBufferPack);
             this.vertexBufferPack = null;

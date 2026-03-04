@@ -18,13 +18,15 @@ import demo.Player;
 public class KeyboardInput {
     
     private static long windowRef;
-    public static boolean isWireFrameMode;
-    public static boolean isCloseWindow;
-    public static boolean isCursorHidden = true;
-    public static boolean isMouseLock = true;
-    public static boolean isTeleportActive;
-    public static boolean isChunkBorderShow;
-    public static boolean isJumping;
+    // volatile car ils sont tous écrits et lus depuis des threads différents
+    // volatile force le thread à toujours lire et écrire directement en RAM (pas en cache)
+    public static volatile boolean isWireFrameMode;
+    public static volatile boolean isCloseWindow;
+    public static volatile boolean isCursorHidden = true;
+    public static volatile boolean isMouseLock = true;
+    public static volatile boolean isTeleportActive;
+    public static volatile boolean isChunkBorderShow;
+    public static volatile boolean isJumping;
 
     @OpenGLThread
     public KeyboardInput(long windowRef){

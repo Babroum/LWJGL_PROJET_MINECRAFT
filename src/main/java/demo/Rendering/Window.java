@@ -15,6 +15,7 @@ import demo.Events.InputManager;
 import demo.Events.WindowCloseEventManager;
 import demo.Managers.AudioManager;
 import demo.Managers.ShadersManager;
+import demo.Managers.ChunksManager;
 
 /**
  * La fenêtre géré par GLFW
@@ -132,6 +133,8 @@ public class Window {
         
         AudioManager.cleanup();
         BlockBorderRenderer.cleanup();
+
+        ChunksManager.removeAllSubChunk();
         
         Window.windowCloseEventManager.closeWidow(Window.window);
 
