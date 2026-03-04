@@ -4,7 +4,6 @@ import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 
 import org.lwjgl.system.MemoryUtil;
-import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
 
@@ -13,7 +12,6 @@ import demo.Annotations.OpenGLThread;
 import demo.Events.KeyboardInput;
 import demo.Exceptions.ArrayEmpty;
 import demo.Exceptions.Empty;
-import demo.Geometry.SubChunk;
 import demo.Managers.BuffersManager;
 import demo.Managers.TexturesManager;
 import demo.Rendering.Render;
@@ -146,12 +144,18 @@ public class SubChunkMesh {
 
     /**
      * Définit la taille du buffer pour les vertexs
+     * @param blockCount int
      */
     @ChunkThread
-    public synchronized void setupSubChunkBuffers(){
+    public synchronized void setupSubChunkBuffers(int blockCount){
         this.vertexCount = 0;
-        this.vertexArrayPack = new int[SubChunk.MAXBLOCK * 4 * 6]; // A MODIF
-        // Plus d'allocation du IntBuffer ici — sera fait dans fillSubChunkVertexBufferWithArray()
+        int needed = blockCount > 0 ? blockCount * 36 : 1;
+        // Ne réalloue que si le tableau actuel est trop petit
+        // 6 faces * 6 sommets par bloc = 36 vertices max par bloc visible
+        // blockCount * 36 = taille exacte au pire cas
+        if (this.vertexArrayPack == null || this.vertexArrayPack.length < needed){
+            this.vertexArrayPack = new int[needed];
+        }
         this.vertexBufferPack = null;
     }
 
@@ -237,7 +241,7 @@ public class SubChunkMesh {
             0 , 16, 16,  0 , 16, 0
         };   
         
-        IntBuffer linesBuffer = BufferUtils.createIntBuffer(lines.length);
+        IntBuffer linesBuffer = MemoryUtil.memAllocInt(lines.length);
         
         for(int i = 0; i < lines.length; i+=3){
             int packed = 0;
@@ -251,6 +255,7 @@ public class SubChunkMesh {
         int[] chunkBorderIds = BuffersManager.createVBOVAO(linesBuffer);
         this.ids[2] = chunkBorderIds[0];
         this.ids[3] = chunkBorderIds[1];
+        MemoryUtil.memFree(linesBuffer);
     }
 
     @OpenGLThread

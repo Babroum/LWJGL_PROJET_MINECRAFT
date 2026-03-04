@@ -3,7 +3,7 @@ package demo.Enum;
 import demo.Geometry.Cube;
 
 /**
- * Liste de blocks qui existent
+ * Liste des blocks qui existent
  */
 public enum BlocksType {
     GRASS(1),
@@ -14,25 +14,26 @@ public enum BlocksType {
     HOMER(6),
     NULL(0);
 
-    private Cube cube;
-    private final int id;
+    private Cube cube; // valeur d'instance, chaque valeur à le sien
 
+    // Constructeur, appelé une seule fois par valeur au chargement JVM
+    private final int id; // private car pas possible de créer de nouvelles instancs depuis l'exterieur
     BlocksType(int id) { this.id = id; }
 
-    public int getId() { return id; }
+    public int getId() { return id; } // retourne l'id de cette valeur, BlocksType.STONE -> 3
 
     public static BlocksType fromId(int id) {
         for (BlocksType t : values()) {
-            if (t.id == id) return t;
+            if (t.id == id) return t; // retourne la valeur qui a le même id 3, -> BlocksType.STONE
         }
         return NULL;
     }
 
     public Cube getCube(){
         if (this.cube == null){
-            this.cube = new Cube(this);
+            this.cube = new Cube(this); // au départ créer un cube pour la valeur
         }
-        return this.cube;
+        return this.cube; // retourne le même object par valeur, plusieurs appel de GRASS retourne le même object Cube
     }
 
     public TexturesType getTexture(Directions direction){

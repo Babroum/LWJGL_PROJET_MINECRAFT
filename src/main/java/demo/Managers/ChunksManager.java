@@ -44,8 +44,9 @@ public class ChunksManager {
     @ChunkThread
     public static void finalizeChunk(Chunk chunk){
         for(SubChunk sub : chunk.subChunks){
-            sub.mesh.setupSubChunkBuffers(); // recrée vertexArrayPack avant de générer
+            sub.mesh.setupSubChunkBuffers(sub.bitSet.cardinality()); // recrée vertexArrayPack avant de générer
             sub.generateSubChunkMesh();
+            sub.linkNeighbors();
             Render.dirtySubChunks.add(sub);
         }
         Render.chunkQueue.add(chunk);

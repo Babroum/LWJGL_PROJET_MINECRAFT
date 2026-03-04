@@ -167,7 +167,7 @@ public class PerformanceMonitor {
         displayLines[6]  = String.format("Heap Java   : %d Mo / %d Mo", heapUsedMB, heapMaxMB);
         displayLines[7]  = String.format("Off-heap    : %d Mo%s",
                                           offHeapUsedMB,
-                                          offHeapMaxMB == -1 ? " (illimité)" : " / " + offHeapMaxMB + " Mo");
+                                          offHeapMaxMB == -1 ? " (illimite)" : " / " + offHeapMaxMB + " Mo");
         displayLines[8]  = String.format("Process RAM : %d Mo (tout)", processRamMB);
         displayLines[9] = buildMemBar(heapUsedMB, heapMaxMB);
         displayLines[10] = null;

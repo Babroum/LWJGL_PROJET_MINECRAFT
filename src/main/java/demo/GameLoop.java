@@ -1,6 +1,5 @@
 package demo;
 
-import demo.Geometry.CubeRegistry;
 import demo.Managers.AudioManager;
 import demo.Managers.PlayersManager;
 
@@ -15,8 +14,6 @@ public class GameLoop {
     public static void init(){
         AudioManager.playLoop("bird");
         AudioManager.setVolume("bird", 10f);
-
-        CubeRegistry.init();
 
         // positionne la camera
         PlayersManager.player.getCamera().setPosition(0, 8, 0);
