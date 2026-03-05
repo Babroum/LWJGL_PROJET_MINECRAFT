@@ -1,13 +1,14 @@
-package demo.Events;
+package demo.Managers;
 
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.glfw.GLFW;
 
-import demo.Managers.PlayersManager;
 import demo.Player;
 import demo.Annotations.OpenGLThread;
+import demo.Events.KeyboardInput;
+import demo.Events.MouseInput;
 import demo.Rendering.Camera;
 import demo.Rendering.SceneGraph;
 import demo.Rendering.Window;

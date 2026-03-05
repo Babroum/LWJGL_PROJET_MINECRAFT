@@ -3,7 +3,6 @@ package demo.Rendering;
 import java.io.IOException;
 import java.nio.FloatBuffer;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -13,11 +12,11 @@ import org.lwjgl.opengl.GL11;
 
 import demo.GameLoop;
 import demo.Annotations.OpenGLThread;
-import demo.Events.InputManager;
 import demo.Geometry.Chunk;
 import demo.Geometry.SubChunk;
 import demo.Managers.AudioManager;
 import demo.Managers.BuffersManager;
+import demo.Managers.InputManager;
 import demo.Managers.ShadersManager;
 import demo.Managers.TexturesManager;
 import demo.Others.FileLoader;
@@ -111,7 +110,7 @@ public class Render {
                 Render.sceneGraph.root.addChild(chunk);
             }
 
-            // Chunks modifiés update le VBO existant
+            // subChunks modifiés update le VBO existant
             SubChunk dirty;
             while ((dirty = dirtySubChunks.poll()) != null) {
                 dirty.setupSubChunkVBOVAO();
@@ -168,10 +167,11 @@ public class Render {
                 System.gc();
                 System.out.println("RAM après GC: " + (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / (1024*1024) + " MB");
             }*/
-            GameLoop.quit();
+            AudioManager.cleanupTempSources();
             monitor.endFrame();
 		}
 
+        GameLoop.quit();
         // ferme le fenêtre quand la boucle de rendu est fini
         Window.exitWindow();
     }

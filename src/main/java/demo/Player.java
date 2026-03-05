@@ -209,7 +209,7 @@ public class Player {
                 int bx = (int) Math.floor(hit.x);
                 int by = (int) Math.floor(hit.y);
                 int bz = (int) Math.floor(hit.z);
-
+ 
                 // récupère le block à tel position
                 block = ChunksManager.getBlock(bx, by, bz);
                 // pareil pour le chunk

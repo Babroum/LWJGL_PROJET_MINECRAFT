@@ -125,7 +125,7 @@ public class SubChunk extends Node3D{
     @OpenGLThread
     public void removeSubChunk(){
         // Libère le buffer CPU off-heap s'il n'a pas encore été uploadé
-        this.mesh.freeBuffer();
+        this.mesh.cleanup();
         // Libère les buffers GPU
         this.mesh.deleteSubChunkVBOVAO();
         this.cleanup();

@@ -310,7 +310,7 @@ public class SubChunkMesh {
     } 
 
     // À appeler si le SubChunk est détruit avant que son buffer ait été uploadé
-    public void freeBuffer(){
+    public void cleanup(){
         if (this.vertexBufferPack != null){
             MemoryUtil.memFree(this.vertexBufferPack);
             this.vertexBufferPack = null;

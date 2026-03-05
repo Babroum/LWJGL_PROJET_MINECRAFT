@@ -1,0 +1,261 @@
+App.java
+├─ main()
+│   ├─ Window() - constructeur 
+│   │   └─ InputManager() - constructeur
+│   │
+│   └─ startWindow() - Window.java        
+│       └─ create/start Thread - OpenGLThread
+│           └─ init() - Window.java 
+│               ├─ create() - InputManager.java
+│               │   ├─ MouseInput() - constructeur 
+│               │   └─ KeyboardInput() - constructeur 
+│               │       └─ keyPressToggle() - KeyboardInput.java
+│               │           ├─ getAllChunks() - ChunksManager.java 
+│               │           ├─ getBorderVAO() - SubChunkMesh.java 
+│               │           ├─ createSubChunkBorderVBOVAO() - SubChunkMesh.java
+│               │           │   └─ createVBOVAO() - BuffersManager.java
+│               │           │
+│               │           ├─ getAllChunks() - ChunksManager.java 
+│               │           └─ deleteSubChunkBorderVBOVAO() - SubChunkMesh.java 
+│               │               └─ deleteVBOVAO() - BuffersManager.java
+│               │
+│               ├─ init() - AudioManager.java 
+│               ├─ setupBeforeRendering() - Render.java
+│               │   ├─ init() - BlockBorderRenderer.java 
+│               │   │   └─ createVBOVAO() - BuffersManager.java
+│               │   │
+│               │   ├─ loadTextures() - TexturesManager.java
+│               │   │   ├─ TextureRender() - constructeur
+│               │   │   └─ addTexture() - TextureRender.java 
+│               │   │
+│               │   ├─ loadSound() - AudioManager.java
+│               │   └─ TextRender() - constructeur
+│               │       └─ createTextShader() - ShadersManager.java 
+│               │           ├─ loadShaderFromClasspathS() - FileLoader.java 
+│               │           └─ create() - ShadersManager.java
+│               │              
+│               └─ rendering() - Render.java
+│                   ├─ initialize3D() - Render.java 
+│                   │   ├─ createShader() - ShadersManager.java
+│                   │   │   ├─ loadShaderFromClasspathS() - FileLoader.java 
+│                   │   │   └─ create() - ShadersManager.java
+│                   │   │
+│                   │   ├─ createBlockBorderShader() - ShadersManager.java
+│                   │   │   ├─ loadShaderFromClasspathS() - FileLoader.java 
+│                   │   │   └─ create() - ShadersManager.java
+│                   │   │
+│                   │   └─ getUniformLocations() - ShadersManager.java 
+│                   │
+│                   ├─ init() - GameLoop.java
+│                   │   ├─ playLoop() - AudioManager.java 
+│                   │   ├─ setVolume() - AudioManager.java
+│                   │   └─ setPosition() - Player.java
+│                   │       └─ setPosition() - Camera.java
+│                   │           └─ recalculate() - Camera.java
+│                   │
+│                   ├─ run() - InputManager.java
+│                   │   ├─ input() - MouseInput.java
+│                   │   ├─ getCamera() - Camera.java
+│                   │   ├─ keyPressedContinue() - KeyboardInput.java 
+│                   │   │   └─ move...() - Player.java
+│                   │   │       ├─ get...Directions() - Camera.java 
+│                   │   │       └─ move() - Player.java
+│                   │   │           ├─ canMoveToWithBuffer() - Player.java 
+│                   │   │           │   └─ canMoveTo() - Player.java
+│                   │   │           │       └─ getBlock() - ChunksManager.java
+│                   │   │           │           ├─ getChunk() - ChunksManager.java
+│                   │   │           │           ├─ getSubChunk() - Chunk.java 
+│                   │   │           │           └─ getBlock() - SubChunk.java
+│                   │   │           │
+│                   │   │           └─ setPosition() - Player.java 
+│                   │   │               └─ ...
+│                   │   │
+│                   │   ├─ exitWindow() - Window.java   
+│                   │   │   ├─ closeGLFW() - Window.java
+│                   │   │   ├─ closeProgramId() - ShadersManager.java
+│                   │   │   ├─ closeProgramTextId() - ShadersManager.java
+│                   │   │   ├─ closeProgramBlockBorderId() - ShadersManager.java
+│                   │   │   ├─ cleanup() - AudioManager.java 
+│                   │   │   ├─ cleanup() - BlockBorderRenderer.java 
+│                   │   │   │   └─ deleteVBOVAO() - BuffersManager.java   
+│                   │   │   │   
+│                   │   │   ├─ getTextRender() - Render.java 
+│                   │   │   ├─ cleanup() - TextRender.java 
+│                   │   │   ├─ removeAllSubChunk() - ChunksManager.java 
+│                   │   │   │   └─ removeSubChunk() - SubChunk.java 
+│                   │   │   │       ├─ cleanup() - SubChunkMesh.java
+│                   │   │   │       ├─ deleteSubChunkVBOVAO() - SubChunkMesh.java
+│                   │   │   │       │   └─ deleteVBOVAO() - BuffersManager.java 
+│                   │   │   │       │
+│                   │   │   │       └─ cleanup() - Node3D.java 
+│                   │   │   │
+│                   │   │   └─ closeWindow() - WindowCloseEventManager.java
+│                   │   │ 
+│                   │   ├─ jump() - Player.java 
+│                   │   │   └─ isBlockCeilling() - Player.java 
+│                   │   │       └─ isBlockAt() - Player.java
+│                   │   │           └─ getBlock() - ChunksManager.java
+│                   │   │               └─ ...
+│                   │   │
+│                   │   ├─ setPosition() - Player.java 
+│                   │   │   └─ ...
+│                   │   └─ addRotation() - Camera.java
+│                   │       └─ recalculate() - Camera.java
+│                   │
+│                   ├─ useShader() - ShadersManager.java
+│                   ├─ run() - GameLoop.java
+│                   │   └─ playersLoop() - PlayersManager.java 
+│                   │       ├─ getCamera() - Player.java
+│                   │       ├─ getLookAt() - Camera.java
+│                   │       │   └─ getBlock() - ChunksManager.java 
+│                   │       │       └─ ...
+│                   │       │
+│                   │       ├─ getBlock() - ChunksManager.java 
+│                   │       │   └─ ...
+│                   │       │
+│                   │       ├─ getSubChunk() - ChunksManager.java
+│                   │       │   ├─ getChunk() - ChunksManager.java 
+│                   │       │   └─ getSubChunk() - Chunk.java 
+│                   │       │
+│                   │       ├─ isLeftButtonPressed() - MouseInput.java 
+│                   │       ├─ removeBlockFromSubChunk() - SubChunk.java
+│                   │       │   ├─ fillSubChunkBitSet() - SubChunk.java
+│                   │       │   ├─ getNeighbor...() - SubChunk.java 
+│                   │       │   └─ rebuildSubChunk() - SubChunk.java
+│                   │       │       ├─ fillSubChunkBitSet() - SubChunk.java 
+│                   │       │       ├─ setupSubChunkBuffers() - SubChunkMesh.java 
+│                   │       │       ├─ generateSubChunkMesh() - SubChunk.java
+│                   │       │       │   ├─ calculateSubChunkFaceCulling() - SubChunk.java 
+│                   │       │       │   │   └─ getNeighbor...() - SubChunk.java
+│                   │       │       │   │
+│                   │       │       │   ├─ uploadSubChunkMesh() - SubChunk.java
+│                   │       │       │   │   ├─ addObjectFaceVertexToArray() - SubChunkMesh.java
+│                   │       │       │   │   ├─ getCube() - BlocksType.java 
+│                   │       │       │   │   │   └─ Cube() - constructeur
+│                   │       │       │   │   │       ├─ Face() - constructeur
+│                   │       │       │   │   │       ├─ getTexture() - BlocksType.java
+│                   │       │       │   │   │       ├─ addVertex() - Face.java 
+│                   │       │       │   │   │       │   └─ getIndex() - TexturesManager.java
+│                   │       │       │   │   │       │
+│                   │       │       │   │   │       └─ addFaces() - Mesh.java
+│                   │       │       │   │   │
+│                   │       │       │   │   └─ getFaceVertex() - Mesh.java
+│                   │       │       │   │
+│                   │       │       │   └─ fillSubChunkVertexBufferWithArray() - SubChunkMesh.java
+│                   │       │       │       
+│                   │       │       └─ linkNeighbors() - SubChunk.java
+│                   │       │           ├─ getChunk() - ChunksManager.java
+│                   │       │           └─ getSubChunk() - Chunk.java 
+│                   │       │
+│                   │       ├─ isRightButtonPressed() - MouseInput.java 
+│                   │       ├─ getSubChunk() - ChunksManager.java 
+│                   │       │   └─ ...
+│                   │       │
+│                   │       ├─ addBlockToSubChunk() - SubChunk.java
+│                   │       │   ├─ getId() - BlocksType.java
+│                   │       │   └─ rebuildSubChunk() - SubChunk.java 
+│                   │       │       └─ ...
+│                   │       │
+│                   │       ├─ draw() - BlockBorderRenderer.java
+│                   │       │   ├─ useBlockBorderShader() - ShadersManager.java 
+│                   │       │   ├─ runProjectionBlockBorder() - ShadersManager.java 
+│                   │       │   ├─ calculateProjection() - Render.java 
+│                   │       │   ├─ runViewBlockBorder() - ShadersManager.java 
+│                   │       │   ├─ getCamera() - Player.java 
+│                   │       │   ├─ getViewMatrixBuffer() - Camera.java
+│                   │       │   │   └─ getViewMatrix() - Camera.java
+│                   │       │   │
+│                   │       │   ├─ runBlockPosBlockBorder() - ShadersManager.java 
+│                   │       │   └─ useShader() - ShadersManager.java
+│                   │       │
+│                   │       └─ updateMovement() - Player.java
+│                   │           ├─ setPosition() - Player.java 
+│                   │           │   └─ ...
+│                   │           ├─ isBlockCeilling() - Player.java 
+│                   │           │   └─ ...
+│                   │           ├─ isOnGround() - Player.java 
+│                   │           │   └─ isBlockAt() - Player.java 
+│                   │           │       └─ ...
+│                   │           └─ setPosition() - Player.java 
+│                   │               └─ ...
+│                   │       
+│                   ├─ addChild() - Node3D.java
+│                   ├─ setupSubChunkVBOVAO() - SubChunk.java
+│                   │   ├─ createSubChunkVBOVAO() - SubChunkMesh.java
+│                   │   │   ├─ deleteVBOVAO() - BuffersManager.java 
+│                   │   │   └─ createVBOVAO() - BuffersManager.java 
+│                   │   │
+│                   │   ├─ getBorderVAO() - SubChunkMesh.java
+│                   │   └─ createSubChunkBorderVBOVAO() - SubChunkMesh.java 
+│                   │       └─ ...
+│                   │
+│                   ├─ drawScene() - Render.java
+│                   │   └─ drawScene() - SceneGraph.java
+│                   │       └─ drawNode() - Node3D.java 
+│                   │           ├─ runModel() - ShadersManager.java
+│                   │           ├─ drawSpecific() - Node3D.java 
+│                   │           ├─ drawNode() - Chunk.java @Override
+│                   │           │   └─ drawNode() - SubChunk.java 
+│                   │           │       ├─ runModel() - ShadersManager.java 
+│                   │           │       └─ drawSpecific() - SubChunk.java @Override
+│                   │           │           └─ ...
+│                   │           │
+│                   │           └─ drawNode() - SubChunk.java @Override
+│                   │               └─ ...
+│                   │               
+│                   ├─ calculateFPS() - Render.java
+│                   │   ├─ getTextRender() - Render.java 
+│                   │   └─ drawText() - TextRender.java
+│                   │       ├─ useTextShader() - ShadersManager.java 
+│                   │       ├─ runTextOrtho() - ShadersManager.java 
+│                   │       ├─ runTextFragmentColor() - ShadersManager.java 
+│                   │       ├─ drawChar() - TextRender.java
+│                   │       ├─ updateTextVBOEBO() - BuffersManager.java 
+│                   │       └─ useShader() - ShadersManager.java
+│                   │
+│                   ├─ getTextRender() - Render.java
+│                   ├─ drawText() - TextRender.java
+│                   │   └─ ...
+│                   ├─ getPosition() - Player.java
+│                   ├─ cleanupTempSources() - AudioManager.java
+│                   ├─ quit() - GameLoop.java 
+│                   └─ exitWindow() - Window.java 
+│                       └─ ...
+│
+└─ draw()
+    ├─ create Thread - ChunkThread
+    │   ├─ createChunk() - ChunksManager.java 
+    │   │   ├─ Chunk() - constructeur 
+    │   │   │   ├─ SubChunk() - constructeur 
+    │   │   │   │   └─ setupSubChunkBuffers() - SubChunkMesh.java
+    │   │   │   │
+    │   │   │   └─ setSubChunkPosition() - SubChunk.java
+    │   │   │
+    │   │   └─ setChunkPosition() - Chunk.java
+    │   │       └─ setSubChunkPosition() - SubChunk.java
+    │   │ 
+    │   ├─ addFloorToChunk() - Chunk.java 
+    │   │   └─ addFloorToSubChunk() - SubChunk.java 
+    │   │       ├─ addBlockToSubChunk() - SubChunk.java 
+    │   │       │   └─ rebuildSubChunk() - SubChunk.java 
+    │   │       │       └─  ...
+    │   │       │
+    │   │       └─ rebuildSubChunk() - SubChunk.java 
+    │   │           └─ ...
+    │   │
+    │   ├─ getChunk() - ChunksManager.java 
+    │   ├─ fillSubChunkBitSet() - SubChunk.java
+    │   ├─ getChunk() - ChunksManager.java
+    │   ├─ finalizeChunk() - ChunksManager.java 
+    │   │   ├─ setupSubChunkBuffers() - SubChunkMesh.java 
+    │   │   ├─ generateSubChunkMesh() - SubChunk.java
+    │   │   │   └─ ...
+    │   │   └─ linkNeighbors() - SubChunk.java
+    │   │       └─ ...
+    │   ├─ getChunk() - ChunksManager.java 
+    │   ├─ getSubChunk() - Chunk.java 
+    │   └─ addFloorToSubChunk() - SubChunk.java
+    │       └─ ...
+    ├─ start Thread - ChunkThread
+    ├─ setChunkQueue() - Render.java 
+    └─ setDirtyChunkQueue() - Render.java

@@ -1,9 +1,10 @@
 package demo.Rendering;
 
 import java.nio.IntBuffer;
-import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
+import org.lwjgl.system.MemoryUtil;
+
 import demo.Managers.BuffersManager;
 import demo.Managers.PlayersManager;
 import demo.Managers.ShadersManager;
@@ -31,7 +32,7 @@ public class BlockBorderRenderer {
             0, 1, 1,   0, 1, 0
         };
 
-        IntBuffer buffer = BufferUtils.createIntBuffer(lines.length);
+        IntBuffer buffer = MemoryUtil.memAllocInt(lines.length);
         for(int i = 0; i < lines.length; i += 3){
             int packed = 0;
             packed |= ((lines[i]  ) & 0x1F) << 27;
@@ -44,6 +45,7 @@ public class BlockBorderRenderer {
         int[] ids = BuffersManager.createVBOVAO(buffer);
         vbo = ids[0];
         vao = ids[1];
+        MemoryUtil.memFree(buffer);
     }
 
     // Appelé à chaque frame si un bloc est regardé

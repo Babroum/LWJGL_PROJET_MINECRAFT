@@ -3,7 +3,7 @@ package demo.Rendering;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
-import org.lwjgl.BufferUtils;
+import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
 import org.lwjgl.stb.STBImage;
@@ -34,15 +34,19 @@ public class TextureRender {
      * @param texture Textures
      */
     public void addTexture(ByteBuffer path, TexturesType texture){
-        IntBuffer w = BufferUtils.createIntBuffer(1);
-        IntBuffer h = BufferUtils.createIntBuffer(1);
-        IntBuffer c = BufferUtils.createIntBuffer(1);
+        IntBuffer w = MemoryUtil.memAllocInt(1);
+        IntBuffer h = MemoryUtil.memAllocInt(1);
+        IntBuffer c = MemoryUtil.memAllocInt(1);
         // récup l'image en mémoire
         ByteBuffer pixels = STBImage.stbi_load_from_memory(path, w, h, c, 4);
         // et l'ajoute au shader
         GL30.glTexSubImage3D(GL30.GL_TEXTURE_2D_ARRAY, 0, 0, 0, texture.ordinal(), 16, 16, 1, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, pixels);
         // libère la mémoire
         STBImage.stbi_image_free(pixels);
+        MemoryUtil.memFree(w);
+        MemoryUtil.memFree(h);
+        MemoryUtil.memFree(c);
+
     }   
 
     /**

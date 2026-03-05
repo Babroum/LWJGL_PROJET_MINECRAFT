@@ -1,6 +1,5 @@
 package demo.Managers;
 
-import org.lwjgl.BufferUtils;
 import org.lwjgl.openal.*;
 import org.lwjgl.stb.*;
 import org.lwjgl.system.MemoryUtil;
@@ -82,7 +81,7 @@ public class AudioManager {
             ByteBuffer vorbis = FileLoader.loadFileFromClasspathBB(path);
 
             // Ouvrir le décodeur STB Vorbis sur les données du fichier
-            IntBuffer error = BufferUtils.createIntBuffer(1);
+            IntBuffer error = MemoryUtil.memAllocInt(1);
             long decoder = stb_vorbis_open_memory(vorbis, error, null);
             if (decoder == MemoryUtil.NULL) {
                 System.out.println("Erreur chargement OGG : " + name + " (code " + error.get(0) + ")");
@@ -97,15 +96,15 @@ public class AudioManager {
 
             // Allouer un ShortBuffer de la bonne taille pour recevoir les données PCM
             // taille = nombre d'échantillons total * nombre de channels
-            ShortBuffer pcm = BufferUtils.createShortBuffer(
-                stb_vorbis_stream_length_in_samples(decoder) * channels
-            );
+            ShortBuffer pcm = MemoryUtil.memAllocShort(stb_vorbis_stream_length_in_samples(decoder) * channels);
 
             // Décoder tout le fichier OGG en PCM dans le ShortBuffer
             stb_vorbis_get_samples_short_interleaved(decoder, channels, pcm);
 
             // Fermer le décodeur STB (on n'en a plus besoin)
             stb_vorbis_close(decoder);
+            MemoryUtil.memFree(error);
+            MemoryUtil.memFree(vorbis);
 
             // Choisir le format OpenAL selon le nombre de channels
             // MONO16   = 1 channel,  16 bits par échantillon
@@ -116,6 +115,8 @@ public class AudioManager {
             // Le buffer = les données audio stockées côté GPU/driver audio
             int buffer = alGenBuffers();
             alBufferData(buffer, format, pcm, info.sample_rate());
+
+            MemoryUtil.memFree(pcm);
 
             // Créer une source OpenAL et la lier au buffer
             // La source = l'objet qui "joue" le son dans l'espace 3D
