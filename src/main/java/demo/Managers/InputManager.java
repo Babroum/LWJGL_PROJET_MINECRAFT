@@ -23,7 +23,7 @@ public class InputManager {
 
     /**
      * Fait les actions en fonction des inputs
-     * @param window Window
+     * @param windowRef long
      * @param sceneGraph SceneGraph
      * @param deltaTime long
      */

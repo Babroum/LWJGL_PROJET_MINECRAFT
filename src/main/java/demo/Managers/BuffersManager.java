@@ -20,7 +20,7 @@ public class BuffersManager {
      * Créer les buffers en les remplissant <br>
      * Chaque int est une donnée (vertex packing)
      * @param vertex IntBuffer, sommet à affiché
-     * @return
+     * @return int[]
      */
     @OpenGLThread
     public static int[] createVBOVAO(IntBuffer vertex){
@@ -86,7 +86,8 @@ public class BuffersManager {
 
     /**
      * Mets à jour le vbo d'un chunk
-     * @param IntBuffer, données à ajouté
+     * @param vertex IntBuffer, données à ajouté
+     * @param vbo int
      */
     @OpenGLThread
     public static void updateChunkVBO(IntBuffer vertex, int vbo){

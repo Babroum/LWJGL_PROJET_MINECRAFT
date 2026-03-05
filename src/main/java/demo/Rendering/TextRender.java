@@ -100,11 +100,11 @@ public class TextRender {
 
     /**
      * Dessine un texte à des coordonnées données
-     * @param window Window
      * @param text String
      * @param x int
      * @param y int
-     * @param ftSize int, taille d'un caractère
+     * @param fontSize int, taille d'un caractère
+     * @param color Color4f
      */
     @OpenGLThread
     public void drawText(String text, int x, int y, int fontSize, Color4f color){   

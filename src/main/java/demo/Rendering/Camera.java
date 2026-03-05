@@ -64,7 +64,7 @@ public class Camera {
     /**
      * Fonctionne comme un raycast <br>
      * Raycast DDA (Digital Differential Analysis)
-     * @param distance
+     * @param distance float
      * @return Vector3f[], [0] bloc visé et [1] où poser
      */
     public Vector3f[] getLookAt(float distance){
@@ -199,7 +199,6 @@ public class Camera {
 
     /**
      * Recalcule la viewMatrix
-     * @param inc float
      */
     private void recalculate(){
         this.viewMatrix.identity().rotateX((float) Math.toRadians(pitch)).rotateY((float) Math.toRadians(yaw)).translate(-position.x, -position.y, -position.z);
@@ -221,7 +220,6 @@ public class Camera {
      * Définis une rotation pour le vecteur de rotation
      * @param x float
      * @param y float 
-     * @param z float
      */
     public void setRotation(float x, float y) {
         // Si x et y sont passés en radians, on les convertit

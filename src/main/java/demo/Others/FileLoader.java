@@ -10,6 +10,9 @@ import org.lwjgl.BufferUtils;
 import demo.Managers.ShadersManager;
 import demo.Rendering.Render;
 
+/**
+ * Permet de lire des fichiers
+ */
 public class FileLoader {
     // permet de lire les images/sons qui seront dans le .jar
     public static ByteBuffer loadFileFromClasspathBB(String path) throws IOException {

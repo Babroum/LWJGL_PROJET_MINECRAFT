@@ -19,6 +19,7 @@ public class Chunk extends Node3D{
     
     /**
      * Initialise les subChunks du chunks
+     * @param name String
      */
     @ChunkThread
     public Chunk(String name){

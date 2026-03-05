@@ -50,7 +50,7 @@ public class Node3D {
 
     /**
      * Ajoute un nœud au tableau de nœud.
-     * @param node
+     * @param node Node3D
      * @throws ArrayFull
      */
     public void addChild(Node3D node) throws ArrayFull{
@@ -69,7 +69,7 @@ public class Node3D {
 
     /**
      * Dessine le nœud actuel et tous ses enfants.
-     * @param Matrix4f , si un nœud parent est bougé les enfants vont le suivre
+     * @param parentModel Matrix4f, si un nœud parent est bougé les enfants vont le suivre
      */
     @OpenGLThread
     public void drawNode(Matrix4f parentModel){

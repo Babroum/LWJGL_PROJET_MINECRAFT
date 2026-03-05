@@ -13,7 +13,6 @@ import demo.Player;
 /**
  * Définis les listeners GLFW
  * <br>Et détecte les appui continue/toggle
- * @param windowRef
  */
 public class KeyboardInput {
     

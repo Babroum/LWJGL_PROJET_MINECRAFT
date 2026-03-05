@@ -142,7 +142,6 @@ public class AudioManager {
      * Joue un son UNE FOIS depuis le début.
      * Idéal pour les effets sonores (saut, tir, collision...).
      * Si le son est déjà en cours, il repart depuis le début.
-     * 
      * @param name nom du son chargé avec loadSound()
      */
     public static void play(String name) {
@@ -185,7 +184,6 @@ public class AudioManager {
     /**
      * Joue un son EN BOUCLE indéfiniment.
      * Idéal pour la musique de fond ou les sons ambiants.
-     * 
      * @param name nom du son chargé avec loadSound()
      */
     public static void playLoop(String name) {
@@ -201,7 +199,6 @@ public class AudioManager {
     /**
      * Met en pause un son.
      * Peut être repris avec resume().
-     * 
      * @param name nom du son
      */
     public static void pause(String name) {
@@ -212,7 +209,6 @@ public class AudioManager {
 
     /**
      * Reprend un son mis en pause.
-     * 
      * @param name nom du son
      */
     public static void resume(String name) {
@@ -224,7 +220,6 @@ public class AudioManager {
     /**
      * Stoppe un son complètement.
      * Contrairement à pause(), remet la lecture au début.
-     * 
      * @param name nom du son
      */
     public static void stop(String name) {
@@ -235,7 +230,6 @@ public class AudioManager {
 
     /**
      * Change le volume d'un son.
-     * 
      * @param name   nom du son
      * @param volume 0.0 = muet, 1.0 = normal, 2.0 = double, etc.
      */
@@ -264,8 +258,8 @@ public class AudioManager {
 
     /**
      * Retourne le volume d'un son.
-     * 
      * @param name nom du son
+     * @return float
      */
     public static float getVolume(String name) {
         Integer source = sources.get(name);
@@ -276,7 +270,6 @@ public class AudioManager {
     /**
      * Change le volume global de tous les sons.
      * Affecte toutes les sources sans exception.
-     * 
      * @param volume 0.0 = muet, 1.0 = normal, 2.0 = double, etc.
      */
     public static void setMasterVolume(float volume) {
@@ -287,7 +280,7 @@ public class AudioManager {
 
     /**
      * Retourne le volume global de tous les sons.
-     * @return 
+     * @return float
      */
     public static float getMasterVolume() {
         return alGetListenerf(AL_GAIN);
@@ -295,7 +288,6 @@ public class AudioManager {
 
     /**
      * Vérifie si un son est en cours de lecture.
-     * 
      * @param name nom du son
      * @return true si le son joue, false sinon
      */

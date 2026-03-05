@@ -64,7 +64,6 @@ public class Render {
 
     /**
      * Gère le rendu de la fenêtre.
-     * @param window
      * @param windowRef
      */
     @OpenGLThread

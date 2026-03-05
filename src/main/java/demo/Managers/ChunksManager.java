@@ -23,6 +23,7 @@ public class ChunksManager {
      * Créer un nouveau chunk à la position donné
      * @param x int
      * @param z int
+     * @return Chunk
      * @throws IncorrectCoordinates
      */
     @ChunkThread
@@ -58,6 +59,7 @@ public class ChunksManager {
      * Retourne le chunk à la position donné
      * @param x int
      * @param z int
+     * @return Chunk
      * @throws IncorrectCoordinates
      */
     @ChunkThread
@@ -71,7 +73,7 @@ public class ChunksManager {
 
     /**
      * Retourne la collection de tous les chunks
-     * @return Collection<Chunk>
+     * @return Collection
      */
     public static Collection<Chunk> getAllChunks(){
         return ChunksManager.chunks.values();
