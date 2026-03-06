@@ -18,7 +18,7 @@ public class GameLoop {
         AudioManager.setVolume("bird", 10f);
 
         // positionne la camera
-        PlayersManager.player.setPosition(new Vector3f(0, 8, 0));
+        PlayersManager.player.setPosition(new Vector3f(1, 8, 1));
     }
 
     /**

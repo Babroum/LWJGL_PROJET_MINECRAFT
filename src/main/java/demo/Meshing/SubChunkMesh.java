@@ -134,6 +134,87 @@ public class SubChunkMesh {
         }    
     }
 
+
+    @ChunkThread
+    public void addQuadVertexToArray(Quad quad, int textureId) {
+        int x = quad.x;
+        int y = quad.y;
+        int z = quad.z;
+        int w = quad.width;
+        int h = quad.height;
+        int d = quad.direction.ordinal();
+
+        // Les 4 coins : A=origine, B=+width, C=+height, D=+width+height
+        // 2 triangles sans EBO : A-B-D, A-D-C
+        int[][] verts = new int[6][7]; // 6 sommets * {x, y, z, u, v, dir, texId}
+
+        switch(quad.direction){
+            case SOUTH:
+                verts[0] = new int[]{x,   y,   z, 1, 1, d, textureId};
+                verts[1] = new int[]{x+w, y,   z, 0, 1, d, textureId};
+                verts[2] = new int[]{x+w, y+h, z, 0, 0, d, textureId};
+                verts[3] = new int[]{x+w, y+h, z, 0, 0, d, textureId};
+                verts[4] = new int[]{x,   y+h, z, 1, 0, d, textureId};
+                verts[5] = new int[]{x,   y,   z, 1, 1, d, textureId};
+                break;
+            case NORTH:
+                verts[0] = new int[]{x+w, y,   z+1, 1, 1, d, textureId};
+                verts[1] = new int[]{x,   y,   z+1, 0, 1, d, textureId};
+                verts[2] = new int[]{x,   y+h, z+1, 0, 0, d, textureId};
+                verts[3] = new int[]{x,   y+h, z+1, 0, 0, d, textureId};
+                verts[4] = new int[]{x+w, y+h, z+1, 1, 0, d, textureId};
+                verts[5] = new int[]{x+w, y,   z+1, 1, 1, d, textureId};
+                break;
+            case WEST:
+                verts[0] = new int[]{x+1, y,   z,   1, 1, d, textureId};
+                verts[1] = new int[]{x+1, y,   z+w, 0, 1, d, textureId};
+                verts[2] = new int[]{x+1, y+h, z+w, 0, 0, d, textureId};
+                verts[3] = new int[]{x+1, y+h, z+w, 0, 0, d, textureId};
+                verts[4] = new int[]{x+1, y+h, z,   1, 0, d, textureId};
+                verts[5] = new int[]{x+1, y,   z,   1, 1, d, textureId};
+                break;
+            case EAST:
+                verts[0] = new int[]{x, y,   z+w, 1, 1, d, textureId};
+                verts[1] = new int[]{x, y,   z,   0, 1, d, textureId};
+                verts[2] = new int[]{x, y+h, z,   0, 0, d, textureId};
+                verts[3] = new int[]{x, y+h, z,   0, 0, d, textureId};
+                verts[4] = new int[]{x, y+h, z+w, 1, 0, d, textureId};
+                verts[5] = new int[]{x, y,   z+w, 1, 1, d, textureId};
+                break;
+            case UP: // y fixe à y+1, s'étend sur X et Z
+                verts[0] = new int[]{x,   y+1, z,   0, 0, d, textureId};
+                verts[1] = new int[]{x+w, y+1, z,   1, 0, d, textureId};
+                verts[2] = new int[]{x+w, y+1, z+h, 1, 1, d, textureId};
+                verts[3] = new int[]{x+w, y+1, z+h, 1, 1, d, textureId};
+                verts[4] = new int[]{x,   y+1, z+h, 0, 1, d, textureId};
+                verts[5] = new int[]{x,   y+1, z,   0, 0, d, textureId};
+                break;
+            case DOWN: // y fixe à y, Z inversé
+                verts[0] = new int[]{x,   y, z+h, 0, 0, d, textureId};
+                verts[1] = new int[]{x+w, y, z+h, 1, 0, d, textureId};
+                verts[2] = new int[]{x+w, y, z,   1, 1, d, textureId};
+                verts[3] = new int[]{x+w, y, z,   1, 1, d, textureId};
+                verts[4] = new int[]{x,   y, z,   0, 1, d, textureId};
+                verts[5] = new int[]{x,   y, z+h, 0, 0, d, textureId};
+                break;
+        }
+
+        int[] array = new int[42]; // 6 sommets * 7 valeurs
+        for(int i = 0; i < 6; i++){
+            array[i*7]   = verts[i][0]; // x
+            array[i*7+1] = verts[i][1]; // y
+            array[i*7+2] = verts[i][2]; // z
+            array[i*7+3] = verts[i][3]; // u
+            array[i*7+4] = verts[i][4]; // v
+            array[i*7+5] = d;           // dir
+            array[i*7+6] = textureId;   // textureId
+        }
+
+        try {
+            this.addObjectFaceVertexToArray(array, 0, 0, 0);
+        } catch(ArrayEmpty e){ e.printStackTrace(); }
+    }
+
     /**
      * Retourne le nombre de sommets dans le chunk
      * @return

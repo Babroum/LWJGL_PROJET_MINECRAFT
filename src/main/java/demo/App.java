@@ -34,6 +34,7 @@ public class App
         Thread generationThread = new Thread(() -> {
 
             // créer tous les chunks et placer les blocs
+            
             for (int i = -5; i < 5; i++){
                 for (int j = -5; j < 5; j++){
                     Chunk chunk = ChunksManager.createChunk(j, i);
@@ -59,9 +60,9 @@ public class App
                 }
             }
 
-            Chunk chunk = ChunksManager.getChunk(0, 0);
-            SubChunk sub = chunk.getSubChunk(1);
-            sub.addFloorToSubChunk(0, 1, BlocksType.GRASS);
+            Chunk chunk = ChunksManager.getChunk(1, 1);
+            SubChunk sub = chunk.getSubChunk(0);
+            sub.addFloorToSubChunk(1, 15, BlocksType.GRASS);
         });     
         
         // daemon pour que le thread se ferme à la fermeture de la jvm
