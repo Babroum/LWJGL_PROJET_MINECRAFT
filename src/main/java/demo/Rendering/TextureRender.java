@@ -46,7 +46,7 @@ public class TextureRender {
         MemoryUtil.memFree(w);
         MemoryUtil.memFree(h);
         MemoryUtil.memFree(c);
-
+        MemoryUtil.memFree(path); 
     }   
 
     /**

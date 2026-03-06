@@ -37,7 +37,7 @@ public class TextRender {
     private float[] data = new float[BUFFERSIZE * 16];
     private int[] indices = new int[BUFFERSIZE * 6];
     
-    private FloatBuffer buffer = MemoryUtil.memAllocFloat(16);
+    private FloatBuffer buffer;
 
     /**
      * Charge l'image des caractères en mémoire <br>
@@ -54,6 +54,8 @@ public class TextRender {
         this.gridHeight = gHeight;
         this.fontPerRow = ftPerRow;
         this.chars = chars;
+
+        this.buffer = MemoryUtil.memAllocFloat(16);
 
         // pour opengl les buffers          
         IntBuffer width   = MemoryUtil.memAllocInt(1);
@@ -86,6 +88,7 @@ public class TextRender {
         MemoryUtil.memFree(width);
         MemoryUtil.memFree(height);
         MemoryUtil.memFree(channel);
+        MemoryUtil.memFree(path); 
 
         GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
 

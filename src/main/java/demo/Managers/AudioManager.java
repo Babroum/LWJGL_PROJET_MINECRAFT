@@ -85,6 +85,8 @@ public class AudioManager {
             long decoder = stb_vorbis_open_memory(vorbis, error, null);
             if (decoder == MemoryUtil.NULL) {
                 System.out.println("Erreur chargement OGG : " + name + " (code " + error.get(0) + ")");
+                MemoryUtil.memFree(error);
+                MemoryUtil.memFree(vorbis);
                 return;
             }
 
@@ -130,7 +132,7 @@ public class AudioManager {
             // Stocker buffer et source pour les retrouver par nom
             buffers.put(name, buffer);
             sources.put(name, source);
-
+            
             //System.out.println("Son chargé : " + name + " (" + channels + "ch, " + info.sample_rate() + "Hz)");
 
         } catch (Exception e) {

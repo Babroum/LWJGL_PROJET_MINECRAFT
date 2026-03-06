@@ -5,7 +5,7 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
-import org.lwjgl.BufferUtils;
+import org.lwjgl.system.MemoryUtil;
 
 import demo.Managers.ShadersManager;
 import demo.Rendering.Render;
@@ -18,7 +18,7 @@ public class FileLoader {
     public static ByteBuffer loadFileFromClasspathBB(String path) throws IOException {
         InputStream is = Render.class.getResourceAsStream(path);
         byte[] bytes = is.readAllBytes();
-        ByteBuffer buffer = BufferUtils.createByteBuffer(bytes.length);
+        ByteBuffer buffer = MemoryUtil.memAlloc(bytes.length);
         buffer.put(bytes).flip();
         return buffer;
     }
