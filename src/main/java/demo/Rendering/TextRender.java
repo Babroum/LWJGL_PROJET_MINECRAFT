@@ -4,7 +4,7 @@ import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 
-import org.lwjgl.BufferUtils;
+import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
@@ -37,7 +37,7 @@ public class TextRender {
     private float[] data = new float[BUFFERSIZE * 16];
     private int[] indices = new int[BUFFERSIZE * 6];
     
-    private FloatBuffer buffer = BufferUtils.createFloatBuffer(16);
+    private FloatBuffer buffer;
 
     /**
      * Charge l'image des caractères en mémoire <br>
@@ -55,10 +55,12 @@ public class TextRender {
         this.fontPerRow = ftPerRow;
         this.chars = chars;
 
-        // pour opengl les buffers
-        IntBuffer width = BufferUtils.createIntBuffer(1);
-        IntBuffer height = BufferUtils.createIntBuffer(1);
-        IntBuffer channel = BufferUtils.createIntBuffer(1);
+        this.buffer = MemoryUtil.memAllocFloat(16);
+
+        // pour opengl les buffers          
+        IntBuffer width   = MemoryUtil.memAllocInt(1);
+        IntBuffer height  = MemoryUtil.memAllocInt(1);
+        IntBuffer channel = MemoryUtil.memAllocInt(1);
 
         // charge l'image, et remplis les buffers
         ByteBuffer pixels = STBImage.stbi_load_from_memory(path, width, height, channel, 4);
@@ -83,12 +85,17 @@ public class TextRender {
             
         // libère les mémoires
         STBImage.stbi_image_free(pixels);
+        MemoryUtil.memFree(width);
+        MemoryUtil.memFree(height);
+        MemoryUtil.memFree(channel);
+        MemoryUtil.memFree(path); 
+
         GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
 
         // Initialise les buffers / shaders / vbo vao ebo
         ShadersManager.createTextShader();
-        this.vertexsBuffer = BufferUtils.createFloatBuffer(this.BUFFERSIZE * 16);
-        this.indicesBuffer = BufferUtils.createIntBuffer(this.BUFFERSIZE * 6);
+        this.vertexsBuffer = MemoryUtil.memAllocFloat(this.BUFFERSIZE * 16);
+        this.indicesBuffer = MemoryUtil.memAllocInt(this.BUFFERSIZE * 6);
         this.ids = BuffersManager.createTextVBOVAOEBO(vertexsBuffer, indicesBuffer);
         
         this.texUniformLocation = GL20.glGetUniformLocation(ShadersManager.getProgramTextId(), "tex");
@@ -96,11 +103,11 @@ public class TextRender {
 
     /**
      * Dessine un texte à des coordonnées données
-     * @param window Window
      * @param text String
      * @param x int
      * @param y int
-     * @param ftSize int, taille d'un caractère
+     * @param fontSize int, taille d'un caractère
+     * @param color Color4f
      */
     @OpenGLThread
     public void drawText(String text, int x, int y, int fontSize, Color4f color){   
@@ -189,5 +196,15 @@ public class TextRender {
 
             }
         }
+    }
+
+    /**
+     * Libère tous les buffers alloués avec MemoryUtil.
+     */
+    public void cleanup() {
+        MemoryUtil.memFree(this.vertexsBuffer);
+        MemoryUtil.memFree(this.indicesBuffer);
+        MemoryUtil.memFree(this.buffer);
+        GL11.glDeleteTextures(this.textureId);
     }
 }

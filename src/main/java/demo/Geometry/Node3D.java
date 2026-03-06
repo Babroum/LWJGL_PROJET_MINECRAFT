@@ -3,7 +3,7 @@ package demo.Geometry;
 import java.nio.FloatBuffer;
 
 import org.joml.Matrix4f;
-import org.lwjgl.BufferUtils;
+import org.lwjgl.system.MemoryUtil;
 
 import demo.Annotations.OpenGLThread;
 import demo.Exceptions.ArrayFull;
@@ -31,51 +31,37 @@ public class Node3D {
 
     // PRIVATE CAR PAS NECESSAIRE DANS UN JEU MINECRAFT .___.
     
-    /**
-     * Angle X du nœud.
-     */
+    /*
     private int angleX = 0;
-    /**
-     * Angle Y du nœud.
-     */
     private int angleY = 0;
-    /**
-     * Angle Z du nœud.
-     */
     private int angleZ = 0;
 
-    /**
-     * Taille X du nœud.
-     */
     private int scaleX = 1;
-    /**
-     * Taille Y du nœud.
-     */
     private int scaleY = 1;
-    /**
-     * Taille Z du nœud.
-     */
     private int scaleZ = 1;
-    
+    */
 
     /**
      * Tableau de nœud enfant.
      */
-    private Node3D[] children = new Node3D[SubChunk.MAXBLOCK]; // 16 * 16 * 16 = max de bloc par subchunk
-    public FloatBuffer buffer = BufferUtils.createFloatBuffer(16);
+    private Node3D[] children = null; // alloué seulement si addChild() est appelé
+    public FloatBuffer buffer = MemoryUtil.memAllocFloat(16);
     private int nbChildren;
 
     /**
      * Ajoute un nœud au tableau de nœud.
-     * @param node
+     * @param node Node3D
      * @throws ArrayFull
      */
     public void addChild(Node3D node) throws ArrayFull{
+        // Alloue le tableau seulement au premier addChild()
+        if (this.children == null){
+        this.children = new Node3D[SubChunk.MAXBLOCK];
+        }
         if (this.nbChildren == this.children.length){
             throw new ArrayFull();
         }
-        synchronized (this.children)
-        {
+        synchronized (this.children){
             this.children[this.nbChildren] = node;
         }       
         this.nbChildren++;
@@ -83,32 +69,34 @@ public class Node3D {
 
     /**
      * Dessine le nœud actuel et tous ses enfants.
-     * @param Matrix4f , si un nœud parent est bougé les enfants vont le suivre
+     * @param parentModel Matrix4f, si un nœud parent est bougé les enfants vont le suivre
      */
     @OpenGLThread
     public void drawNode(Matrix4f parentModel){
         // Crée la model matrix   
         // Placement des nœuds enfants relativement à la position de ce nœud
         Matrix4f model = new Matrix4f(parentModel)
-            .translate(this.x, this.y, this.z) // Position aux coordonnées X, Y, Z
-            .rotateX((float) Math.toRadians(this.angleX)) // Rotation autour de l'axe X
-            .rotateY((float) Math.toRadians(this.angleY)) // Rotation autour de l'axe Y
-            .rotateZ((float) Math.toRadians(this.angleZ)) // Rotation autour de l'axe Z
-            .scale(this.scaleX, this.scaleY, this.scaleZ); // Application des facteurs d'échelle
+            .translate(this.x, this.y, this.z); // Position aux coordonnées X, Y, Z
+            //.rotateX((float) Math.toRadians(this.angleX)) // Rotation autour de l'axe X
+            //.rotateY((float) Math.toRadians(this.angleY)) // Rotation autour de l'axe Y
+            //.rotateZ((float) Math.toRadians(this.angleZ)) // Rotation autour de l'axe Z
+            //.scale(this.scaleX, this.scaleY, this.scaleZ); // Application des facteurs d'échelle
         model.get(this.buffer);
         ShadersManager.runModel(this.buffer);
 
         // Dessin spécifique
         this.drawSpecific();
 
-        synchronized (this.children)
-        {
-            for (int i = 0; i < this.nbChildren; i++){
-                //if(!(this.children[i] instanceof Object3D)){
-                    this.children[i].drawNode(model);
-                //}
-            }
-        }    
+        if (this.children != null){
+            synchronized (this.children)
+            {
+                for (int i = 0; i < this.nbChildren; i++){
+                    //if(!(this.children[i] instanceof Object3D)){
+                        this.children[i].drawNode(model);
+                    //}
+                }
+            } 
+        }   
     }
 
     /**
@@ -116,7 +104,7 @@ public class Node3D {
      * @return
      */
     public Node3D[] getChildren(){
-        return this.children;
+        return this.children != null ? this.children : new Node3D[0];
     }
 
     /**
@@ -129,4 +117,11 @@ public class Node3D {
     @OpenGLThread
     public void drawSpecific() throws Empty{
     }
+
+    public void cleanup(){
+    if (this.buffer != null){
+        MemoryUtil.memFree(this.buffer);
+        this.buffer = null;
+    }
+}
 }

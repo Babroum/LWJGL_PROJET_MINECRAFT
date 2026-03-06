@@ -6,14 +6,13 @@ import java.util.concurrent.Executors;
 import org.joml.Vector3f;
 import org.lwjgl.opengl.GL11;
 
-import demo.Managers.BuffersManager;
 import demo.Managers.ChunksManager;
 import demo.Managers.PlayersManager;
+import demo.Rendering.BlockBorderRenderer;
 import demo.Rendering.Camera;
 import demo.Enum.BlocksType;
 import demo.Events.KeyboardInput;
 import demo.Events.MouseInput;
-import demo.Geometry.Object3D;
 import demo.Geometry.SubChunk;
 
 /**
@@ -38,7 +37,7 @@ public class Player {
     private boolean isFalling = false; 
     private float velocityY = 0f; // Vitesse de chute/saut
     private final float gravity = -9.81f; // constante de gravité
-    private Object3D oldBlockBorder;
+    private Vector3f oldBlockBorder;
     private float breakCooldown = 0f;
     private float placeCooldown = 0f;
     private float breakPlaceDelay = 200f; // temps en millisecondes pour casser/poser un bloc
@@ -96,9 +95,9 @@ public class Player {
         int bz = newZ < 0 ? (int) Math.floor(newZ) : (int) newZ;
         int by = (int)(this.position.y - this.playerHeight);
         try {
-            Object3D blockFeet = ChunksManager.getBlock(bx, by, bz);
-            Object3D blockHead = ChunksManager.getBlock(bx, by + 1, bz);
-            return blockFeet == null && blockHead == null;
+            BlocksType blockFeet = ChunksManager.getBlock(bx, by, bz);
+            BlocksType blockHead = ChunksManager.getBlock(bx, by + 1, bz);
+            return blockFeet == BlocksType.NULL && blockHead == BlocksType.NULL;
         } catch (Exception e) {
             return false;
         }
@@ -182,7 +181,7 @@ public class Player {
             int bx = (int) Math.floor(x);
             int by = (int) Math.floor(y);
             int bz = (int) Math.floor(z);
-            return ChunksManager.getBlock(bx, by, bz) != null;
+            return ChunksManager.getBlock(bx, by, bz) != BlocksType.NULL;
         } catch (Exception e) {
             return false;
         }
@@ -198,7 +197,7 @@ public class Player {
 
         // récupère les coordonées de ce que regarde le joueur (raycast)
         Vector3f[] look = PlayersManager.player.getCamera().getLookAt(5);
-        Object3D block = null;
+        BlocksType block = BlocksType.NULL;
         SubChunk sub = null;
 
         // si on regarde quelque chose
@@ -210,7 +209,7 @@ public class Player {
                 int bx = (int) Math.floor(hit.x);
                 int by = (int) Math.floor(hit.y);
                 int bz = (int) Math.floor(hit.z);
-
+ 
                 // récupère le block à tel position
                 block = ChunksManager.getBlock(bx, by, bz);
                 // pareil pour le chunk
@@ -219,15 +218,18 @@ public class Player {
                 // si on clique gauche et que la souris n'est pas débloqué, on casse le block si il existe
                 if (MouseInput.isLeftButtonPressed() && KeyboardInput.isMouseLock) {
                     // Si on a un bloc et que le cooldown est prêt
-                    if (block != null && this.breakCooldown <= 0f) {
+                    if (block != BlocksType.NULL && this.breakCooldown <= 0f) {
                         // le thread ne prend que des constantes, donc on copie 
                         final SubChunk subToModify = sub;
-                        final Object3D blockToRemove = block;
+                        final int fbx = bx, fby = by, fbz = bz;
                         chunkModifyThread.submit(() -> {
-                            subToModify.removeBlockFromSubChunk(blockToRemove);
+                            int localX = ChunksManager.floorMod(fbx, SubChunk.CHUNKSIZEX);
+                            int localY = ChunksManager.floorMod(fby, SubChunk.CHUNKSIZEY);
+                            int localZ = ChunksManager.floorMod(fbz, SubChunk.CHUNKSIZEZ);
+                            subToModify.removeBlockFromSubChunk(localX, localY, localZ);
                         });
                         this.breakCooldown = this.breakPlaceDelay;
-                        block = null; 
+                        block = BlocksType.NULL;
                     }
                 } else {
                     this.breakCooldown = 0;
@@ -239,7 +241,7 @@ public class Player {
                     int py = (int) Math.floor(place.y);
                     int pz = (int) Math.floor(place.z);
                     // on vérifie pour etre sur qu'il n'y ait pas de bloc
-                    if (ChunksManager.getBlock(px, py, pz) == null && this.placeCooldown <= 0f && !this.isInsidePlayer(px, py, pz)){
+                    if (ChunksManager.getBlock(px, py, pz) == BlocksType.NULL && this.placeCooldown <= 0f && !this.isInsidePlayer(px, py, pz)){
                         try {
                             final SubChunk sub2 = ChunksManager.getSubChunk(px, py, pz);
                             // convertir en coordonnées locales du subchunk
@@ -259,17 +261,21 @@ public class Player {
                 }     
 
                 // si le block regarder n'est pas le même que le précédent on créer les buffers
-                if (block != null && block != this.oldBlockBorder){
-                    if (this.oldBlockBorder != null){ BuffersManager.deleteVBOVAO(oldBlockBorder.ids); }
-                    this.oldBlockBorder = block;
-                    block.createSubChunkBorderVBOVAO();
+                if (block != BlocksType.NULL){
+                this.oldBlockBorder = new Vector3f(bx, by, bz);
+                } else {
+                    this.oldBlockBorder = null;
                 }
 
                 // dessine à chaque frame si un bloc est regardé
                 if (this.oldBlockBorder != null){
-                    GL11.glLineWidth(4.0f); // épaisseur en pixels
-                    this.oldBlockBorder.drawBlockBorder(bx, by, bz);
-                    GL11.glLineWidth(1.0f); // reset après
+                    GL11.glLineWidth(4.0f);
+                    BlockBorderRenderer.draw(
+                        (int) this.oldBlockBorder.x,
+                        (int) this.oldBlockBorder.y,
+                        (int) this.oldBlockBorder.z
+                    );
+                    GL11.glLineWidth(1.0f);
                 }
             } catch(Exception e){
                 // le chunk n'existe pas
@@ -277,7 +283,6 @@ public class Player {
         } else {
             // Si on ne regarde rien 
             if (this.oldBlockBorder != null) {
-                BuffersManager.deleteVBOVAO(oldBlockBorder.ids);
                 this.oldBlockBorder = null;
             }
         }  

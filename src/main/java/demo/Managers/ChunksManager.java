@@ -6,11 +6,12 @@ import java.util.LinkedHashMap;
 import org.joml.Math;
 
 import demo.Annotations.ChunkThread;
+import demo.Annotations.OpenGLThread;
+import demo.Enum.BlocksType;
 import demo.Exceptions.IncorrectCoordinates;
 import demo.Geometry.Chunk;
 import demo.Geometry.SubChunk;
 import demo.Rendering.Render;
-import demo.Geometry.Object3D;
 
 public class ChunksManager {
 
@@ -22,6 +23,7 @@ public class ChunksManager {
      * Créer un nouveau chunk à la position donné
      * @param x int
      * @param z int
+     * @return Chunk
      * @throws IncorrectCoordinates
      */
     @ChunkThread
@@ -34,15 +36,30 @@ public class ChunksManager {
         // il faut tout créer avant de généré la mesh ça évite de devoir la regénérer
         // sauf pour les test on s'en fout
         ChunksManager.chunks.put(coord, chunk);
-        chunk.generateChunkMesh();
-
         return chunk;
+    }
+
+    /**
+     * Finalise la construction du chunk
+     * @param chunk Chunk
+     */
+    @ChunkThread
+    public static void finalizeChunk(Chunk chunk){
+        for(SubChunk sub : chunk.subChunks){
+            sub.mesh.setupSubChunkBuffers(sub.bitSet.cardinality()); // recrée vertexArrayPack avant de générer
+            sub.generateSubChunkMesh();
+            sub.linkNeighbors();
+            // met le thread en pause si l'array est plein, le thread se relance automatiquement au moment ou OpenGLThread poll un chunk
+            try { Render.dirtySubChunks.put(sub); } catch(InterruptedException e) { Thread.currentThread().interrupt(); }
+        }
+        try { Render.chunkQueue.put(chunk); } catch(InterruptedException e) { Thread.currentThread().interrupt(); }
     }
 
     /**
      * Retourne le chunk à la position donné
      * @param x int
      * @param z int
+     * @return Chunk
      * @throws IncorrectCoordinates
      */
     @ChunkThread
@@ -56,7 +73,7 @@ public class ChunksManager {
 
     /**
      * Retourne la collection de tous les chunks
-     * @return Collection<Chunk>
+     * @return Collection
      */
     public static Collection<Chunk> getAllChunks(){
         return ChunksManager.chunks.values();
@@ -68,7 +85,7 @@ public class ChunksManager {
      * @param z int
      * @throws IncorrectCoordinates
      */
-    @ChunkThread
+    @OpenGLThread
     public static void removeChunk(int x, int z) throws IncorrectCoordinates{
         String coord = String.valueOf(x)+","+String.valueOf(z);
         if (!ChunksManager.chunks.containsKey(coord)){
@@ -83,21 +100,12 @@ public class ChunksManager {
     }
 
     /**
-     * Reconstruit tout les chunks <br>
-     * Pas optimal
+     * Finalise la construction de tout les chunks
      */
-    public static void rebuildAllCHunks(){
+    @ChunkThread
+    public static void finalizeAllChunk(){
         for(Chunk chunk : ChunksManager.chunks.values()){
-            for(SubChunk sub : chunk.subChunks){
-                sub.fillSubChunkBitSet();
-            }
-        }
-        for(Chunk chunk : ChunksManager.chunks.values()){
-            for(SubChunk sub : chunk.subChunks){
-                sub.mesh.setupSubChunkBuffers();
-                sub.generateSubChunkMesh();
-                Render.dirtySubChunks.add(sub);
-            }
+            ChunksManager.finalizeChunk(chunk);
         }
     }
 
@@ -110,7 +118,7 @@ public class ChunksManager {
      * @return Object3D
      * @throws IncorrectCoordinates
      */
-    public static Object3D getBlock(int x, int y, int z) throws IncorrectCoordinates{
+    public static BlocksType getBlock(int x, int y, int z) throws IncorrectCoordinates{
         if (y < 0 || y >= SubChunk.CHUNKSIZEY * Chunk.SUBCHUNKCOUNT){throw new IncorrectCoordinates("Valeur en Y incorrect");}
 
         int chunkX = (int) Math.floor((float) x / SubChunk.CHUNKSIZEX);
@@ -147,6 +155,18 @@ public class ChunksManager {
         SubChunk sub = chunk.getSubChunk(y / SubChunk.CHUNKSIZEY);
 
         return sub;
+    }
+
+    /**
+     * Supprime tout les subchunks
+     */
+    @OpenGLThread
+    public static void removeAllSubChunk(){
+        for (Chunk chunk : ChunksManager.chunks.values()){
+            for (SubChunk sub : chunk.subChunks){
+                sub.removeSubChunk();
+            }
+        }
     }
 
     /**

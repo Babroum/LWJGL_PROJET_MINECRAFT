@@ -217,7 +217,7 @@ public abstract class ShadersManager {
 
     /**
      * Envoie la viewMatrix de la caméra au shader
-     * @param proj FloatBuffer
+     * @param view FloatBuffer
      */
     @OpenGLThread 
     public static void runView(FloatBuffer view){
@@ -237,7 +237,7 @@ public abstract class ShadersManager {
 
     /**
      * Envoie la viewMatrix de la caméra au shader des bordures de blocks
-     * @param proj FloatBuffer
+     * @param view FloatBuffer
      */
     @OpenGLThread 
     public static void runViewBlockBorder(FloatBuffer view){
@@ -247,7 +247,9 @@ public abstract class ShadersManager {
 
     /**
      * Envoie la pos des lignes du block au shader des bordures de blocks
-     * @param proj FloatBuffer
+     * @param x int
+     * @param y int
+     * @param z int
      */
     @OpenGLThread 
     public static void runBlockPosBlockBorder(int x, int y, int z){
@@ -256,7 +258,7 @@ public abstract class ShadersManager {
 
     /**
      * Envoie le model des cubes au shader
-     * @param proj FloatBuffer
+     * @param model FloatBuffer
      */
     @OpenGLThread
     public static void runModel(FloatBuffer model){
@@ -266,6 +268,7 @@ public abstract class ShadersManager {
 
     /**
      * Envoie la matrice orthonormé au shader de texte
+     * @param buffer FloatBuffer
      * @param width int
      * @param height int
      */

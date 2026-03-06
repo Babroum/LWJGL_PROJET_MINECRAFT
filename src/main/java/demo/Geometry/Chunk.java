@@ -19,6 +19,7 @@ public class Chunk extends Node3D{
     
     /**
      * Initialise les subChunks du chunks
+     * @param name String
      */
     @ChunkThread
     public Chunk(String name){
@@ -54,7 +55,11 @@ public class Chunk extends Node3D{
      */
     @ChunkThread
     public void addFloorToChunk(int y, int nbFloor, BlocksType type){
-        this.subChunks[y / SubChunk.CHUNKSIZEY].addFloorToSubChunk(y % SubChunk.CHUNKSIZEY, nbFloor % (SubChunk.CHUNKSIZEY + 1), type);
+        int subIndex = y / SubChunk.CHUNKSIZEY;
+        // Bloque les rebuilds pendant qu'on remplit les blocs
+        this.subChunks[subIndex].setGenerating(true);
+        this.subChunks[subIndex].addFloorToSubChunk(y % SubChunk.CHUNKSIZEY, nbFloor % (SubChunk.CHUNKSIZEY + 1), type);
+        this.subChunks[subIndex].setGenerating(false);
     }
     
     /**
@@ -111,7 +116,6 @@ public class Chunk extends Node3D{
      * @throws IncorrectCoordinates
      * @return SubChunk
      */
-    @ChunkThread
     public SubChunk getSubChunk(int y) throws IncorrectCoordinates{ 
         if (y < 0 || y >= Chunk.SUBCHUNKCOUNT) throw new IncorrectCoordinates("Les coordonées sont incorrects (0 pour le subChunk n°0, 1 ... n°1, etc...");
         return this.subChunks[y];
@@ -133,6 +137,7 @@ public class Chunk extends Node3D{
         for(SubChunk sub : this.subChunks) sub.setupSubChunkVBOVAO();
     }
 
+    @OpenGLThread
     @Override
     public void drawNode(Matrix4f parentModel){
         for (SubChunk sub : subChunks){

@@ -1,5 +1,7 @@
 package demo;
 
+import org.joml.Vector3f;
+
 import demo.Managers.AudioManager;
 import demo.Managers.PlayersManager;
 
@@ -16,7 +18,7 @@ public class GameLoop {
         AudioManager.setVolume("bird", 10f);
 
         // positionne la camera
-        PlayersManager.player.getCamera().setPosition(0, 8, 0);
+        PlayersManager.player.setPosition(new Vector3f(0, 8, 0));
     }
 
     /**
@@ -30,7 +32,6 @@ public class GameLoop {
      * Executer après la boucle de rendu
      */
     public static void quit(){
-        // termine l'enregistrement de donnée pour la frame
-        AudioManager.cleanupTempSources();
+        
     }
 }

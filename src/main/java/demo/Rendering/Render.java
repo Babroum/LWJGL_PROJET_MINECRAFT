@@ -2,7 +2,7 @@ package demo.Rendering;
 
 import java.io.IOException;
 import java.nio.FloatBuffer;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ArrayBlockingQueue;
 
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -12,11 +12,11 @@ import org.lwjgl.opengl.GL11;
 
 import demo.GameLoop;
 import demo.Annotations.OpenGLThread;
-import demo.Events.InputManager;
 import demo.Geometry.Chunk;
 import demo.Geometry.SubChunk;
 import demo.Managers.AudioManager;
 import demo.Managers.BuffersManager;
+import demo.Managers.InputManager;
 import demo.Managers.ShadersManager;
 import demo.Managers.TexturesManager;
 import demo.Others.FileLoader;
@@ -36,8 +36,9 @@ public class Render {
     private static int frameCount;
     private static float displayedFps = 0.0f;
 
-    public static ConcurrentLinkedQueue<Chunk> chunkQueue = new ConcurrentLinkedQueue<>();
-    public static ConcurrentLinkedQueue<SubChunk> dirtySubChunks = new ConcurrentLinkedQueue<>();
+    // Valeur à changé aussi dans App.java
+    public static ArrayBlockingQueue<Chunk> chunkQueue = new ArrayBlockingQueue<>(16);
+    public static ArrayBlockingQueue<SubChunk> dirtySubChunks = new ArrayBlockingQueue<>(64);
 
     private static FloatBuffer projBuffer = BufferUtils.createFloatBuffer(16);
 
@@ -46,6 +47,7 @@ public class Render {
      */
     @OpenGLThread
     public static void setupBeforeRendering(){
+        BlockBorderRenderer.init();
         // initialise en mémoire les textures des caractères
         TexturesManager.loadTextures();
         try{
@@ -62,7 +64,6 @@ public class Render {
 
     /**
      * Gère le rendu de la fenêtre.
-     * @param window
      * @param windowRef
      */
     @OpenGLThread
@@ -105,11 +106,10 @@ public class Render {
             // poll les chunks prêts et upload sur GPU
             Chunk chunk;
             while((chunk = Render.chunkQueue.poll()) != null){
-                chunk.setupChunkVBOVAO();
                 Render.sceneGraph.root.addChild(chunk);
             }
 
-            // Chunks modifiés update le VBO existant
+            // subChunks modifiés update le VBO existant
             SubChunk dirty;
             while ((dirty = dirtySubChunks.poll()) != null) {
                 dirty.setupSubChunkVBOVAO();
@@ -166,18 +166,19 @@ public class Render {
                 System.gc();
                 System.out.println("RAM après GC: " + (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / (1024*1024) + " MB");
             }*/
-            GameLoop.quit();
+            AudioManager.cleanupTempSources();
             monitor.endFrame();
 		}
 
+        GameLoop.quit();
         // ferme le fenêtre quand la boucle de rendu est fini
         Window.exitWindow();
     }
 
-    public static void setChunkQueue(ConcurrentLinkedQueue<Chunk> queue){
+    public static void setChunkQueue(ArrayBlockingQueue<Chunk> queue){
         Render.chunkQueue = queue;
     }
-    public static void setDirtyChunkQueue(ConcurrentLinkedQueue<SubChunk> queue){
+    public static void setDirtyChunkQueue(ArrayBlockingQueue<SubChunk> queue){
         Render.dirtySubChunks = queue;
     }
 

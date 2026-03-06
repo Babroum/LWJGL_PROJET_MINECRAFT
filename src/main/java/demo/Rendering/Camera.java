@@ -6,7 +6,7 @@ import java.lang.Math;
 import org.joml.*;
 import org.lwjgl.BufferUtils;
 
-import demo.Geometry.Object3D;
+import demo.Enum.BlocksType;
 import demo.Managers.ChunksManager;
 
 /**
@@ -64,7 +64,7 @@ public class Camera {
     /**
      * Fonctionne comme un raycast <br>
      * Raycast DDA (Digital Differential Analysis)
-     * @param distance
+     * @param distance float
      * @return Vector3f[], [0] bloc visé et [1] où poser
      */
     public Vector3f[] getLookAt(float distance){
@@ -120,9 +120,9 @@ public class Camera {
             }
             
             try {
-                Object3D block = ChunksManager.getBlock(bx, by, bz);
+                BlocksType block = ChunksManager.getBlock(bx, by, bz);
                 // dès qu'on trouve un bloc on retourne sa position entière exacte
-                if (block != null){
+                if (block != BlocksType.NULL){
                     int placeX = bx - (lastAxis == 0 ? stepX : 0);
                     int placeY = by - (lastAxis == 1 ? stepY : 0);
                     int placeZ = bz - (lastAxis == 2 ? stepZ : 0);
@@ -199,7 +199,6 @@ public class Camera {
 
     /**
      * Recalcule la viewMatrix
-     * @param inc float
      */
     private void recalculate(){
         this.viewMatrix.identity().rotateX((float) Math.toRadians(pitch)).rotateY((float) Math.toRadians(yaw)).translate(-position.x, -position.y, -position.z);
@@ -221,7 +220,6 @@ public class Camera {
      * Définis une rotation pour le vecteur de rotation
      * @param x float
      * @param y float 
-     * @param z float
      */
     public void setRotation(float x, float y) {
         // Si x et y sont passés en radians, on les convertit

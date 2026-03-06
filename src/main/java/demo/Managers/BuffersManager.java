@@ -20,7 +20,7 @@ public class BuffersManager {
      * Créer les buffers en les remplissant <br>
      * Chaque int est une donnée (vertex packing)
      * @param vertex IntBuffer, sommet à affiché
-     * @return
+     * @return int[]
      */
     @OpenGLThread
     public static int[] createVBOVAO(IntBuffer vertex){
@@ -86,7 +86,8 @@ public class BuffersManager {
 
     /**
      * Mets à jour le vbo d'un chunk
-     * @param IntBuffer, données à ajouté
+     * @param vertex IntBuffer, données à ajouté
+     * @param vbo int
      */
     @OpenGLThread
     public static void updateChunkVBO(IntBuffer vertex, int vbo){
@@ -113,17 +114,17 @@ public class BuffersManager {
     }
 
     @OpenGLThread
-    public static void deleteVBOVAOEBO(int[] ids){
-        GL30.glDeleteVertexArrays(ids[0]); // vao
-        GL20.glDeleteBuffers(ids[1]); // vbo
+    public static void deleteVBOVAOEBO(int[] ids){        
+        GL20.glDeleteBuffers(ids[0]); // vbo
+        GL30.glDeleteVertexArrays(ids[1]); // vao
         GL20.glDeleteBuffers(ids[2]); // ebo 
         activeVAOCount--;
     }
 
     @OpenGLThread
     public static void deleteVBOVAO(int[] ids){
-        GL30.glDeleteVertexArrays(ids[0]); // vao
-        GL20.glDeleteBuffers(ids[1]); // vbo
+        GL20.glDeleteBuffers(ids[0]);       // ids[0] = vbo
+        GL30.glDeleteVertexArrays(ids[1]); // ids[1] = vao
         activeVAOCount--;
     }
 }

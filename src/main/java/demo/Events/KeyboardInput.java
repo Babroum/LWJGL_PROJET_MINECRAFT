@@ -3,25 +3,29 @@ package demo.Events;
 import org.lwjgl.glfw.GLFW;
 
 import demo.Annotations.OpenGLThread;
+import demo.Geometry.Chunk;
+import demo.Geometry.SubChunk;
 import demo.Managers.AudioManager;
+import demo.Managers.ChunksManager;
 import demo.Rendering.Camera;
 import demo.Player;
 
 /**
  * Définis les listeners GLFW
  * <br>Et détecte les appui continue/toggle
- * @param windowRef
  */
 public class KeyboardInput {
     
     private static long windowRef;
-    public static boolean isWireFrameMode;
-    public static boolean isCloseWindow;
-    public static boolean isCursorHidden = true;
-    public static boolean isMouseLock = true;
-    public static boolean isTeleportActive;
-    public static boolean isChunkBorderShow;
-    public static boolean isJumping;
+    // volatile car ils sont tous écrits et lus depuis des threads différents
+    // volatile force le thread à toujours lire et écrire directement en RAM (pas en cache)
+    public static volatile boolean isWireFrameMode;
+    public static volatile boolean isCloseWindow;
+    public static volatile boolean isCursorHidden = true;
+    public static volatile boolean isMouseLock = true;
+    public static volatile boolean isTeleportActive;
+    public static volatile boolean isChunkBorderShow;
+    public static volatile boolean isJumping;
 
     @OpenGLThread
     public KeyboardInput(long windowRef){
@@ -50,6 +54,21 @@ public class KeyboardInput {
 
                 case GLFW.GLFW_KEY_B:
                     KeyboardInput.isChunkBorderShow = !KeyboardInput.isChunkBorderShow;
+                    if (KeyboardInput.isChunkBorderShow){
+                        for (Chunk chunk : ChunksManager.getAllChunks()){
+                            for (SubChunk sub : chunk.subChunks){
+                                if (sub.mesh.getBorderVAO() == 0 && sub.mesh.getVertexCount() > 0){
+                                    sub.mesh.createSubChunkBorderVBOVAO();
+                                }
+                            }
+                        }
+                    } else {
+                        for (Chunk chunk : ChunksManager.getAllChunks()){
+                            for (SubChunk sub : chunk.subChunks){
+                                sub.mesh.deleteSubChunkBorderVBOVAO();
+                            }
+                        }
+                    }
                     break;
 
                 case GLFW.GLFW_KEY_T:

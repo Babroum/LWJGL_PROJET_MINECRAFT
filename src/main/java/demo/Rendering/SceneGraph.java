@@ -17,8 +17,6 @@ public class SceneGraph {
 
     public final Node3D root = new Node3D();
     private Color4f backGroundColor = Color4f.WHITE;    
-    // a replacer dans une autre class
-    private ChunksManager chunksManager = new ChunksManager();
 
     /**
      * Définis la couleur de la scène
@@ -34,14 +32,6 @@ public class SceneGraph {
      */
     public Color4f getBackGroundColor(){
         return this.backGroundColor;
-    }
-
-    /**
-     * Retourne la camera de la scène
-     * @return Camera
-     */
-    public ChunksManager getChunksManager(){
-        return this.chunksManager;
     }
 
     /**

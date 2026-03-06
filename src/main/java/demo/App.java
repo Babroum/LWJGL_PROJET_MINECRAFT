@@ -1,6 +1,6 @@
 package demo;
 
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ArrayBlockingQueue;
 
 import demo.Enum.BlocksType;
 import demo.Geometry.Chunk;
@@ -12,7 +12,6 @@ import demo.Rendering.Window;
 
 public class App 
 {   
-    
     public static void main( String[] args ) throws Exception
     {
         // création de la fenêtre 
@@ -23,29 +22,48 @@ public class App
     }
 
     public static void draw(SceneGraph scene){
-        // ConcurrentLinkedQueue pour passer les chunks prêts au thread OpenGL
-        ConcurrentLinkedQueue<Chunk> readyChunks = new ConcurrentLinkedQueue<>();
-        ConcurrentLinkedQueue<SubChunk> dirtyChunks = new ConcurrentLinkedQueue<>();
+
+        // nombre de chunk que le ChunkThread peut mettre avant de s'arreter
+        // le OpenGLThread va lui afficher ce qu'il y a dans l'array et des qu'il affiche 1 chunk il le retire 
+        // du array ce qui permet au ChunkThread de rajouter un nouveau chunk dans l'array
+        // Valeur à changé aussi dans Render.java
+        ArrayBlockingQueue<Chunk> readyChunks = new ArrayBlockingQueue<>(16);
+        ArrayBlockingQueue<SubChunk> dirtyChunks = new ArrayBlockingQueue<>(64);
 
         // thread de génération
         Thread generationThread = new Thread(() -> {
-            Chunk chunk = ChunksManager.createChunk(0, 0);
-            Chunk chunk2 = ChunksManager.createChunk(-1, 0);
-            Chunk chunk3 = ChunksManager.createChunk(-1, -1);
-            Chunk chunk4 = ChunksManager.createChunk(0, -1);
 
-            // sol pour se repérer
-            chunk.addFloorToChunk(0, 1, BlocksType.GRASS);       
-            chunk2.addFloorToChunk(0, 1, BlocksType.GRASS);    
-            chunk3.addFloorToChunk(0, 1, BlocksType.GRASS);   
-            chunk4.addFloorToChunk(0, 1, BlocksType.GRASS);
+            // créer tous les chunks et placer les blocs
+            for (int i = -5; i < 5; i++){
+                for (int j = -5; j < 5; j++){
+                    Chunk chunk = ChunksManager.createChunk(j, i);
+                    chunk.addFloorToChunk(0, 1, BlocksType.GRASS);
+                }
+            }
 
-            ChunksManager.rebuildAllCHunks();
-            readyChunks.add(chunk);            
-            readyChunks.add(chunk2);
-            readyChunks.add(chunk3);
-            readyChunks.add(chunk4);
-        });        
+            for (int i = -5; i < 5; i++){
+                for (int j = -5; j < 5; j++){
+                    Chunk chunk = ChunksManager.getChunk(j, i);
+                    for(SubChunk sub : chunk.subChunks){
+                        sub.fillSubChunkBitSet();
+                    }
+                }
+            }
+
+            // finaliser APRÈS que tous les voisins existent
+            for (int i = -5; i < 5; i++){
+                for (int j = -5; j < 5; j++){
+                    Chunk chunk = ChunksManager.getChunk(j, i);
+                    ChunksManager.finalizeChunk(chunk);
+                    try { readyChunks.put(chunk); } catch(InterruptedException e) { Thread.currentThread().interrupt(); }
+                }
+            }
+
+            Chunk chunk = ChunksManager.getChunk(0, 0);
+            SubChunk sub = chunk.getSubChunk(1);
+            sub.addFloorToSubChunk(0, 1, BlocksType.GRASS);
+        });     
+        
         // daemon pour que le thread se ferme à la fermeture de la jvm
         generationThread.setDaemon(true);
         generationThread.start();
