@@ -34,10 +34,14 @@ public class Player {
     public Vector3f position;
     private float playerHeight = 1.5f; // si le joueur est grand ou pas
     private float playerRadius = 0.3f; // si le joueur est gros ou pas
+    
     private boolean isFalling = false; 
     private float velocityY = 0f; // Vitesse de chute/saut
     private final float gravity = -9.81f; // constante de gravité
-    private Vector3f oldBlockBorder;
+
+    private final Vector3f oldBlockBorder = new Vector3f();
+    private boolean hasBlockBorder = false;
+
     private float breakCooldown = 0f;
     private float placeCooldown = 0f;
     private float breakPlaceDelay = 200f; // temps en millisecondes pour casser/poser un bloc
@@ -79,7 +83,7 @@ public class Player {
             this.position.z = nextZ;
         }
         
-        this.setPosition(new Vector3f(this.position.x, this.position.y, this.position.z));
+        this.setPosition(this.position.x, this.position.y, this.position.z);
     }
 
     private boolean canMoveToWithBuffer(float x, float z, float radius) {
@@ -121,7 +125,7 @@ public class Player {
         if (this.position.y < 0) {
             this.velocityY = 0f;
             this.isFalling = false;
-            this.setPosition(new Vector3f(0, 10, 0));
+            this.setPosition(0, 10, 0);
             return;
         }
 
@@ -139,7 +143,7 @@ public class Player {
             // sinon on tombe
             this.isFalling = true;
         }
-        this.setPosition(new Vector3f(this.position.x, this.position.y, this.position.z));
+        this.setPosition(this.position.x, this.position.y, this.position.z);
     }
 
     private boolean isInsidePlayer(int px, int py, int pz){
@@ -262,13 +266,14 @@ public class Player {
 
                 // si le block regarder n'est pas le même que le précédent on créer les buffers
                 if (block != BlocksType.NULL){
-                this.oldBlockBorder = new Vector3f(bx, by, bz);
+                    this.hasBlockBorder = true;
+                    this.oldBlockBorder.set(bx, by, bz);
                 } else {
-                    this.oldBlockBorder = null;
+                    this.hasBlockBorder = false;
                 }
 
                 // dessine à chaque frame si un bloc est regardé
-                if (this.oldBlockBorder != null){
+                if (this.hasBlockBorder){
                     GL11.glLineWidth(4.0f);
                     BlockBorderRenderer.draw(
                         (int) this.oldBlockBorder.x,
@@ -282,8 +287,8 @@ public class Player {
             }
         } else {
             // Si on ne regarde rien 
-            if (this.oldBlockBorder != null) {
-                this.oldBlockBorder = null;
+            if (this.hasBlockBorder) {
+                this.hasBlockBorder = false;
             }
         }  
 
@@ -317,8 +322,10 @@ public class Player {
      * Définis la postition du joueur
      * @param pos
      */
-    public void setPosition(Vector3f pos){
-        this.position = pos;
-        this.camera.setPosition(pos.x, pos.y, pos.z);
+    public void setPosition(float x, float y, float z){
+        this.position.x = x;
+        this.position.y = y;
+        this.position.z = z;
+        this.camera.setPosition(x, y, z);
     }
 }

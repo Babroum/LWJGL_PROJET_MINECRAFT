@@ -22,6 +22,8 @@ public class SubChunk extends Node3D{
     public static final int CHUNKSIZEZ = 16;
     public static final int MAXBLOCK = 4096;    
 
+    private final Matrix4f model = new Matrix4f();
+
     private SubChunk westNeighbor;
     private SubChunk eastNeighbor;
     private SubChunk northNeighbor;
@@ -561,9 +563,8 @@ public class SubChunk extends Node3D{
     @ChunkThread
     @Override
     public void drawNode(Matrix4f parentModel){
-        Matrix4f model = new Matrix4f(parentModel)
-            .translate(this.x, this.y, this.z);
-        model.get(this.buffer);
+        parentModel.translate(this.x, this.y, this.z, this.model);
+        this.model.get(this.buffer);
         ShadersManager.runModel(this.buffer);
         this.drawSpecific();
         // pas d'itération sur les cubes enfants
