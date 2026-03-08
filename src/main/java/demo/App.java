@@ -1,12 +1,9 @@
 package demo;
 
-import java.util.concurrent.ArrayBlockingQueue;
-
 import demo.Enum.BlocksType;
 import demo.Geometry.Chunk;
 import demo.Geometry.SubChunk;
 import demo.Managers.ChunksManager;
-import demo.Rendering.Render;
 import demo.Rendering.SceneGraph;
 import demo.Rendering.Window;
 
@@ -22,14 +19,6 @@ public class App
     }
 
     public static void draw(SceneGraph scene){
-
-        // nombre de chunk que le ChunkThread peut mettre avant de s'arreter
-        // le OpenGLThread va lui afficher ce qu'il y a dans l'array et des qu'il affiche 1 chunk il le retire 
-        // du array ce qui permet au ChunkThread de rajouter un nouveau chunk dans l'array
-        // Valeur à changé aussi dans Render.java
-        ArrayBlockingQueue<Chunk> readyChunks = new ArrayBlockingQueue<>(16);
-        ArrayBlockingQueue<SubChunk> dirtyChunks = new ArrayBlockingQueue<>(64);
-
         // thread de génération
         Thread generationThread = new Thread(() -> {
 
@@ -55,20 +44,17 @@ public class App
                 for (int j = -5; j < 5; j++){
                     Chunk chunk = ChunksManager.getChunk(j, i);
                     ChunksManager.finalizeChunk(chunk);
-                    try { readyChunks.put(chunk); } catch(InterruptedException e) { Thread.currentThread().interrupt(); }
                 }
             }
 
-            Chunk chunk = ChunksManager.getChunk(0, 0);
-            SubChunk sub = chunk.getSubChunk(1);
-            sub.addFloorToSubChunk(0, 1, BlocksType.GRASS);
-        });     
+            //Chunk chunk = ChunksManager.getChunk(0, 0);
+            //SubChunk sub = chunk.getSubChunk(1);
+            //sub.addFloorToSubChunk(0, 1, BlocksType.GRASS);
+        }); 
         
         // daemon pour que le thread se ferme à la fermeture de la jvm
         generationThread.setDaemon(true);
         generationThread.start();
-        Render.setChunkQueue(readyChunks);
-        Render.setDirtyChunkQueue(dirtyChunks);
     }  
 
     /*

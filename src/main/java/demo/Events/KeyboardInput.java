@@ -8,6 +8,7 @@ import demo.Geometry.SubChunk;
 import demo.Managers.AudioManager;
 import demo.Managers.ChunksManager;
 import demo.Rendering.Camera;
+import demo.Rendering.Window;
 import demo.Player;
 
 /**
@@ -16,7 +17,6 @@ import demo.Player;
  */
 public class KeyboardInput {
     
-    private static long windowRef;
     // volatile car ils sont tous écrits et lus depuis des threads différents
     // volatile force le thread à toujours lire et écrire directement en RAM (pas en cache)
     public static volatile boolean isWireFrameMode;
@@ -28,9 +28,8 @@ public class KeyboardInput {
     public static volatile boolean isJumping;
 
     @OpenGLThread
-    public KeyboardInput(long windowRef){
-        KeyboardInput.windowRef = windowRef;
-        GLFW.glfwSetKeyCallback(windowRef, KeyboardInput::keyPressedToggle);
+    public KeyboardInput(){
+        GLFW.glfwSetKeyCallback(Window.window, KeyboardInput::keyPressedToggle);
     }
 
     // utiliser pour toutes les touches toggle
@@ -102,14 +101,14 @@ public class KeyboardInput {
     public static void keyPressedContinue(long windowRef, Camera camera, float move, Player player) {
         
         // Mouvement devant, derrière, gauche, droite, haut, bas
-        if (GLFW.glfwGetKey(KeyboardInput.windowRef, GLFW.GLFW_KEY_W) == GLFW.GLFW_PRESS) {
+        if (GLFW.glfwGetKey(Window.window, GLFW.GLFW_KEY_W) == GLFW.GLFW_PRESS) {
             player.moveForward(move);
-        } else if (GLFW.glfwGetKey(KeyboardInput.windowRef, GLFW.GLFW_KEY_S) == GLFW.GLFW_PRESS) {
+        } else if (GLFW.glfwGetKey(Window.window, GLFW.GLFW_KEY_S) == GLFW.GLFW_PRESS) {
             player.moveBackwards(move);
         }
-        if (GLFW.glfwGetKey(KeyboardInput.windowRef, GLFW.GLFW_KEY_A) == GLFW.GLFW_PRESS) {
+        if (GLFW.glfwGetKey(Window.window, GLFW.GLFW_KEY_A) == GLFW.GLFW_PRESS) {
             player.moveLeft(move);
-        } else if (GLFW.glfwGetKey(KeyboardInput.windowRef, GLFW.GLFW_KEY_D) == GLFW.GLFW_PRESS) {
+        } else if (GLFW.glfwGetKey(Window.window, GLFW.GLFW_KEY_D) == GLFW.GLFW_PRESS) {
             player.moveRight(move);
         }
 

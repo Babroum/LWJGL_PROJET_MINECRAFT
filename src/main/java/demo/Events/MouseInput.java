@@ -25,7 +25,7 @@ public class MouseInput {
      * @param windowRef long
      */
     @OpenGLThread
-    public MouseInput(long windowRef){
+    public MouseInput(){
         MouseInput.previousPos = new Vector2f(-1, -1);
         MouseInput.currentPos = new Vector2f();
         MouseInput.displVec = new Vector2f();
@@ -35,19 +35,19 @@ public class MouseInput {
 
         // Callback quand la souris est bougé
         //setCursorPosCallback(windowRef, window);
-        GLFW.glfwSetCursorPosCallback(windowRef, (handle, xpos, ypos) -> {
+        GLFW.glfwSetCursorPosCallback(Window.window, (handle, xpos, ypos) -> {
             if (KeyboardInput.isMouseLock){
                 MouseInput.currentPos.x = 0;
                 MouseInput.currentPos.y = 0;
                 currentPos.x = (float) xpos - Window.width/2;
                 currentPos.y = (float) ypos - Window.height/2;
-                GLFW.glfwSetCursorPos(windowRef, Window.width/2, Window.height/2);
+                GLFW.glfwSetCursorPos(Window.window, Window.width/2, Window.height/2);
             }
         });
         // Callback quand la souris est dans la fenêtre ou en dehors
-        GLFW.glfwSetCursorEnterCallback(windowRef, (handle, entered) -> inWindow = entered);
+        GLFW.glfwSetCursorEnterCallback(Window.window, (handle, entered) -> inWindow = entered);
         // Callback quand un bouton de la souris est cliqué
-        GLFW.glfwSetMouseButtonCallback(windowRef, (handle, button, action, mode) -> {
+        GLFW.glfwSetMouseButtonCallback(Window.window, (handle, button, action, mode) -> {
             leftButtonPressed = button == GLFW.GLFW_MOUSE_BUTTON_1 && action == GLFW.GLFW_PRESS;
             rightButtonPressed = button == GLFW.GLFW_MOUSE_BUTTON_2 && action == GLFW.GLFW_PRESS;
         });

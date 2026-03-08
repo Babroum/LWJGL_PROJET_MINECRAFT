@@ -16,7 +16,6 @@ import demo.Geometry.Chunk;
 import demo.Geometry.SubChunk;
 import demo.Managers.AudioManager;
 import demo.Managers.BuffersManager;
-import demo.Managers.InputManager;
 import demo.Managers.ShadersManager;
 import demo.Managers.TexturesManager;
 import demo.Others.FileLoader;
@@ -36,11 +35,14 @@ public class Render {
     private static int frameCount;
     private static float displayedFps = 0.0f;
 
-    // Valeur à changé aussi dans App.java
-    public static ArrayBlockingQueue<Chunk> chunkQueue = new ArrayBlockingQueue<>(16);
-    public static ArrayBlockingQueue<SubChunk> dirtySubChunks = new ArrayBlockingQueue<>(64);
+    // nombre de chunk que le ChunkThread peut mettre avant de s'arreter
+    // le OpenGLThread va lui afficher ce qu'il y a dans l'array et des qu'il affiche 1 chunk il le retire 
+    // du array ce qui permet au ChunkThread de rajouter un nouveau chunk dans l'array
+    public static ArrayBlockingQueue<Chunk> chunkQueue = new ArrayBlockingQueue<>(16); // 16 ajout possibles max
+    public static ArrayBlockingQueue<SubChunk> dirtySubChunks = new ArrayBlockingQueue<>(64); // 64 modif possibles max
 
     private static FloatBuffer projBuffer = BufferUtils.createFloatBuffer(16);
+    private static final Matrix4f projection = new Matrix4f();
 
     /**
      * Est appelé avant le début du draw scene 
@@ -59,7 +61,7 @@ public class Render {
                                         " !\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~");          
         }catch(IOException e){
             System.out.println(e);
-        }        
+        }   
     }
 
     /**
@@ -67,32 +69,28 @@ public class Render {
      * @param windowRef
      */
     @OpenGLThread
-    public static void rendering(long windowRef){
-        // Stocke le temps actuel (UNIX)
-        long lastTimeMs = System.currentTimeMillis();
-        long lastTimeNano = System.nanoTime();        
+    public static void rendering(){     
+        double lastTime = GLFW.glfwGetTime(); 
 
         // Prépare la 3D
         Render.initialize3D(Window.width, Window.height);
 
         GameLoop.init();
 
-        while ( !GLFW.glfwWindowShouldClose(windowRef) ) {  
+        while ( !GLFW.glfwWindowShouldClose(Window.window) ) {  
             // démarre l'enregistrement de performances pour la frame
             monitor.beginFrame();
 
-            // Stocke le temps actuel (UNIX) et en nanosec
-            long nowMs = System.currentTimeMillis();
-            long nowNano = System.nanoTime();
+            double now = GLFW.glfwGetTime(); 
+            double delta = now - lastTime;
+            lastTime = now;
+            // Protection contre les gros sauts
+            if (delta > 0.1) delta = 0.1; // 10FPS
 
             // nettoie le frame buffer
 			GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
 
-            // Enregistre le temps pour les inputs
-            monitor.startTimer("logic");
-            // Modifie le déplacement de la caméra 
-            InputManager.run(windowRef, sceneGraph, nowMs - lastTimeMs);
-            monitor.stopTimer("logic");
+            GameLoop.run((float)delta * 1000.0f);
 
             // utilise le shader 
             ShadersManager.useShader();
@@ -100,8 +98,6 @@ public class Render {
             // donne les matrices de camera et perspective au shader
             ShadersManager.runProjection(Render.calculateProjection(45.0f, (float) Window.width / Window.height, 0.1f, 5000.f)); // donne la perspective de l'ecran
             ShadersManager.runView(PlayersManager.player.getCamera().getViewMatrixBuffer()); // donne la vue de la camera
-
-            GameLoop.run(nowMs - lastTimeMs);
 
             // poll les chunks prêts et upload sur GPU
             Chunk chunk;
@@ -123,9 +119,8 @@ public class Render {
 
             // récupère le nombre de vbo
             monitor.setActiveVAOs(BuffersManager.activeVAOCount);
-
+            
             // Affiche les fps            
-            double delta = (nowNano - lastTimeNano) / 1_000_000_000.0;
             Render.calculateFPS(delta);
 
             // crosshair simple
@@ -152,24 +147,22 @@ public class Render {
                 }
             }
 
-            // Rends la fenêtre en buffer dessinée visible à l’écran
-            GLFW.glfwSwapBuffers(windowRef);		
-
-            GLFW.glfwPollEvents();
-
-            lastTimeMs = nowMs;           
-            lastTimeNano = nowNano; 
-
             // TESTE A UTILISE POUR VOIR SI IL Y A ACCUMULATION DE RAM (FUITE DE MEMOIRE)
-            /*/
+            /*
             if(frameCount % 600 == 0){ // toutes les 600 frames (~10sec à 60fps)
                 System.gc();
                 System.out.println("RAM après GC: " + (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / (1024*1024) + " MB");
             }*/
-            AudioManager.cleanupTempSources();
-            monitor.endFrame();
-		}
 
+            AudioManager.cleanupTempSources();
+            
+
+            // Rends la fenêtre en buffer dessinée visible à l’écran
+            GLFW.glfwSwapBuffers(Window.window);		
+
+            GLFW.glfwPollEvents();
+            monitor.endFrame();   
+		}
         GameLoop.quit();
         // ferme le fenêtre quand la boucle de rendu est fini
         Window.exitWindow();
@@ -270,8 +263,9 @@ public class Render {
 
     // calcule la matrice de projection et la retourne en floatbuffer pour les shaders
     public static FloatBuffer calculateProjection(float fov, float aspect, float near, float far) {
-        Matrix4f projection = new Matrix4f().perspective((float) Math.toRadians(fov), aspect, near, far);
-        projection.get(projBuffer);
-        return projBuffer;
+        Render.projBuffer.clear();
+        Render.projection.setPerspective((float) Math.toRadians(fov), aspect, near, far);
+        Render.projection.get(Render.projBuffer);
+        return Render.projBuffer;
     }
 }

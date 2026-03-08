@@ -15,9 +15,9 @@ import demo.Rendering.Window;
 public class InputManager {
 
     @OpenGLThread
-    public static void create(long windowRef){
-        new MouseInput(windowRef);
-        new KeyboardInput(windowRef);
+    public static void create(){
+        new MouseInput();
+        new KeyboardInput();
     }
 
     /**
@@ -27,7 +27,7 @@ public class InputManager {
      * @param deltaTime long
      */
     @OpenGLThread
-    public static void run(long windowRef, SceneGraph sceneGraph, long deltaTime){
+    public static void run(SceneGraph sceneGraph, float deltaTime){
         // Récupère le dernier mouvement de la souris
         MouseInput.input();
 
@@ -36,7 +36,7 @@ public class InputManager {
         Camera camera = PlayersManager.player.getCamera();
 
         // détecte les appuie continues
-        KeyboardInput.keyPressedContinue(windowRef, camera, move, PlayersManager.player);
+        KeyboardInput.keyPressedContinue(Window.window, camera, move, PlayersManager.player);
 
         // Active/désactive le wireframe/cull face
         if (KeyboardInput.isWireFrameMode){

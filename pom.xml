@@ -108,6 +108,28 @@
 
   <build>
     <plugins>
+
+      <!-- Lancement via Maven -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>3.1.0</version>
+        <configuration>
+          <executable>java</executable>
+          <arguments>
+            <argument>-XX:+UseZGC</argument> <!-- active le ZGC, un garbage collector moderne conçu pour avoir des pauses ultra-courtes -->
+            <argument>-Xms128m</argument> <!-- la JVM démarre avec 128 Mo de heap réservé -->
+            <argument>-Xmx512m</argument> <!-- la heap ne peut jamais dépasser 512 Mo -->
+            <!-- <argument>-Xlog:gc*:stdout:time,uptime</argument>  a mettre pour afficher les logs mémoires-->
+            <argument>-cp</argument>
+            <classpath/>
+            <argument>demo.App</argument>
+            <argument>${project.basedir}/src/main/resources</argument>
+            <argument>-Djava.library.path=${project.build.directory}/natives</argument> <!-- dit à la JVM où trouver les fichiers natifs LWJGL (les .dll sur Windows, .so sur Linux) -->
+          </arguments>
+        </configuration>
+      </plugin>
+
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.10.1</version>
@@ -140,24 +162,6 @@
         </executions>
       </plugin>
 
-      <!-- Lancement via Maven -->
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>exec-maven-plugin</artifactId>
-        <version>3.1.0</version>
-        <configuration>mv
-          <mainClass>demo.App</mainClass>
-          <additionalClasspathElements>
-            <additionalClasspathElement>${project.basedir}/src/main/resources</additionalClasspathElement>
-          </additionalClasspathElements>
-          <systemProperties>
-            <systemProperty>
-              <key>java.library.path</key>
-              <value>${project.build.directory}/natives</value>
-            </systemProperty>
-          </systemProperties>
-        </configuration>
-      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>

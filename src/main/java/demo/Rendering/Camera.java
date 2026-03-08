@@ -149,6 +149,7 @@ public class Camera {
      * @return FloatBuffer
      */
     public FloatBuffer getViewMatrixBuffer(){
+        this.recalculate();
         this.matrixBuffer.clear();
         this.getViewMatrix().get(matrixBuffer);
         return matrixBuffer;

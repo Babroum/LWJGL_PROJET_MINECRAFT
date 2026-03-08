@@ -32,7 +32,7 @@ public class Window {
     public static int height;
 
     // Référence de la fenêtre
-    private static long window;
+    public static long window;
     private static WindowCloseEventManager windowCloseEventManager = new WindowCloseEventManager();
     private static Runnable onReady;
 
@@ -76,28 +76,24 @@ public class Window {
         GLFW.glfwWindowHint(GLFW.GLFW_DECORATED, GLFW.GLFW_TRUE); // Contour de fenetre
         GLFW.glfwWindowHint(GLFW.GLFW_RESIZABLE, GLFW.GLFW_TRUE); // Fenêtre redimensionable?
         GLFW.glfwWindowHint(GLFW.GLFW_MAXIMIZED, GLFW.GLFW_FALSE); // La fenêtre essayera d'atteindre la taille demandée
+        GLFW.glfwWindowHint(GLFW.GLFW_DOUBLEBUFFER, GLFW.GLFW_TRUE);
 
         Window.window = GLFW.glfwCreateWindow(Window.width, Window.height, "Wankraft", NULL, NULL); // Créer la fenêtre
         if (Window.window == MemoryUtil.NULL) {
             Window.closeGLFW();
             throw new RuntimeException("Impossible de créer la fenêtre");
         }
-    
-        // Créer les Listeners clavier/souris
-        InputManager.create(window);
 
         // Management de la fermeture de la fenêtre
         GLFW.glfwSetWindowCloseCallback(Window.window, Window.windowCloseEventManager);
 
         GLFW.glfwMakeContextCurrent(Window.window); // glfwSwapInterval needs a context on the calling thread, otherwise will cause NO_CURRENT_CONTEXT error    
 
-        GLFW.glfwSwapInterval(1); // Le nombre de dessin avant d'échanger les buffers (Vsync)
+        GLFW.glfwSwapInterval(0); // Le nombre de dessin avant d'échanger les buffers (Vsync)
 
         GL.createCapabilities(); // Will let lwjgl know we want to use this context as the context to draw with
 
         GLFW.glfwShowWindow(Window.window); // Affiche la fenêtre
-
-        GL.createCapabilities(); // Will let lwjgl know we want to use this context as the context to draw with
 
         AudioManager.init();
 
@@ -115,7 +111,7 @@ public class Window {
             }
         });  
 
-        Render.rendering(Window.window);
+        Render.rendering();
     }
 
     public static void exitWindow()

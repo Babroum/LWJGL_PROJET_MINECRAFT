@@ -1,0 +1,53 @@
+[33m4041dab[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m opti
+[33mc28d39a[m Merge pull request #35 from Babroum/33-big-opti
+[33mfe49bac[m[33m ([m[1;31morigin/33-big-opti[m[33m)[m V5 - fix problème crash mémoire
+[33mc38000f[m V4.1 - modif de code pour la javadoc
+[33mdfb39d5[m V4 - modif de BufferUtil -> MemoryUtil - arborescence des méthodes du projet (très chiant à faire !)
+[33m84b39d2[m V3 - ArrayBlockingQueue bornée - volatile sur les boolean - Node3D children lazy - synchronized nettoyés
+[33mece8f67[m V2 pour l'instant : 1. MemoryUtil au lieu de BufferUtils        → -600Mo heap 2. Libération buffer CPU après upload GPU   → -allocation permanente 3. byte[] au lieu de Object3D[]             → -suppression millions d'objets 4. vertexArrayPack taille exacte            → -réduction allocations 5. Réutilisation vertexArrayPack            → -pression GC 6. linkNeighbors cache des voisins          → -30Mo + moins de GC 7. Tableaux face culling locaux             → -10Mo permanents 8. MemoryUtil pour border buffer            → -heap Java
+[33mae7b15e[m V1 - opti
+[33mcea5e75[m Merge pull request #34 from Babroum/25-avoir-un-joueur
+[33m32f61f6[m[33m ([m[1;31morigin/25-avoir-un-joueur[m[33m, [m[1;32m25-avoir-un-joueur[m[33m)[m modif pom v0.0.1 -> v0.0.2
+[33m19be6aa[m V6 - petit ajustement - correction de bug de thread/buffer - etc ...
+[33m2b28084[m V5 suite - pas possible de poser un block dans le joueur - on tape le block (si il existe) du dessus si on saute - thread correctement arrêter à la fermeture du jeu (daemon true) - suppression des anciens buffers quand ont créer les nouveaux
+[33m523d60f[m V5 - pas possible de poser un block dans le joueur - on tape le block (si il existe) du dessus si on saute - thread correctement arrêter à la fermeture du jeu (daemon true) - suppression des anciens buffers quand ont créer les nouveaux
+[33m49265ce[m V4 - le joueur peut poser des blocks (1 seul type pour l'instant) - fix d'erreur sur les faces nord sud qui était inversé - et modif de code simple - ajout de la position du joueur à l'écran
+[33md64fc48[m V3 - refonte de la class Camera     - elle ne s'occupe plus des déplacements     - les rotations utilise le système trigonométrique avec yaw et pitch
+[33m36f70b3[m V2 - le joueur à un crosshair (un texte + au milieu de l'écran ) - les blocks ont des contours noir quand le joueur regarde un blocks - todo : modif le systeme de texte qui garde la couleur des anciens textes
+[33mbdd110d[m V1 - joueur qui se déplace     - peut sauter (gravité simple) - si tombe dans le vide = tp en 0,5,0 - Camera : peut obtenir le block qu'il regarde     - raycast a une distance donnée retourne l'object touché
+[33mb39a46b[m Merge pull request #31 from 321voiture321/21-optimisation-de-chunk
+[33m4f3792a[m[33m ([m[1;31morigin/21-optimisation-de-chunk[m[33m, [m[1;32m21-optimisation-de-chunk[m[33m)[m reset sans greedy meshing
+[33m179b5e0[m Merge branch '21-optimisation-de-chunk' of https://github.com/321voiture321/LWJGL_PROJET_MINECRAFT into 21-optimisation-de-chunk
+[33m29d95e1[m V7.2 - greedy meshing pas fonctionnel
+[33mb2a88cc[m V7 - systeme audio
+[33m65c88d0[m V6 - début binary greedy meshing     - chaque face dans chaque direction sont stocker mais perpendiculairement à la ligne
+[33m717828e[m V5 - Classe ChunksManager     - contient tout les chunks du monde - face culling fonctionnel entre chunk - Avant : 30fps pour 2 sol de 16*16 - Après : 2500fps pour 4 sol de 16*16
+[33m5a1d95e[m V4 - Classe Chunk qui contient des subChunks (ancienne classe chunk)     - chaque subChunk a son VBO et face culling (pas encore partagé au autre subChunk) - Possible d'ajouté un sol/bloc avec des coordonées de chunk et qu'il soit placé dans le bon subChunk - Donc chaque sub subchunk peut être mis a jour sans que tout les subchunks du chunk le soit TODO : - face culling partagé entre subchunk - greedy meshing (version optimisé) - d'autre peutêtre
+[33m373ec8b[m V3 - transformation de chunk (16 * 255 * 16) en sub chunk (16 * 16 * 16)     - pareil pour mesh (juste renomer) - face culling fonctionnel mais seulement dans le chunk     - les chunks côte à côte ont encore leurs faces dessiné - chaque rangé de cube dans une direction est stocké dans 1 seul int pour l'optimisation     - 6 côtés : 16 * 16 ints par côtés qui stocke (bloc air 0, bloc plein 1)     - exemple 1 rangé de cube de 16 cube est stocké dans 1 int : 11111111111111110000000000000000         - les 16 autres bits servent à rien
+[33m11d5854[m V2 - pas fonctionnel (probleme de mémoire) - face culling sur les faces EST OUEST NORD SUD     - pas haut bas pour l'instant - dessin des face en fonction du face culling
+[33mc7b6510[m V1 - thread pour la génération des chunks - thread pour l'update des chunks - détruire / ajouter un bloc
+[33m4c3d688[m Merge pull request #29 from 321voiture321/20-création-de-la-classe-chunk
+[33m025f085[m[33m ([m[1;31morigin/20-création-de-la-classe-chunk[m[33m, [m[1;32m20-création-de-la-classe-chunk[m[33m)[m Sytème de chunk, vertex packing - Fini - Possible de voir les bordures d'un chunk avec b - petit systeme de lumiere sur les faces (très simple) - chaque chunk a son vbo et non plus les blocks - les blocks ne peuvent plus être créer sans être dans un chunk - coordonnées dans un chunk locales pour les blocs - qlq autre modif
+[33mdc9602b[m V1 chunk / vertex packing - Création des classes Chunk/ChunkMesh - pas fonctionnel
+[33m4fd1d7e[m Modif
+[33mad7a971[m Modif
+[33m65e9ce8[m Documentation
+[33m8b8be9a[m modif v3
+[33mc7597d0[m Modif
+[33m6a647d7[m Update README.md
+[33mab9ea89[m[33m ([m[1;33mtag: [m[1;33mV0.0.2[m[33m)[m Modif opti - déplacé le dossier ressources pour qu'il soit pris en compte dans le jar - modifié le pom pour qu'a chaque package il fasse le .jar avec toutes les dépendances comprises - optimisation de buffer - lecture des fichiers dans le code modifié pour qu'il soit lus quand on lance le jar
+[33m650fb7e[m Merge pull request #26 from 321voiture321/3-optimiser-le-stockage-des-vertex-dune-maille-et-textures-différente-par-face
+[33m70fa468[m[33m ([m[1;31morigin/3-optimiser-le-stockage-des-vertex-dune-maille-et-textures-différente-par-face[m[33m, [m[1;32m3-optimiser-le-stockage-des-vertex-dune-maille-et-textures-différente-par-face[m[33m)[m Nouveau référentiel - les vertex ne sont plus stockés en float (-0.5 à 0.5)   mais en int (0 à 1) - les vbo reçoivent des int maintenant - d'autres petites modif
+[33m3be274d[m Merge pull request #19 from 321voiture321/10-ajouter-des-textures
+[33m807782b[m[33m ([m[1;31morigin/10-ajouter-des-textures[m[33m, [m[1;32m10-ajouter-des-textures[m[33m)[m Sytème de texture - Chaque texture a son png     - il faut indiquer dans l'enum la nouvelle texture     - et ajouter la texture dans le Render -> setupBeforeRendering - Optimisation de code
+[33m89a979a[m V1 - Ajout de textures - Transformation de certaine classe en static car instancier que 1 fois - Ajout d'un suivit de performance plus poussé (merci claude) - modification/optimisation de code
+[33mce217b1[m Merge pull request #18 from 321voiture321/Optimisation-du-shader
+[33m59d08e1[m[33m ([m[1;31morigin/Optimisation-du-shader[m[33m, [m[1;32mOptimisation-du-shader[m[33m)[m Update TextRender - les vbo/vao/ebo ne sont plus détruit/créer à chaque frame   mais mis a jour
+[33m59fa8a4[m Correction des différences entre le Main et la Branche "fucking-around"
+[33m2b40f44[m Merge pull request #15 from 321voiture321/fucking-around
+[33m969edc3[m[33m ([m[1;31morigin/fucking-around[m[33m)[m Merge branch 'main' into fucking-around
+[33mf0e3406[m[33m ([m[1;32mfucking-around[m[33m)[m .
+[33m5a8ae6a[m Petit fix sensibilité de la souris corrigé
+[33mfd397fc[m Modif - InputManger en static - KeyboardInput en static - MouseInput en static - qlq modif
+[33me2888dd[m Merge pull request #17 from 321voiture321/documentation
+[33m087cee7[m[33m ([
