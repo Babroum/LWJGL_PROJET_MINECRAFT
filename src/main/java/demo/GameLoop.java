@@ -19,7 +19,7 @@ public class GameLoop {
         // Créer les Listeners clavier/souris
         InputManager.create();
         // positionne la camera
-        PlayersManager.player.setPosition(0, 8, 0);
+        PlayersManager.player.setPosition(0, 100, 0);
     }
 
     /**

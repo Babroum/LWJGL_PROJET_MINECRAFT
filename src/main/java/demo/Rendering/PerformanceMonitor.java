@@ -123,8 +123,8 @@ public class PerformanceMonitor {
 
     public String[] getDisplayLines() {
         displayLines[0]  = String.format("Frame : %.2f ms", frameTimeMs);
-        displayLines[1]  = String.format("Logique : %.2f ms",
-                                          getTimer("logic"));
+        displayLines[1]  = String.format("Rendu : %.2f ms",
+                                          getTimer("render"));
         displayLines[2]  = "Draw calls : "   + drawCalls;
         displayLines[3]  = "Triangles : "    + triangleCount;
         displayLines[4]  = "VAOs actifs : "  + activeVAOs;

@@ -101,7 +101,7 @@ public class Player {
         try {
             BlocksType blockFeet = ChunksManager.getBlock(bx, by, bz);
             BlocksType blockHead = ChunksManager.getBlock(bx, by + 1, bz);
-            return blockFeet == BlocksType.NULL && blockHead == BlocksType.NULL;
+            return blockFeet == BlocksType.AIR && blockHead == BlocksType.AIR;
         } catch (Exception e) {
             return false;
         }
@@ -125,7 +125,7 @@ public class Player {
         if (this.position.y < 0) {
             this.velocityY = 0f;
             this.isFalling = false;
-            this.setPosition(0, 10, 0);
+            this.setPosition(0, 100, 0);
             return;
         }
 
@@ -185,7 +185,7 @@ public class Player {
             int bx = (int) Math.floor(x);
             int by = (int) Math.floor(y);
             int bz = (int) Math.floor(z);
-            return ChunksManager.getBlock(bx, by, bz) != BlocksType.NULL;
+            return ChunksManager.getBlock(bx, by, bz) != BlocksType.AIR;
         } catch (Exception e) {
             return false;
         }
@@ -201,7 +201,7 @@ public class Player {
 
         // récupère les coordonées de ce que regarde le joueur (raycast)
         Vector3f[] look = PlayersManager.player.getCamera().getLookAt(5);
-        BlocksType block = BlocksType.NULL;
+        BlocksType block = BlocksType.AIR;
         SubChunk sub = null;
 
         // si on regarde quelque chose
@@ -221,8 +221,8 @@ public class Player {
 
                 // si on clique gauche et que la souris n'est pas débloqué, on casse le block si il existe
                 if (MouseInput.isLeftButtonPressed() && KeyboardInput.isMouseLock) {
-                    // Si on a un bloc et que le cooldown est prêt
-                    if (block != BlocksType.NULL && this.breakCooldown <= 0f) {
+                    // Si on a un bloc et que le cooldown est prêt et que ce n'est pas de la bedrock
+                    if (block != BlocksType.AIR && this.breakCooldown <= 0f && block != BlocksType.BEDROCK) {
                         // le thread ne prend que des constantes, donc on copie 
                         final SubChunk subToModify = sub;
                         final int fbx = bx, fby = by, fbz = bz;
@@ -233,7 +233,7 @@ public class Player {
                             subToModify.removeBlockFromSubChunk(localX, localY, localZ);
                         });
                         this.breakCooldown = this.breakPlaceDelay;
-                        block = BlocksType.NULL;
+                        block = BlocksType.AIR;
                     }
                 } else {
                     this.breakCooldown = 0;
@@ -245,7 +245,7 @@ public class Player {
                     int py = (int) Math.floor(place.y);
                     int pz = (int) Math.floor(place.z);
                     // on vérifie pour etre sur qu'il n'y ait pas de bloc
-                    if (ChunksManager.getBlock(px, py, pz) == BlocksType.NULL && this.placeCooldown <= 0f && !this.isInsidePlayer(px, py, pz)){
+                    if (ChunksManager.getBlock(px, py, pz) == BlocksType.AIR && this.placeCooldown <= 0f && !this.isInsidePlayer(px, py, pz)){
                         try {
                             final SubChunk sub2 = ChunksManager.getSubChunk(px, py, pz);
                             // convertir en coordonnées locales du subchunk
@@ -253,7 +253,7 @@ public class Player {
                             int localY = ChunksManager.floorMod(py, SubChunk.CHUNKSIZEY);
                             int localZ = ChunksManager.floorMod(pz, SubChunk.CHUNKSIZEZ);
                             chunkModifyThread.submit(() -> {
-                                sub2.addBlockToSubChunk(BlocksType.STONE, localX, localY, localZ);
+                                sub2.addBlockToSubChunk(BlocksType.COBBLESTONE, localX, localY, localZ);
                             });
                             this.placeCooldown = this.breakPlaceDelay;
                         } catch (Exception e) {
@@ -265,7 +265,7 @@ public class Player {
                 }     
 
                 // si le block regarder n'est pas le même que le précédent on créer les buffers
-                if (block != BlocksType.NULL){
+                if (block != BlocksType.AIR){
                     this.hasBlockBorder = true;
                     this.oldBlockBorder.set(bx, by, bz);
                 } else {

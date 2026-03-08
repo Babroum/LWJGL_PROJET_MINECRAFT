@@ -21,6 +21,9 @@ public class TexturesManager {
             TexturesManager.textureRender.addTexture(FileLoader.loadFileFromClasspathBB("/Textures/Blocks/stone.png"), TexturesType.STONE);
             TexturesManager.textureRender.addTexture(FileLoader.loadFileFromClasspathBB("/Textures/Blocks/dirt.png"), TexturesType.DIRT);
             TexturesManager.textureRender.addTexture(FileLoader.loadFileFromClasspathBB("/Textures/Blocks/homer.png"), TexturesType.HOMER);
+            TexturesManager.textureRender.addTexture(FileLoader.loadFileFromClasspathBB("/Textures/Blocks/sand.png"), TexturesType.SAND);
+            TexturesManager.textureRender.addTexture(FileLoader.loadFileFromClasspathBB("/Textures/Blocks/bedrock.png"), TexturesType.BEDROCK);
+            TexturesManager.textureRender.addTexture(FileLoader.loadFileFromClasspathBB("/Textures/Blocks/cobblestone.png"), TexturesType.COBBLESTONE);
         }catch(IOException e){
             System.out.println(e);
         }

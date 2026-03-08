@@ -33,7 +33,7 @@ public class SubChunk extends Node3D{
 
     // donne au mesh le subChunk au quel il appartient
     public SubChunkMesh mesh = new SubChunkMesh();
-    private byte[] blocks;
+    public byte[] blocks;
     public String name;
 
     private boolean isGenerating = false;
@@ -194,7 +194,7 @@ public class SubChunk extends Node3D{
             z < 0 || z >= SubChunk.CHUNKSIZEZ
         ){throw new IncorrectCoordinates("Coordonées dans le subChunk invalide");}
         int index = x + y * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
-        this.blocks[index] = 0;
+        this.blocks[index] = (byte)BlocksType.AIR.getId();
         this.fillSubChunkBitSet();
 
         // rebuild les voisins si le bloc est en bordure
@@ -249,7 +249,7 @@ public class SubChunk extends Node3D{
                     int x = Integer.numberOfLeadingZeros(ligneEast);
                     // calcule la position de l'objet
                     int objectIndex = x + y * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
-                    if (this.blocks[objectIndex] == 0) continue;
+                    if (this.blocks[objectIndex] == (byte)BlocksType.AIR.getId()) continue;
                     BlocksType type = BlocksType.fromId(this.blocks[objectIndex]);
                     this.mesh.addObjectFaceVertexToArray(
                         type.getCube().mesh.getFaceVertex(Directions.EAST), x, y, z);
@@ -264,7 +264,7 @@ public class SubChunk extends Node3D{
                 while (ligneWest != 0){
                     int x = Integer.numberOfLeadingZeros(ligneWest);
                     int objectIndex = x + y * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
-                    if (this.blocks[objectIndex] == 0) continue;
+                    if (this.blocks[objectIndex] == (byte)BlocksType.AIR.getId()) continue;
                     BlocksType type = BlocksType.fromId(this.blocks[objectIndex]);
                     this.mesh.addObjectFaceVertexToArray(
                         type.getCube().mesh.getFaceVertex(Directions.WEST), x, y, z);
@@ -282,7 +282,7 @@ public class SubChunk extends Node3D{
                 while (ligneSouth != 0){
                     int z = Integer.numberOfLeadingZeros(ligneSouth);
                     int objectIndex = x + y * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
-                    if (this.blocks[objectIndex] == 0) continue;
+                    if (this.blocks[objectIndex] == (byte)BlocksType.AIR.getId()) continue;
                     BlocksType type = BlocksType.fromId(this.blocks[objectIndex]);
                     this.mesh.addObjectFaceVertexToArray(
                         type.getCube().mesh.getFaceVertex(Directions.SOUTH), x, y, z);
@@ -293,7 +293,7 @@ public class SubChunk extends Node3D{
                 while (ligneNorth != 0){
                     int z = Integer.numberOfLeadingZeros(ligneNorth);
                     int objectIndex = x + y * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
-                    if (this.blocks[objectIndex] == 0) continue;
+                    if (this.blocks[objectIndex] == (byte)BlocksType.AIR.getId()) continue;
                     BlocksType type = BlocksType.fromId(this.blocks[objectIndex]);
                     this.mesh.addObjectFaceVertexToArray(
                         type.getCube().mesh.getFaceVertex(Directions.NORTH), x, y, z);
@@ -311,7 +311,7 @@ public class SubChunk extends Node3D{
                 while (ligneDown != 0){
                     int y = Integer.numberOfLeadingZeros(ligneDown);
                     int objectIndex = x + y * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
-                    if (this.blocks[objectIndex] == 0) continue;
+                    if (this.blocks[objectIndex] == (byte)BlocksType.AIR.getId()) continue;
                     BlocksType type = BlocksType.fromId(this.blocks[objectIndex]);
                     this.mesh.addObjectFaceVertexToArray(
                         type.getCube().mesh.getFaceVertex(Directions.DOWN), x, y, z);
@@ -322,7 +322,7 @@ public class SubChunk extends Node3D{
                 while (ligneUp != 0){
                     int y = Integer.numberOfLeadingZeros(ligneUp);
                     int objectIndex = x + y * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
-                    if (this.blocks[objectIndex] == 0) continue;
+                    if (this.blocks[objectIndex] == (byte)BlocksType.AIR.getId()) continue;
                     BlocksType type = BlocksType.fromId(this.blocks[objectIndex]);
                     this.mesh.addObjectFaceVertexToArray(
                         type.getCube().mesh.getFaceVertex(Directions.UP), x, y, z);
@@ -437,7 +437,7 @@ public class SubChunk extends Node3D{
     public void fillSubChunkBitSet(){
         this.bitSet.clear();
         for(int i = 0; i < SubChunk.MAXBLOCK; i++){
-            if (this.blocks[i] != 0){
+            if (this.blocks[i] != (byte)BlocksType.AIR.getId()){
                 this.bitSet.set(i); // met a 1 l'indice i
             }
         }
