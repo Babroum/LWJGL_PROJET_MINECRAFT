@@ -5,56 +5,32 @@ import demo.Geometry.SubChunk;
 import demo.Others.FastNoiseLite;
 import demo.Enum.BlocksType;
 
-// je lui demande : fait une javadoc et explique bien 
-// il abuse un peu la
-
 /**
- * Générateur procédural de terrain pour le monde voxel.
+ * Génère procéduralement le terrain du monde voxel.
  *
- * <p>Le terrain est généré en trois passes successives :</p>
- * <ol>
- *   <li><b>Grille basse résolution</b> : calcul de la densité sur une grille 5×33×5
- *       espacée de 4 blocs en XZ et 8 blocs en Y.</li>
- *   <li><b>Interpolation trilinéaire</b> : remplissage de chaque bloc à partir des
- *       8 coins de la cellule de grille correspondante. Réduit massivement les appels
- *       au bruit (×512 environ) sans perte visuelle.</li>
- *   <li><b>Couches de surface</b> : remplacement du premier bloc solide rencontré
- *       (depuis le haut) par de la Grass ou du Sand selon le niveau de mer, puis
- *       les 3 blocs suivants par de la Dirt.</li>
- * </ol>
+ * Fonctionne en 3 passes :
+ * 1. Calcul de densité sur une grille basse résolution 5x33x5
+ * 2. Interpolation trilinéaire pour remplir chaque bloc
+ * 3. Application des couches de surface (herbe, terre, sable, bedrock)
  *
- * <p><b>Architecture des bruits :</b></p>
- * <ul>
- *   <li>{@code minLimitNoise} — variation 3D basse fréquence, plancher de densité.</li>
- *   <li>{@code maxLimitNoise} — variation 3D basse fréquence, plafond de densité.</li>
- *   <li>{@code selectorNoise} — très basse fréquence, sélectionne entre min et max
- *       ET déclenche les zones montagneuses.</li>
- *   <li>{@code depthNoise}    — bruit 2D, décale verticalement la surface (vallons / mers).</li>
- * </ul>
+ * Paramètres clés :
  *
- * <h2>Paramètres clés à régler (voir tableau en bas du fichier)</h2>
- * <pre>
- * ┌─────────────────────────────────────────┬─────────────────┬─────────────────────────────────────────────────────┐
- * │ Paramètre                               │ Valeur actuelle │ Effet si on augmente la valeur                      │
- * ├─────────────────────────────────────────┼─────────────────┼─────────────────────────────────────────────────────┤
- * │ BASE_HEIGHT                             │ 68              │ Terrain plus haut dans le monde                     │
- * │ SEA_LEVEL                               │ 64              │ Mers plus hautes → plus de surface inondée          │
- * │ depth * 3.5  (multiplicateur depth)     │ 3.5             │ Collines plus hautes / creux plus profonds          │
- * │ falloff > 0  (* 0.75)                   │ 0.75            │ Sommet des collines plus pointu / aiguisé           │
- * │ falloff < 0  (* 0.35)                   │ 0.35            │ Base des collines plus large / en pente douce       │
- * │ selectorNoise.frequency  (0.002f)       │ 0.002f          │ Zones biomes plus petites, transitions plus rapides │
- * │ mountainSel seuil  (0.55)               │ 0.55            │ Moins de montagnes (zone 0.55→1.0 réduite)          │
- * │ mountain t2*t2 * 22.0                   │ 22.0            │ Montagnes plus hautes                               │
- * │ depthNoise.frequency  (0.028f)          │ 0.028f          │ Rivières/mers plus étroites et sinueuses            │
- * │ minLimitNoise * 0.4  (amplitude)        │ 0.4             │ Plus de détail 3D dans la densité (grottes etc.)    │
- * └─────────────────────────────────────────┴─────────────────┴─────────────────────────────────────────────────────┘
- * </pre>
+ * | Paramètre                          | Valeur  | Effet si augmenté                           |
+ * |------------------------------------|---------|---------------------------------------------|
+ * | BASE_HEIGHT                        | 68      | Terrain plus haut dans le monde             |
+ * | SEA_LEVEL                          | 64      | Plus de surface inondée                     |
+ * | depth * 3.5                        | 3.5     | Collines plus hautes / creux plus profonds  |
+ * | falloff > 0 (* 0.75)               | 0.75    | Sommets plus pointus                        |
+ * | falloff < 0 (* 0.35)               | 0.35    | Base des collines plus large                |
+ * | selectorNoise.frequency (0.002f)   | 0.002f  | Zones de biomes plus petites                |
+ * | mountainSel seuil (0.55)           | 0.55    | Montagnes plus rares                        |
+ * | mountain t2*t2 * 22.0              | 22.0    | Montagnes plus hautes                       |
+ * | depthNoise.frequency (0.028f)      | 0.028f  | Rivières plus étroites et sinueuses         |
+ * | caveNoise seuil abs() < 0.08       | 0.08    | Grottes plus larges                         |
  */
 public class WorldGenerator {
 
-    // ─────────────────────────────────────────────────────────────────
     //  Générateurs de bruit
-    // ─────────────────────────────────────────────────────────────────
 
     /** Bruit 3D Perlin FBm — plancher de la densité interpolée. */
     private final FastNoiseLite minLimitNoise;
@@ -62,152 +38,117 @@ public class WorldGenerator {
     /** Bruit 3D Perlin FBm — plafond de la densité interpolée. */
     private final FastNoiseLite maxLimitNoise;
 
+    /** Bruit 3D Perlin FBm — premier bruit de grotte. */
+    private final FastNoiseLite caveNoise;
+
+    /** Bruit 3D Perlin FBm — second bruit de grotte. L'intersection des deux crée des tunnels horizontaux. */
+    private final FastNoiseLite caveNoise2;
+
     /**
-     * Bruit Perlin très basse fréquence — remplit deux rôles :
-     * <ul>
-     *   <li>Sélecteur 3D : choisit le ratio entre minLimit et maxLimit.</li>
-     *   <li>Sélecteur 2D : déclenche les zones montagneuses quand sa valeur > 0.55.</li>
-     * </ul>
+     * Bruit Perlin très basse fréquence.
+     * Sert de sélecteur entre minLimit et maxLimit (3D),
+     * et de déclencheur pour les zones montagneuses (2D).
      */
     private final FastNoiseLite selectorNoise;
 
     /**
-     * Bruit Perlin 2D (seuls X et Z sont utilisés) — décale verticalement la surface
-     * pour créer des vallons, des crêtes et des creux aquatiques (rivières / mers peu profondes).
+     * Bruit Perlin 2D (Y ignoré).
+     * Décale verticalement la surface pour créer des vallons et des creux aquatiques.
      */
     private final FastNoiseLite depthNoise;
 
-    // ─────────────────────────────────────────────────────────────────
-    //  Constantes de mise en forme du terrain
-    // ─────────────────────────────────────────────────────────────────
-
-    /**
-     * Hauteur de référence (en blocs) autour de laquelle oscille la surface du terrain.
-     * Augmenter pousse tout le terrain vers le haut.
-     * <ul>
-     *   <li>Valeur basse (ex. 50) → terrain dans le bas du monde.</li>
-     *   <li>Valeur haute (ex. 100) → terrain dans le haut du monde.</li>
-     * </ul>
-     */
+    /** Hauteur de référence en blocs autour de laquelle oscille la surface. */
     private static final int BASE_HEIGHT = 68;
 
-    /**
-     * Niveau à partir duquel un bloc de surface est considéré « sous l'eau ».
-     * En dessous → bloc SAND (sable/gravier) ; au dessus → bloc GRASS.
-     * <ul>
-     *   <li>Augmenter → plus de surface couverte par l'eau.</li>
-     *   <li>Diminuer → mers moins présentes, terrain plus aride.</li>
-     * </ul>
-     */
+    /** Niveau de la mer. En dessous → sable, au dessus → herbe. */
     private static final int SEA_LEVEL = 64;
 
-    // ─────────────────────────────────────────────────────────────────
-    //  Dimensions du chunk
-    // ─────────────────────────────────────────────────────────────────
-
-    /** Taille horizontale d'un chunk (ex. 16 blocs). Tiré de SubChunk.CHUNKSIZEX. */
+    /** Taille horizontale d'un chunk en blocs. */
     private static final int CHUNK_SIZE   = SubChunk.CHUNKSIZEX;
 
-    /** Hauteur totale du chunk = taille d'un sous-chunk × nombre de sous-chunks (ex. 256). */
+    /** Hauteur totale d'un chunk en blocs (sous-chunks × hauteur par sous-chunk). */
     private static final int CHUNK_HEIGHT = SubChunk.CHUNKSIZEY * Chunk.SUBCHUNKCOUNT;
 
-    // ─────────────────────────────────────────────────────────────────
-    //  Grille basse résolution pour l'interpolation trilinéaire
-    // ─────────────────────────────────────────────────────────────────
+    //  Grille basse résolution
 
-    /**
-     * Nombre de points de grille en X et Z.
-     * {@code CHUNK_SIZE / STEP_XZ + 1} = 16/4 + 1 = 5 points → 4 intervalles couvrent les 16 blocs.
-     */
+    /** Points de grille en X : 16/4 + 1 = 5. */
     private static final int GRID_X = 5;
 
-    /**
-     * Nombre de points de grille en Y.
-     * {@code CHUNK_HEIGHT / STEP_Y + 1} = 256/8 + 1 = 33 points → 32 intervalles couvrent les 256 blocs.
-     */
+    /** Points de grille en Y : 256/8 + 1 = 33. */
     private static final int GRID_Y = 33;
 
-    /** Nombre de points de grille en Z (identique à GRID_X). */
+    /** Points de grille en Z : identique à GRID_X. */
     private static final int GRID_Z = 5;
 
-    /**
-     * Pas de la grille en XZ (en blocs).
-     * Plus petit → grille plus dense → génération plus précise mais plus lente.
-     */
+    /** Pas de la grille en XZ en blocs. Plus petit = plus précis mais plus lent. */
     private static final int STEP_XZ = 4;
 
-    /**
-     * Pas de la grille en Y (en blocs).
-     * Plus petit → interpolation verticale plus précise (moins d'artefacts de lissage).
-     */
+    /** Pas de la grille en Y en blocs. Plus petit = moins d'artefacts d'interpolation verticale. */
     private static final int STEP_Y  = 8;
 
-    // ─────────────────────────────────────────────────────────────────
-    //  Constructeur
-    // ─────────────────────────────────────────────────────────────────
-
     /**
-     * Initialise les quatre générateurs de bruit avec des graines décalées pour
-     * éviter toute corrélation entre eux.
+     * Initialise tous les générateurs de bruit avec des graines décalées
+     * pour éviter toute corrélation entre eux.
      *
-     * @param seed Graine de base du monde. Chaque bruit reçoit {@code seed + N}
-     *             (N = 0, 1, 2, 3) pour garantir l'indépendance des patterns.
+     * @param seed graine de base du monde
      */
     public WorldGenerator(long seed) {
 
-        // ── minLimitNoise ─────────────────────────────────────────────
-        this.minLimitNoise = new FastNoiseLite((int)(seed));        // graine de base
+        // minLimitNoise
+        this.minLimitNoise = new FastNoiseLite((int)(seed)); // graine de base
         this.minLimitNoise.SetNoiseType(FastNoiseLite.NoiseType.Perlin);
-        this.minLimitNoise.SetFrequency(0.01f);                     // fréquence spatiale : détails ~100 blocs
+        this.minLimitNoise.SetFrequency(0.01f); // fréquence spatiale : détails ~100 blocs
         this.minLimitNoise.SetFractalType(FastNoiseLite.FractalType.FBm); // fractales pour plus de détails
-        this.minLimitNoise.SetFractalOctaves(3);                    // 3 octaves = bon compromis qualité/perf
+        this.minLimitNoise.SetFractalOctaves(3); // 3 octaves = bon compromis qualité/perf
 
-        // ── maxLimitNoise ─────────────────────────────────────────────
-        this.maxLimitNoise = new FastNoiseLite((int)(seed + 1));    // +1 → pattern différent de minLimit
+        // maxLimitNoise
+        this.maxLimitNoise = new FastNoiseLite((int)(seed + 1)); // +1 → pattern différent de minLimit
         this.maxLimitNoise.SetNoiseType(FastNoiseLite.NoiseType.Perlin);
-        this.maxLimitNoise.SetFrequency(0.01f);                     // même fréquence que minLimit
+        this.maxLimitNoise.SetFrequency(0.01f); // même fréquence que minLimit
         this.maxLimitNoise.SetFractalType(FastNoiseLite.FractalType.FBm);
         this.maxLimitNoise.SetFractalOctaves(3);
 
-        // ── selectorNoise ─────────────────────────────────────────────
-        this.selectorNoise = new FastNoiseLite((int)(seed + 2));    // +2 → encore différent
+        // selectorNoise
+        this.selectorNoise = new FastNoiseLite((int)(seed + 2)); // +2 → encore différent
         this.selectorNoise.SetNoiseType(FastNoiseLite.NoiseType.Perlin);
-        this.selectorNoise.SetFrequency(0.002f);  // très basse fréquence → grandes zones homogènes (~500 blocs)
-        this.selectorNoise.SetFractalOctaves(2);  // peu d'octaves → transitions douces entre biomes
+        this.selectorNoise.SetFrequency(0.002f); // très basse fréquence → grandes zones homogènes (~500 blocs)
+        this.selectorNoise.SetFractalOctaves(2); // peu d'octaves → transitions douces entre biomes
 
-        // ── depthNoise ────────────────────────────────────────────────
-        this.depthNoise = new FastNoiseLite((int)(seed + 3));       // +3 → indépendant des autres
+        // depthNoise
+        this.depthNoise = new FastNoiseLite((int)(seed + 3)); // +3 → indépendant des autres
         this.depthNoise.SetNoiseType(FastNoiseLite.NoiseType.Perlin);
-        this.depthNoise.SetFrequency(0.028f);     // fréquence modérée → rivières ~35 blocs de large
-        this.depthNoise.SetFractalOctaves(3);     // quelques octaves pour des bords naturels
+        this.depthNoise.SetFrequency(0.028f); // fréquence modérée → rivières ~35 blocs de large
+        this.depthNoise.SetFractalOctaves(3); // quelques octaves pour des bords naturels
+
+        // caveNoise
+        this.caveNoise = new FastNoiseLite((int)(seed + 4));
+        this.caveNoise.SetNoiseType(FastNoiseLite.NoiseType.Perlin);
+        this.caveNoise.SetFrequency(0.02f);       // baisser → tunnels plus longs et espacés
+        this.caveNoise.SetFractalType(FastNoiseLite.FractalType.FBm);
+        this.caveNoise.SetFractalOctaves(3);
+
+        // caveNoise2
+        this.caveNoise2 = new FastNoiseLite((int)(seed + 5)); // graine différente = pattern différent
+        this.caveNoise2.SetNoiseType(FastNoiseLite.NoiseType.Perlin);
+        this.caveNoise2.SetFrequency(0.02f);
+        this.caveNoise2.SetFractalType(FastNoiseLite.FractalType.FBm);
+        this.caveNoise2.SetFractalOctaves(3);
     }
 
-    // ─────────────────────────────────────────────────────────────────
     //  Calcul de densité
-    // ─────────────────────────────────────────────────────────────────
 
     /**
      * Calcule la densité d'un point 3D du monde.
+     * Densité > 0 = bloc solide, <= 0 = air.
      *
-     * <p>La logique est la suivante :</p>
-     * <ol>
-     *   <li>On mélange {@code minLimitNoise} et {@code maxLimitNoise} via
-     *       {@code selectorNoise} pour obtenir une densité de base.</li>
-     *   <li>On calcule un décalage vertical ({@code depth}) via {@code depthNoise}
-     *       2D, potentiellement amplifié par une zone montagneuse.</li>
-     *   <li>On soustrait un terme de chute verticale ({@code verticalFalloff})
-     *       qui force le terrain à avoir une surface (densité positive → solide,
-     *       densité négative → air).</li>
-     * </ol>
-     *
-     * @param worldX Coordonnée X absolue dans le monde.
-     * @param worldY Coordonnée Y absolue dans le monde (altitude).
-     * @param worldZ Coordonnée Z absolue dans le monde.
-     * @return Valeur de densité : {@code > 0} → bloc solide, {@code ≤ 0} → air.
+     * @param worldX coordonnée X absolue
+     * @param worldY coordonnée Y absolue (altitude)
+     * @param worldZ coordonnée Z absolue
+     * @return valeur de densité
      */
     private double computeDensity(int worldX, int worldY, int worldZ) {
 
-        // ── Densité de base (blend min/max) ───────────────────────────
+        // Densité de base (blend min/max)
 
         // Valeur du bruit plancher, réduite à ±0.4 pour limiter l'impact 3D
         double minVal = this.minLimitNoise.GetNoise(worldX, worldY, worldZ) * 0.4;
@@ -225,7 +166,7 @@ public class WorldGenerator {
         // t=0 → densité = minVal  |  t=1 → densité = maxVal
         double density = minVal + t * (maxVal - minVal);
 
-        // ── Décalage vertical par depthNoise (surface / creux) ────────
+        // Décalage vertical par depthNoise (surface / creux)
 
         // Bruit 2D pur (Y ignoré) → seule la position horizontale influence la hauteur
         double raw = depthNoise.GetNoise(worldX, worldZ); // retourne [-1 ; +1]
@@ -234,79 +175,65 @@ public class WorldGenerator {
         double sign   = raw >= 0 ? 1.0 : -1.0;
         double curved = sign * Math.pow(Math.abs(raw), 1); // sans effet actuellement (pow 1)
 
-        // Amplitude du décalage : ±3.5 blocs → contrôle la variation vallon/creux
+        // Amplitude du décalage : +/-5 blocs → contrôle la variation vallon/creux
         // Augmenter ce chiffre → collines et creux plus prononcés
-        double depth = curved * 3.5;
+        double depth = curved * 5;
 
-        // ── Zone montagneuse (bonus de hauteur conditionnel) ───────────
+        // Zone montagneuse
 
         // Réutilise le selectorNoise en 2D (sans Y) pour identifier les zones de montagnes
         // Basse fréquence → les zones montagneuses s'étendent sur ~500 blocs
         double mountainSel = this.selectorNoise.GetNoise(worldX, worldZ);
 
-        if (mountainSel > 0.55) {
-            // Seuil : au-delà de 0.55, on entre dans une zone montagneuse
-            // La plage 0.55→1.0 représente ~22% du terrain → "de temps en temps"
+        if (mountainSel > 0.3) {
+            // Seuil : au-delà de 0.55, on entre dans une zone montagneuse (~22% du terrain)
             // Diminuer le seuil (ex. 0.4) → plus de montagnes
             // Augmenter le seuil (ex. 0.7) → montagnes très rares
 
             // t2 : progression de 0 à 1 dans la zone montagneuse (0 au bord, 1 au centre)
-            double t2 = (mountainSel - 0.55) / 0.45;
+            double t2 = (mountainSel - 0.3) / 0.45;
 
-            // Courbe en carré (t2²) → transition douce aux bords de la montagne
-            // Multiplier 22.0 → montagnes plus hautes (ex. 40.0 = pics imposants)
-            depth += t2 * t2 * 22.0;
+            // Courbe en carré → transition douce aux bords de la montagne
+            // Multiplier 22.0 → montagnes plus hautes
+            depth += t2 * t2 * 30.0;
         }
 
-        // ── Chute verticale (force la présence d'une surface) ─────────
+        // Chute verticale (force la présence d'une surface)
 
         // Décalage par rapport à la hauteur de référence (positif = au-dessus, négatif = dessous)
         double heightOffset = (worldY - BASE_HEIGHT);
 
         double verticalFalloff;
         if (heightOffset > 0) {
-            // Au-dessus de BASE_HEIGHT : chute LINÉAIRE (× 0.75)
-            // Plus le coefficient est grand → sommet des collines plus pointu
-            // density = depth - heightOffset * 0.75 → devient 0 quand worldY = BASE_HEIGHT + depth/0.75
+            // Au-dessus : chute rapide → sommet des collines bien défini
             verticalFalloff = heightOffset * 0.75;
         } else {
-            // En dessous de BASE_HEIGHT : chute plus douce (× 0.35)
-            // Permet à la densité de rester positive plus longtemps → roche bien remplie en profondeur
+            // En dessous : chute douce → roche bien remplie en profondeur
             verticalFalloff = heightOffset * 0.35;
         }
 
-        // Accumule : densité 3D de base + décalage de surface - chute verticale
-        // Quand density > 0 → bloc solide | Quand density ≤ 0 → air
         density += depth - verticalFalloff;
 
         return density;
     }
 
-    // ─────────────────────────────────────────────────────────────────
     //  Génération du chunk
-    // ─────────────────────────────────────────────────────────────────
 
     /**
-     * Génère l'intégralité d'un chunk (blocs + couches de surface).
+     * Génère tous les blocs d'un chunk en 3 passes :
+     * densité sur grille basse résolution, interpolation trilinéaire, couches de surface.
      *
-     * <p>Processus en 3 passes :</p>
-     * <ol>
-     *   <li>Calcul de la densité sur la grille basse résolution 5×33×5.</li>
-     *   <li>Interpolation trilinéaire pour remplir chaque bloc.</li>
-     *   <li>Application des couches de surface (herbe, terre, sable).</li>
-     * </ol>
-     *
-     * @param chunk  Instance du chunk à remplir (ses sous-chunks sont modifiés en place).
-     * @param chunkX Index X du chunk dans le monde (en unités de chunk, pas en blocs).
-     * @param chunkZ Index Z du chunk dans le monde.
-     * @return Tableau de blocs bruts (non utilisé directement, les sous-chunks sont mis à jour).
+     * @param chunk  le chunk à remplir (ses sous-chunks sont modifiés en place)
+     * @param chunkX index X du chunk en unités de chunk
+     * @param chunkZ index Z du chunk en unités de chunk
+     * @return tableau de blocs bruts (les sous-chunks sont déjà mis à jour)
      */
     public byte[] generateChunk(Chunk chunk, int chunkX, int chunkZ) {
 
         // Tableau de sortie (non utilisé par les sous-chunks mais retourné par la méthode)
         byte[] blocks = new byte[WorldGenerator.CHUNK_SIZE * WorldGenerator.CHUNK_HEIGHT * WorldGenerator.CHUNK_SIZE];
 
-        // ── PASSE 1 : grille basse résolution ─────────────────────────
+        // PASSE 1 : grille basse résolution
 
         // Tableau 3D de densités pré-calculées aux nœuds de la grille
         double[][][] grid = new double[WorldGenerator.GRID_X][WorldGenerator.GRID_Y][WorldGenerator.GRID_Z];
@@ -326,7 +253,7 @@ public class WorldGenerator {
             }
         }
 
-        // ── PASSE 2 : interpolation trilinéaire bloc par bloc ─────────
+        // PASSE 2 : interpolation trilinéaire bloc par bloc
 
         for (int bx = 0; bx < WorldGenerator.CHUNK_SIZE; bx++) {
             for (int bz = 0; bz < WorldGenerator.CHUNK_SIZE; bz++) {
@@ -365,7 +292,21 @@ public class WorldGenerator {
                     // Interpolation finale sur Y → valeur de densité du bloc
                     double density = z0 + ty * (z1 - z0);
 
-                    // ── Écriture dans le sous-chunk ───────────────────
+                    // Grottes 
+                    // Calculé directement par bloc (pas interpolé) pour éviter le lissage
+                    // L'intersection des deux bruits proches de 0 forme des tunnels horizontaux
+                    // Augmenter le seuil (0.08) → tunnels plus larges
+                    int worldX = chunkX * WorldGenerator.CHUNK_SIZE + bx;
+                    int worldZ = chunkZ * WorldGenerator.CHUNK_SIZE + bz;
+                    if (by < SEA_LEVEL - 5) {
+                        double cave1 = this.caveNoise.GetNoise(worldX, by, worldZ);
+                        double cave2 = this.caveNoise2.GetNoise(worldX, by, worldZ);
+                        if (Math.abs(cave1) < 0.06 && Math.abs(cave2) < 0.06) {
+                            density = -1.0; // force l'air directement
+                        }
+                    }
+
+                    // Écriture dans le sous-chunk
 
                     // Détermine dans quel sous-chunk se trouve ce bloc
                     int subChunkIndex = by / WorldGenerator.CHUNK_SIZE;  // ex. by=20 → subChunk 1
@@ -385,39 +326,33 @@ public class WorldGenerator {
             }
         }
 
-        // ── PASSE 3 : couches de surface ──────────────────────────────
+        // PASSE 3 : couches de surface
         applySurfaceLayers(chunk);
 
         return blocks;
     }
 
-    // ─────────────────────────────────────────────────────────────────
-    //  Couches de surface
-    // ─────────────────────────────────────────────────────────────────
+    // Couches de surface
 
     /**
-     * Applique les couches de surface sur un chunk déjà rempli de pierre/air.
+     * Applique les couches de surface sur un chunk déjà rempli.
+     * Descend colonne par colonne depuis Y=255 :
+     * premier bloc solide → herbe ou sable selon SEA_LEVEL,
+     * 3 blocs suivants → terre, Y=0 → bedrock.
+     * Les grottes ne sont pas affectées (surfacePlaced bloque le reset).
      *
-     * <p>Pour chaque colonne (X, Z) du chunk, le parcours descend depuis le bloc
-     * le plus haut (Y=255) vers le bas (Y=0) et remplace :</p>
-     * <ul>
-     *   <li>Le <b>premier</b> bloc solide rencontré → GRASS (au-dessus du niveau de mer)
-     *       ou SAND (sous le niveau de mer).</li>
-     *   <li>Les <b>3 blocs</b> solides suivants → DIRT.</li>
-     *   <li>Le bloc Y=0 → BEDROCK (bedrock, indestructible).</li>
-     * </ul>
-     *
-     * @param chunk Chunk dont les sous-chunks vont être modifiés.
+     * @param chunk le chunk à modifier
      */
     private void applySurfaceLayers(Chunk chunk) {
 
         for (int bx = 0; bx < WorldGenerator.CHUNK_SIZE; bx++) {
             for (int bz = 0; bz < WorldGenerator.CHUNK_SIZE; bz++) {
+                boolean surfacePlaced = false; // pour éviter d'avoir du sable dans les grottes
 
                 // -1 = on n'a pas encore trouvé la surface de cette colonne
                 // >0 = nombre de blocs de terre restant à placer en dessous
                 int dirtDepth = -1;
-
+                
                 // Parcours de haut en bas pour trouver la surface
                 for (int by = 255; by >= 0; by--) {
 
@@ -433,28 +368,27 @@ public class WorldGenerator {
                         continue;
                     }
 
-                    // Bloc air → pas de surface ici, on continue vers le bas
-                    if (subChunk.blocks[idx] == (byte) BlocksType.AIR.getId()) {
-                        dirtDepth = -1; // reset : si on rencontre de l'air, la couche de terre est interrompue
+                    // Bloc air avant la surface → on continue vers le bas
+                    if (subChunk.blocks[idx] == (byte) BlocksType.AIR.getId() && !surfacePlaced) {
+                        dirtDepth = -1;
                         continue;
                     }
 
                     // Premier bloc solide rencontré → c'est la surface
-                    if (dirtDepth == -1) {
-                        dirtDepth = 3; // arme le compteur de terre (3 blocs de dirt sous la surface)
+                    if (dirtDepth == -1 && !surfacePlaced) {
+                        surfacePlaced = true;
+                        dirtDepth = 3; // 3 blocs de dirt sous la surface
 
-                        // Choix de la texture de surface selon le niveau de mer
                         if (by >= WorldGenerator.SEA_LEVEL)
-                            subChunk.blocks[idx] = (byte) BlocksType.GRASS.getId(); // surface émergée → herbe
+                            subChunk.blocks[idx] = (byte) BlocksType.GRASS.getId();
                         else
-                            subChunk.blocks[idx] = (byte) BlocksType.SAND.getId(); // surface immergée → sable/gravier
+                            subChunk.blocks[idx] = (byte) BlocksType.SAND.getId();
 
                     } else if (dirtDepth > 0) {
-                        // Blocs sous la surface (jusqu'à 3 blocs de profondeur) → terre
                         subChunk.blocks[idx] = (byte) BlocksType.DIRT.getId();
-                        dirtDepth--; // décrémente le compteur de terre
+                        dirtDepth--;
                     }
-                    // Si dirtDepth == 0 : on a épuisé la couche de terre, le reste reste en pierre
+                    // dirtDepth == 0 → le reste reste en pierre
                 }
             }
         }
