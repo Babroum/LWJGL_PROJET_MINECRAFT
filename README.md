@@ -14,6 +14,13 @@ Référentielle :
 
 ## Installation et démarrage
 
+### 0. Exécuter le code
+```
+mvn exec:exec     plus de exec:java !
+
+./mvnw compile exec:exec
+```
+
 ### 1. Cloner le projet
 ```bash
 git clone <your-repo-url>
@@ -44,7 +51,6 @@ mvnw.cmd package
 ./mvnw package
 ```
 
-## Contribution
 
 Pour développer et faire des push :
 IL FAUT CREER UNE BRANCHE DEPUIS UNE ISSUE PUIS
@@ -52,7 +58,3 @@ SUR L'ONGLET GIT DE VSCODE CLIQUER SUR LE LOGO DE BRANCHE ET SELECTIONNER LA BRA
 <img width="530" height="65" alt="image" src="https://github.com/user-attachments/assets/77c5a6d3-66b0-42fb-90d6-577de112a77e" />
 
 IL SUFFIT DE PUSH, ET POUR MERGE IL FAUT ALLER SUR GITHUB
-
-
-## AVANT DE PUSH UNE FEATURE
-Il faut créer une issue avec le label feature et le bon milestone, c'est comme une todo list en gros, pour savoir ce que l'on fait et qui le fait
