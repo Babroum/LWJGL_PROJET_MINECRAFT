@@ -1,8 +1,6 @@
 package demo;
 
-import demo.Enum.BlocksType;
-import demo.Geometry.Chunk;
-import demo.Geometry.SubChunk;
+import demo.Managers.BenchmarkManager;
 import demo.Managers.ChunksManager;
 import demo.Rendering.SceneGraph;
 import demo.Rendering.Window;
@@ -19,37 +17,16 @@ public class App
     }
 
     public static void draw(SceneGraph scene){
+        BenchmarkManager.getInstance().start(); // ← démarre ici
+
+        WorldGenerator generator = new WorldGenerator(4949849L); // seed
         // thread de génération
         Thread generationThread = new Thread(() -> {
-
-            // créer tous les chunks et placer les blocs
-            for (int i = -5; i < 5; i++){
-                for (int j = -5; j < 5; j++){
-                    Chunk chunk = ChunksManager.createChunk(j, i);
-                    chunk.addFloorToChunk(0, 1, BlocksType.GRASS);
-                }
-            }
-
-            for (int i = -5; i < 5; i++){
-                for (int j = -5; j < 5; j++){
-                    Chunk chunk = ChunksManager.getChunk(j, i);
-                    for(SubChunk sub : chunk.subChunks){
-                        sub.fillSubChunkBitSet();
-                    }
-                }
-            }
-
-            // finaliser APRÈS que tous les voisins existent
-            for (int i = -5; i < 5; i++){
-                for (int j = -5; j < 5; j++){
-                    Chunk chunk = ChunksManager.getChunk(j, i);
-                    ChunksManager.finalizeChunk(chunk);
-                }
-            }
-
-            //Chunk chunk = ChunksManager.getChunk(0, 0);
-            //SubChunk sub = chunk.getSubChunk(1);
-            //sub.addFloorToSubChunk(0, 1, BlocksType.GRASS);
+            ChunksManager.createChunks(-24, 24, -24, 24);  // 2304 chunks (ratio: 0.05 FPS/chunk)
+            //ChunksManager.createChunks(-16, 16, -16, 16); // 1024 chunks (ratio: 0.29 FPS/chunk)
+            //ChunksManager.createChunks(-10, 10, -10, 10); // 400 chunks (ratio: 2.5  FPS/chunk)
+            ChunksManager.generateChunks(generator);
+            ChunksManager.finalizeChunks();
         }); 
         
         // daemon pour que le thread se ferme à la fermeture de la jvm

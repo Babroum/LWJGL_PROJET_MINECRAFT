@@ -15,6 +15,7 @@ import demo.Annotations.OpenGLThread;
 import demo.Geometry.Chunk;
 import demo.Geometry.SubChunk;
 import demo.Managers.AudioManager;
+import demo.Managers.BenchmarkManager;
 import demo.Managers.BuffersManager;
 import demo.Managers.ShadersManager;
 import demo.Managers.TexturesManager;
@@ -75,9 +76,11 @@ public class Render {
         // Prépare la 3D
         Render.initialize3D(Window.width, Window.height);
 
+
         GameLoop.init();
 
         while ( !GLFW.glfwWindowShouldClose(Window.window) ) {  
+            BenchmarkManager.getInstance().recordFrame();
             // démarre l'enregistrement de performances pour la frame
             monitor.beginFrame();
 
@@ -98,6 +101,8 @@ public class Render {
             // donne les matrices de camera et perspective au shader
             ShadersManager.runProjection(Render.calculateProjection(45.0f, (float) Window.width / Window.height, 0.1f, 5000.f)); // donne la perspective de l'ecran
             ShadersManager.runView(PlayersManager.player.getCamera().getViewMatrixBuffer()); // donne la vue de la camera
+
+            FrustumCulling.recalculateMatrix();
 
             // poll les chunks prêts et upload sur GPU
             Chunk chunk;
@@ -134,7 +139,7 @@ public class Render {
             Render.getTextRender().drawText("Toggle WireFrameMode : E", 0, 20, 15, Color4f.YELLOW);
             Render.getTextRender().drawText("Toggle MouseLock : P", 0, 40, 15, Color4f.YELLOW);       
             Render.getTextRender().drawText("Toggle ChunkBorder : B", 0, 60, 15, Color4f.YELLOW);   
-            Render.getTextRender().drawText("Toggle Teleport to (0,10,0): T", 0, 80, 15, Color4f.YELLOW);      
+            Render.getTextRender().drawText("Toggle Teleport to (0,100,0): T", 0, 80, 15, Color4f.YELLOW);      
 
             // Affiche le nombre de nœud à l'écran
             Render.getTextRender().drawText("Node3D count : " + Render.sceneGraph.getTotalNodeCount(), 0, 100, 15, Color4f.PURPLE);         
@@ -163,7 +168,7 @@ public class Render {
             GLFW.glfwPollEvents();
             monitor.endFrame();   
 		}
-        GameLoop.quit();
+        
         // ferme le fenêtre quand la boucle de rendu est fini
         Window.exitWindow();
     }
@@ -181,6 +186,14 @@ public class Render {
      */
     public static TextRender getTextRender(){
         return Render.textRender;
+    }
+
+    /**
+     * Retourne la matrice de projection
+     * @return
+     */
+    public static Matrix4f getProjection(){
+        return Render.projection;
     }
     
     /**

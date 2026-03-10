@@ -12,5 +12,7 @@ public enum TexturesType {
     DIRT,
     MAX,
     HOMER,
+    SAND,
+    BEDROCK,
     NULL;
 }

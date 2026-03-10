@@ -5,6 +5,7 @@ import java.util.LinkedHashMap;
 
 import org.joml.Math;
 
+import demo.WorldGenerator;
 import demo.Annotations.ChunkThread;
 import demo.Annotations.OpenGLThread;
 import demo.Enum.BlocksType;
@@ -18,6 +19,53 @@ public class ChunksManager {
     // HashMap fait pareil mais linked permet de garder l'ordre dans lequel c'est insérer
     // C'est comme un dictionnaire, clé valeur
     private static LinkedHashMap<String, Chunk> chunks = new LinkedHashMap<>();
+
+    /**
+     * Créer les chunks entre les coordonées
+     * @param fromX départ en X
+     * @param toX arrivé en X
+     * @param fromZ départ en Z
+     * @param toZ arrivé en Z
+     */
+    public static void createChunks(int fromX, int toX, int fromZ, int toZ) {
+        for (int x = fromX; x < toX; x++){
+            for (int z = fromZ; z < toZ; z++){
+                createChunk(x, z);
+            }
+        }
+    }
+
+    /**
+     * Génère les chunks (maillages)
+     * @param generator un seed
+     */
+    public static void generateChunks(WorldGenerator generator) {
+        for (Chunk chunk : chunks.values()) {
+            int chunkX = chunk.x / SubChunk.CHUNKSIZEX;
+            int chunkZ = chunk.z / SubChunk.CHUNKSIZEZ;
+            generator.generateChunk(chunk, chunkX, chunkZ);
+            BenchmarkManager.getInstance().recordChunkGenerated();
+        }
+    }
+
+    /**
+     * Finis la génération en connectant les voisins et calculant les faces à caché entre voisins
+     */
+    public static void finalizeChunks() {
+        for (Chunk chunk : chunks.values()){
+            for (SubChunk sub : chunk.subChunks){
+                sub.linkNeighbors();
+            }
+        }
+        for (Chunk chunk : chunks.values()){
+            for (SubChunk sub : chunk.subChunks){
+                sub.fillSubChunkBitSet();
+            }
+        }
+        for (Chunk chunk : chunks.values()){
+            finalizeChunk(chunk);
+        }
+    }
     
     /**
      * Créer un nouveau chunk à la position donné
@@ -31,10 +79,7 @@ public class ChunksManager {
         String coord = String.valueOf(x)+","+String.valueOf(z);
         if (ChunksManager.chunks.containsKey(coord)) 
             {throw new IncorrectCoordinates("Le chunk x: " + x + " z: "+ z + " existe déjà");}
-        Chunk chunk = new Chunk(x + "," + z);
-        chunk.setChunkPosition(x, z);
-        // il faut tout créer avant de généré la mesh ça évite de devoir la regénérer
-        // sauf pour les test on s'en fout
+        Chunk chunk = new Chunk(x, z);
         ChunksManager.chunks.put(coord, chunk);
         return chunk;
     }
@@ -45,10 +90,14 @@ public class ChunksManager {
      */
     @ChunkThread
     public static void finalizeChunk(Chunk chunk){
+        // remplir le BitSet
+        for (SubChunk sub : chunk.subChunks) {
+            sub.fillSubChunkBitSet();
+        }
+        // générer le mesh avec un BitSet correct
         for(SubChunk sub : chunk.subChunks){
             sub.mesh.setupSubChunkBuffers(sub.bitSet.cardinality()); // recrée vertexArrayPack avant de générer
             sub.generateSubChunkMesh();
-            sub.linkNeighbors();
             // met le thread en pause si l'array est plein, le thread se relance automatiquement au moment ou OpenGLThread poll un chunk
             try { Render.dirtySubChunks.put(sub); } catch(InterruptedException e) { Thread.currentThread().interrupt(); }
         }
