@@ -168,8 +168,7 @@ public class Render {
             GLFW.glfwPollEvents();
             monitor.endFrame();   
 		}
-        BenchmarkManager.getInstance().stop(); 
-        GameLoop.quit();
+        
         // ferme le fenêtre quand la boucle de rendu est fini
         Window.exitWindow();
     }

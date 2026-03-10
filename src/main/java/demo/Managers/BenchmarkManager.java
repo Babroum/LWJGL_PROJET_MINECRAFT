@@ -156,7 +156,7 @@ public class BenchmarkManager {
             chunksData.add(chunks);
 
             // Log console en temps réel
-            //System.out.printf("[BENCH] t=%3ds | FPS: %4d | RAM: %4d Mo | Chunks/s: %3d%n", elapsed, fps, ramMB, chunks);
+            System.out.printf("[BENCH] t=%3ds | FPS: %4d | RAM: %4d Mo | Chunks/s: %3d%n", elapsed, fps, ramMB, chunks);
         }
     }
 

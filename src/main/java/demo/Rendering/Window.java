@@ -10,9 +10,11 @@ import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.system.MemoryUtil;
 
+import demo.GameLoop;
 import demo.Annotations.OpenGLThread;
 import demo.Events.WindowCloseEventManager;
 import demo.Managers.AudioManager;
+import demo.Managers.BenchmarkManager;
 import demo.Managers.ShadersManager;
 import demo.Managers.ChunksManager;
 import demo.Managers.InputManager;
@@ -126,6 +128,9 @@ public class Window {
         ShadersManager.closeProgramId();
         ShadersManager.closeProgramTextId();
         ShadersManager.closeProgramBlockBorderId();
+
+        BenchmarkManager.getInstance().stop(); 
+        GameLoop.quit();
         
         AudioManager.cleanup();
         BlockBorderRenderer.cleanup();
