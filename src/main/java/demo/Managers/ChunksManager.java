@@ -79,10 +79,7 @@ public class ChunksManager {
         String coord = String.valueOf(x)+","+String.valueOf(z);
         if (ChunksManager.chunks.containsKey(coord)) 
             {throw new IncorrectCoordinates("Le chunk x: " + x + " z: "+ z + " existe déjà");}
-        Chunk chunk = new Chunk(x + "," + z);
-        chunk.setChunkPosition(x, z);
-        // il faut tout créer avant de généré la mesh ça évite de devoir la regénérer
-        // sauf pour les test on s'en fout
+        Chunk chunk = new Chunk(x, z);
         ChunksManager.chunks.put(coord, chunk);
         return chunk;
     }

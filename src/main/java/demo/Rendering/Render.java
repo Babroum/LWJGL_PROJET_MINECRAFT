@@ -102,6 +102,8 @@ public class Render {
             ShadersManager.runProjection(Render.calculateProjection(45.0f, (float) Window.width / Window.height, 0.1f, 5000.f)); // donne la perspective de l'ecran
             ShadersManager.runView(PlayersManager.player.getCamera().getViewMatrixBuffer()); // donne la vue de la camera
 
+            FrustumCulling.recalculateMatrix();
+
             // poll les chunks prêts et upload sur GPU
             Chunk chunk;
             while((chunk = Render.chunkQueue.poll()) != null){
@@ -185,6 +187,14 @@ public class Render {
      */
     public static TextRender getTextRender(){
         return Render.textRender;
+    }
+
+    /**
+     * Retourne la matrice de projection
+     * @return
+     */
+    public static Matrix4f getProjection(){
+        return Render.projection;
     }
     
     /**

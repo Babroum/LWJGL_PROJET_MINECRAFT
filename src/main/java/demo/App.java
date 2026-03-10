@@ -22,9 +22,9 @@ public class App
         WorldGenerator generator = new WorldGenerator(4949849L); // seed
         // thread de génération
         Thread generationThread = new Thread(() -> {
-            //ChunksManager.createChunks(-24, 24, -24, 24);  // 2304 chunks (ratio: 0.05 FPS/chunk)
+            ChunksManager.createChunks(-24, 24, -24, 24);  // 2304 chunks (ratio: 0.05 FPS/chunk)
             //ChunksManager.createChunks(-16, 16, -16, 16); // 1024 chunks (ratio: 0.29 FPS/chunk)
-            ChunksManager.createChunks(-10, 10, -10, 10); // 400 chunks (ratio: 2.5  FPS/chunk)
+            //ChunksManager.createChunks(-10, 10, -10, 10); // 400 chunks (ratio: 2.5  FPS/chunk)
             ChunksManager.generateChunks(generator);
             ChunksManager.finalizeChunks();
         }); 

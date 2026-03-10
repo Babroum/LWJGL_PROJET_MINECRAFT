@@ -89,7 +89,7 @@ public class Window {
 
         GLFW.glfwMakeContextCurrent(Window.window); // glfwSwapInterval needs a context on the calling thread, otherwise will cause NO_CURRENT_CONTEXT error    
 
-        GLFW.glfwSwapInterval(0); // Le nombre de dessin avant d'échanger les buffers (Vsync)
+        GLFW.glfwSwapInterval(1); // Le nombre de dessin avant d'échanger les buffers (Vsync)
 
         GL.createCapabilities(); // Will let lwjgl know we want to use this context as the context to draw with
 

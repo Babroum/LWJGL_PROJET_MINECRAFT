@@ -34,7 +34,6 @@ public class SubChunk extends Node3D{
     // donne au mesh le subChunk au quel il appartient
     public SubChunkMesh mesh = new SubChunkMesh();
     public byte[] blocks;
-    public String name;
 
     private boolean isGenerating = false;
 

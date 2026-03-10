@@ -25,7 +25,7 @@ public class PerformanceMonitor {
     private int triangleCount  = 0;
     private int activeVAOs     = 0;
     private int chunkCount     = 0;
-    private int subChunkCount  = 0;
+    private int chunkVisible   = 0;
 
     // --- Mémoire ---
     // Heap Java (gérée par la JVM, comptée dans -Xmx)
@@ -103,7 +103,8 @@ public class PerformanceMonitor {
     public void addTriangles(int count)     { triangleCount += count; }
     public void setActiveVAOs(int count)    { activeVAOs = count; }
     public void addChunkCount()             { chunkCount++; }
-    public void addSubChunkCount()          { subChunkCount++; }
+    public void resetChunkVisibleCount()    { chunkVisible = 0; }
+    public void addChunkVisibleCount()      { chunkVisible++; }
 
     // =====================
     //  GETTERS
@@ -128,15 +129,14 @@ public class PerformanceMonitor {
         displayLines[2]  = "Draw calls : "   + drawCalls;
         displayLines[3]  = "Triangles : "    + triangleCount;
         displayLines[4]  = "VAOs actifs : "  + activeVAOs;
-        displayLines[5]  = "Chunks : "       + chunkCount
-                         + "  SubChunks : "  + subChunkCount;
+        displayLines[5]  = "Chunks : "       + chunkCount;
         // RAM : les 3 métriques séparées pour diagnostiquer
         displayLines[6]  = String.format("Heap Java   : %d Mo / %d Mo", heapUsedMB, heapMaxMB);
         displayLines[7]  = String.format("Off-heap    : %d Mo%s",
                                           offHeapUsedMB,
                                           offHeapMaxMB == -1 ? " (illimite)" : " / " + offHeapMaxMB + " Mo");
         displayLines[8] = buildMemBar(heapUsedMB, heapMaxMB);
-        displayLines[9] = null;
+        displayLines[9] = "Chunks Visible : " + chunkVisible;
         displayLines[10] = null;
         return displayLines;
     }
