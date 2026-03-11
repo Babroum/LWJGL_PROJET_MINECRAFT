@@ -10,9 +10,11 @@ import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.system.MemoryUtil;
 
+import demo.GameLoop;
 import demo.Annotations.OpenGLThread;
 import demo.Events.WindowCloseEventManager;
 import demo.Managers.AudioManager;
+import demo.Managers.BenchmarkManager;
 import demo.Managers.ShadersManager;
 import demo.Managers.ChunksManager;
 import demo.Managers.InputManager;
@@ -89,7 +91,7 @@ public class Window {
 
         GLFW.glfwMakeContextCurrent(Window.window); // glfwSwapInterval needs a context on the calling thread, otherwise will cause NO_CURRENT_CONTEXT error    
 
-        GLFW.glfwSwapInterval(0); // Le nombre de dessin avant d'échanger les buffers (Vsync)
+        GLFW.glfwSwapInterval(1); // Le nombre de dessin avant d'échanger les buffers (Vsync)
 
         GL.createCapabilities(); // Will let lwjgl know we want to use this context as the context to draw with
 
@@ -126,6 +128,9 @@ public class Window {
         ShadersManager.closeProgramId();
         ShadersManager.closeProgramTextId();
         ShadersManager.closeProgramBlockBorderId();
+
+        BenchmarkManager.getInstance().stop(); 
+        GameLoop.quit();
         
         AudioManager.cleanup();
         BlockBorderRenderer.cleanup();

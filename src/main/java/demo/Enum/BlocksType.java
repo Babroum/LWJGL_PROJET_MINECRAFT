@@ -6,13 +6,16 @@ import demo.Geometry.Cube;
  * Liste des blocks qui existent
  */
 public enum BlocksType {
+    AIR(0),
     GRASS(1),
     COBBLESTONE(2),
     STONE(3),
     DIRT(4),
     MAX(5),
     HOMER(6),
-    NULL(0);
+    SAND(7),
+    BEDROCK(8),
+    NULL(-1);
 
     private Cube cube; // valeur d'instance, chaque valeur à le sien
 

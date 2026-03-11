@@ -6,6 +6,7 @@ import demo.Annotations.ChunkThread;
 import demo.Annotations.OpenGLThread;
 import demo.Enum.BlocksType;
 import demo.Exceptions.IncorrectCoordinates;
+import demo.Rendering.FrustumCulling;
 import demo.Rendering.Render;
 
 /**
@@ -15,28 +16,44 @@ public class Chunk extends Node3D{
     
     public static final int SUBCHUNKCOUNT = 16;
     public SubChunk[] subChunks;
-    public String name;
+
+    private int minX;
+    private int minY;
+    private int minZ;
+
+    private int maxX;
+    private int maxY;
+    private int maxZ;
     
     /**
      * Initialise les subChunks du chunks
-     * @param name String
+     * @param chunkX position du chunk en X coordonnées locales
+     * @param chunkZ position du chunk en Z coordonnées locales
      */
     @ChunkThread
-    public Chunk(String name){
+    public Chunk(int chunkX, int chunkZ){
         this.subChunks = new SubChunk[Chunk.SUBCHUNKCOUNT];
         for (int i = 0; i < this.subChunks.length; i++){
             this.subChunks[i] = new SubChunk();
             this.subChunks[i].setSubChunkPosition(0, i * SubChunk.CHUNKSIZEY, 0);
-            this.subChunks[i].name = name + "," + i;
-            Render.monitor.addSubChunkCount();
         }
+        this.setChunkPosition(chunkX, chunkZ);
+        
+        this.minX = this.x;
+        this.minY = this.y;
+        this.minZ = this.z;
+
+        this.maxX = this.minX + SubChunk.CHUNKSIZEX;
+        this.maxY = this.minY + SubChunk.CHUNKSIZEY * Chunk.SUBCHUNKCOUNT;
+        this.maxZ = this.minZ + SubChunk.CHUNKSIZEZ;
+        
         Render.monitor.addChunkCount();
     }
 
     /**
      * Définis la position du chunk
-     * @param chunkX int
-     * @param chunkZ int
+     * @param chunkX position du chunk en X coordonnées locales
+     * @param chunkZ position du chunk en Z coordonnées locales
      */
     @ChunkThread
     public void setChunkPosition(int chunkX, int chunkZ){
@@ -140,8 +157,11 @@ public class Chunk extends Node3D{
     @OpenGLThread
     @Override
     public void drawNode(Matrix4f parentModel){
-        for (SubChunk sub : subChunks){
-            sub.drawNode(parentModel);
-        }
+        // si le chunk est visible on l'affiche
+        if (FrustumCulling.testAABB(this.minX, this.minY, this.minZ, this.maxX, this.maxY, this.maxZ)){
+            for (SubChunk sub : subChunks){
+                sub.drawNode(parentModel);
+            } 
+        }               
     }
 }

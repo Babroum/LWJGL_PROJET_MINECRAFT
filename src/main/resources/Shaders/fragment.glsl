@@ -29,6 +29,6 @@ void main()
     else               light = 0.5; // DOWN, sombre
 
     // calcule la taille texture par rapport au coordonnées uv et la texture
-    vec4 texColor = texture(tex, vec3(uv, float(texId))); 
+    vec4 texColor = texture(tex, vec3(fract(uv), float(texId))); 
     FragColor = vec4(texColor.rgb * light, texColor.a);
 }

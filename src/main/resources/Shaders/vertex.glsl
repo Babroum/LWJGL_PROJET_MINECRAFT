@@ -5,6 +5,7 @@
 
 #version 330 core
 layout(location = 0) in int packedData;
+layout(location = 1) in int packedUV;
 
 flat out int texId;
 flat out int dir;
@@ -19,18 +20,22 @@ void main()
 {
     // unpack les données 
     // donc décale tout et applique un masque pour ne pas récupèrer les valeurs des autres variables
-    int x = (packedData >> 27) & 0x1F;
-    int y = (packedData >> 19) & 0xFF;
-    int z = (packedData >> 14) & 0x1F;
-    int u = (packedData >> 13) & 0x1;
-    int v = (packedData >> 12) & 0x1;
-    dir   = (packedData >> 9)  & 0x7;
-    texId =  packedData        & 0x1FF;
+    int x      = (packedData >> 27) & 0x1F;
+    int y      = (packedData >> 22) & 0x1F;
+    int z      = (packedData >> 17) & 0x1F;
+    int u_bit  = (packedData >> 16) & 0x1;
+    int v_bit  = (packedData >> 15) & 0x1;
+    dir        = (packedData >> 12) & 0x7;
+    texId      =  packedData        & 0xFFF; // F = 1111, F = 1111 F = 1111 ça fait 12bits
 
-    isBorder = (texId == 0 && u == 0 && v == 0) ? 1 : 0; // détecte bordure
+    int w = (packedUV >> 27) & 0x1F;
+    int h = (packedUV >> 22) & 0x1F;
+
+    isBorder = (texId == 0 && u_bit == 0 && v_bit == 0) ? 1 : 0; // détecte bordure
 
     vec3 position = vec3(float(x), float(y), float(z));
 
     gl_Position = projection * view * model * vec4(position, 1.0); // un vec3 est utilisé pour construire un vec4
-    uv = vec2(float(u), float(v));;
+    uv = vec2(u_bit == 0 ? 0.0 : float(w),
+              v_bit == 0 ? 0.0 : float(h));
 }
