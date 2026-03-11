@@ -35,9 +35,9 @@ public class BlockBorderRenderer {
         IntBuffer buffer = MemoryUtil.memAllocInt(lines.length);
         for(int i = 0; i < lines.length; i += 3){
             int packed = 0;
-            packed |= ((lines[i]  ) & 0x1F) << 27;
-            packed |= ((lines[i+1]) & 0xFF) << 19;
-            packed |= ((lines[i+2]) & 0x1F) << 14;
+            packed |= (lines[i]  ) << 27;
+            packed |= (lines[i+1]) << 22;
+            packed |= (lines[i+2]) << 17;
             buffer.put(packed);
         }
         buffer.flip();
