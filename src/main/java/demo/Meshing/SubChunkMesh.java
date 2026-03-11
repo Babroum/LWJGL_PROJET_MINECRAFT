@@ -71,9 +71,9 @@ public class SubChunkMesh {
      * @param cubeY
      * @param cubeZ
      */
-    //[ 00000 | 00000000 | 00000 | 0 | 0 | 000 | 000000000 ]
-    //    x        y         z     u   v   dir   textureId
-    // 512 textures max
+    //[ 00000 | 00000 | 00000 | 0 | 0 | 000 | 000000000000 ]
+    //    x        y      z     u   v   dir   textureId
+    // 4096 textures max
     @ChunkThread
     public void addObjectVertexToArray(int[] array, int cubeX, int cubeY, int cubeZ) throws ArrayEmpty{
         if (array.length < 7){
@@ -82,17 +82,17 @@ public class SubChunkMesh {
         for(int i = 0; i < array.length; i += 7){
             int packed = 0;
             // |= c'est le OU permet de combiner sans supprimer les valeurs
-            // & c'est un ET il applique un masque pour la sécurité au cas ou par exemple on recoit 6 bits au lieu de 5
+            // le x max est 15 donc pourquoi pas avoir << 28 car 15 = 1111 donc 4 bits
+            // le centre du cube n'est pas centré donc pour avoir le sommet le plus loin on fait x + 1 donc 15 + 1 = 16 ce qui dépasse 4bits
+            packed |= (array[i]   + cubeX)  << 27; // 5 bits, décale de 27 bits (donc prend les 5 premiers bits, 32 - 27 = 5)
+            packed |= (array[i+1] + cubeY)  << 22; // 5 bits
+            packed |= (array[i+2] + cubeZ)  << 17; // 5 bits
+            packed |= (array[i+3])          << 16; // 1 bit
+            packed |= (array[i+4])          << 15; // 1 bit
+            packed |=  array[i+5]           << 12; // 3 bits
+            packed |=  array[i+6];                 // 12 bits
 
-            packed |= ((array[i]   + cubeX) & 0x1F) << 27; // 5 bits, décale de 27 bits (donc prend les 5 premiers bits, 32 - 27 = 5)
-            packed |= ((array[i+1] + cubeY) & 0xFF) << 19; // 8 bits
-            packed |= ((array[i+2] + cubeZ) & 0x1F) << 14; // 5 bits
-            packed |= (array[i+3] & 0x1)            << 13; // 1 bit
-            packed |= (array[i+4] & 0x1)            << 12; // 1 bit
-            packed |= (array[i+5] & 0x7)            << 9;  // 3 bits
-            packed |= (array[i+6] & 0x1FF);                // 9 bits
-
-            this.vertexArrayPack[this.vertexCount * 2 + 1] = packed;
+            this.vertexArrayPack[this.vertexCount * 2] = packed;
 
             this.vertexCount++;
         }    
@@ -123,15 +123,15 @@ public class SubChunkMesh {
             packed |= (array[i]   + cubeX)  << 27; // 5 bits, décale de 27 bits (donc prend les 5 premiers bits, 32 - 27 = 5)
             packed |= (array[i+1] + cubeY)  << 22; // 5 bits
             packed |= (array[i+2] + cubeZ)  << 17; // 5 bits
-            //on triche en supprimant 1 et en le rajoutant dans le shader pour évité d'utilisé 1 bit en plus (faire gaf à 0 pour évité -1)
             packed |= (array[i+3])          << 16; // 1 bit
             packed |= (array[i+4])          << 15; // 1 bit
             packed |=  array[i+5]           << 12; // 3 bits
             packed |=  array[i+6];                 // 12 bits
 
+            // coordonnées UV 
             int packed2 = 0;
-            packed2 |= (w) << 27;
-            packed2 |= (h) << 22;
+            packed2 |= (w) << 27; // 5 bits
+            packed2 |= (h) << 22; // 5 bits
 
             this.vertexArrayPack[this.vertexCount * 2] = packed;
             this.vertexArrayPack[this.vertexCount * 2 + 1] = packed2;
