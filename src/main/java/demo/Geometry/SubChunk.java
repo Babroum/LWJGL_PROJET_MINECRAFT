@@ -1,7 +1,6 @@
 package demo.Geometry;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
 

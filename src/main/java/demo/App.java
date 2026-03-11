@@ -22,10 +22,10 @@ public class App
         WorldGenerator generator = new WorldGenerator(4949849L); // seed
         // thread de génération
         Thread generationThread = new Thread(() -> {
-            //ChunksManager.createChunks(-24, 24, -24, 24);  // 2304 chunks 
+            ChunksManager.createChunks(-24, 24, -24, 24);  // 2304 chunks 
             //ChunksManager.createChunks(-16, 16, -16, 16); // 1024 chunks
             //ChunksManager.createChunks(-10, 10, -10, 10); // 400 chunks
-            ChunksManager.createChunks(-2, 2, -2, 2); // 16 chunks
+            //ChunksManager.createChunks(-2, 2, -2, 2); // 16 chunks
             ChunksManager.generateChunks(generator);
             ChunksManager.finalizeChunks();
         }); 
