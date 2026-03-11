@@ -1,6 +1,5 @@
 package demo.Meshing;
 
-import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 
 import org.lwjgl.system.MemoryUtil;
@@ -93,7 +92,7 @@ public class SubChunkMesh {
             packed |= (array[i+5] & 0x7)            << 9;  // 3 bits
             packed |= (array[i+6] & 0x1FF);                // 9 bits
 
-            this.vertexArrayPack[this.vertexCount] = packed;
+            this.vertexArrayPack[this.vertexCount * 2 + 1] = packed;
 
             this.vertexCount++;
         }    
@@ -107,11 +106,11 @@ public class SubChunkMesh {
      * @param cubeY
      * @param cubeZ
      */
-    //[ 00000 | 00000000 | 00000 | 0 | 0 | 000 | 000000000 ]
-    //    x        y         z     u   v   dir   textureId
-    // 512 textures max
+    //[ 00000 | 00000 | 00000 | 0 | 0 | 000 | 000000000000 ]
+    //    x       y       z     u   v   dir     textureId
+    // 4096 textures max
     @ChunkThread
-    public void addObjectFaceVertexToArray(int[] array, int cubeX, int cubeY, int cubeZ) throws ArrayEmpty{
+    public void addObjectFaceVertexToArray(int[] array, int cubeX, int cubeY, int cubeZ, int w, int h) throws ArrayEmpty{
         if (array.length < 7){
             throw new ArrayEmpty();
         }
@@ -119,16 +118,23 @@ public class SubChunkMesh {
         for(int i = 0; i < array.length; i += 7){
             int packed = 0;
             // |= c'est le OU permet de combiner sans supprimer les valeurs
-            // & c'est un ET il applique un masque pour la sécurité au cas ou par exemple on recoit 6 bits au lieu de 5
-            packed |= ((array[i]   + cubeX) & 0x1F) << 27; // 5 bits, décale de 27 bits (donc prend les 5 premiers bits, 32 - 27 = 5)
-            packed |= ((array[i+1] + cubeY) & 0xFF) << 19; // 8 bits
-            packed |= ((array[i+2] + cubeZ) & 0x1F) << 14; // 5 bits
-            packed |= (array[i+3] & 0x1)            << 13; // 1 bit
-            packed |= (array[i+4] & 0x1)            << 12; // 1 bit
-            packed |= (array[i+5] & 0x7)   << 9;  // 3 bits
-            packed |= (array[i+6] & 0x1FF);                // 9 bits
+            // le x max est 15 donc pourquoi pas avoir << 28 car 15 = 1111 donc 4 bits
+            // le centre du cube n'est pas centré donc pour avoir le sommet le plus loin on fait x + 1 donc 15 + 1 = 16 ce qui dépasse 4bits
+            packed |= (array[i]   + cubeX)  << 27; // 5 bits, décale de 27 bits (donc prend les 5 premiers bits, 32 - 27 = 5)
+            packed |= (array[i+1] + cubeY)  << 22; // 5 bits
+            packed |= (array[i+2] + cubeZ)  << 17; // 5 bits
+            //on triche en supprimant 1 et en le rajoutant dans le shader pour évité d'utilisé 1 bit en plus (faire gaf à 0 pour évité -1)
+            packed |= (array[i+3])          << 16; // 1 bit
+            packed |= (array[i+4])          << 15; // 1 bit
+            packed |=  array[i+5]           << 12; // 3 bits
+            packed |=  array[i+6];                 // 12 bits
 
-            this.vertexArrayPack[this.vertexCount] = packed;
+            int packed2 = 0;
+            packed2 |= (w) << 27;
+            packed2 |= (h) << 22;
+
+            this.vertexArrayPack[this.vertexCount * 2] = packed;
+            this.vertexArrayPack[this.vertexCount * 2 + 1] = packed2;
 
             this.vertexCount++;;
         }    
@@ -211,7 +217,7 @@ public class SubChunkMesh {
         }
 
         try {
-            this.addObjectFaceVertexToArray(array, 0, 0, 0);
+            this.addObjectFaceVertexToArray(array, 0, 0, 0, w, h);
         } catch(ArrayEmpty e){ e.printStackTrace(); }
     }
 
@@ -235,7 +241,7 @@ public class SubChunkMesh {
         // 6 faces * 6 sommets par bloc = 36 vertices max par bloc visible
         // blockCount * 36 = taille exacte au pire cas
         if (this.vertexArrayPack == null || this.vertexArrayPack.length < needed){
-            this.vertexArrayPack = new int[needed];
+            this.vertexArrayPack = new int[needed * 2];
         }
         this.vertexBufferPack = null;
     }
@@ -255,9 +261,10 @@ public class SubChunkMesh {
             return;
         }
         // Alloue EXACTEMENT la taille nécessaire, off-heap
-        this.vertexBufferPack = MemoryUtil.memAllocInt(this.vertexCount);
+        this.vertexBufferPack = MemoryUtil.memAllocInt(this.vertexCount * 2);
         for(int i = 0; i < this.vertexCount; i++){
-            this.vertexBufferPack.put(this.vertexArrayPack[i]);
+            this.vertexBufferPack.put(this.vertexArrayPack[i * 2]); // packed vertex
+            this.vertexBufferPack.put(this.vertexArrayPack[i * 2 + 1]); // packed UV
         }
         this.vertexBufferPack.flip(); // remet la position du buffer à 0, sinon il lirai de la fin des données à la fin du buffer
         // Le tableau Java temporaire n'est plus nécessaire
@@ -283,7 +290,7 @@ public class SubChunkMesh {
         if (this.vertexBufferPack == null){
             return;
         }
-        int[] result = BuffersManager.createVBOVAO(this.vertexBufferPack);
+        int[] result = BuffersManager.createSubChunkVBOVAO(this.vertexBufferPack);
         this.ids[0] = result[0];
         this.ids[1] = result[1];
 
@@ -327,8 +334,8 @@ public class SubChunkMesh {
         for(int i = 0; i < lines.length; i+=3){
             int packed = 0;
             packed |= ((lines[i]  ) & 0x1F) << 27;
-            packed |= ((lines[i+1]) & 0xFF) << 19;
-            packed |= ((lines[i+2]) & 0x1F) << 14;
+            packed |= ((lines[i+1]) & 0x1F) << 22;
+            packed |= ((lines[i+2]) & 0x1F) << 17;
             linesBuffer.put(packed);
         }
         linesBuffer.flip();
@@ -370,7 +377,7 @@ public class SubChunkMesh {
      * @throws Empty
      */
     @OpenGLThread
-    public void drawSubChunkMesh(FloatBuffer buffer) throws Empty{   
+    public void drawSubChunkMesh() throws Empty{   
         if (this.ids == null) throw new Empty("les vbo et vao ne sont pas initialisé");
         if (this.ids[1] == 0) return; // sub-chunk vide, rien à dessiner
         TexturesManager.getTextureRender().draw();
