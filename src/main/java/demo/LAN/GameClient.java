@@ -6,6 +6,10 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.*;
 
+import org.joml.Vector3f;
+
+import demo.Managers.PlayersManager;
+
 public class GameClient{
     private static Socket socket;
     private static PrintWriter out;
@@ -42,6 +46,15 @@ public class GameClient{
             
             case "TEST":
                 System.out.println("Message reçu");
+                break;
+
+            case "POS":
+                int id = Integer.parseInt(parts[1]);
+                float x = Float.parseFloat(parts[2]);
+                float y = Float.parseFloat(parts[3]);
+                float z = Float.parseFloat(parts[4]);
+                PlayersManager.otherPlayers.put(id, new Vector3f(x, y, z));
+                break;
 
             default:
                 break;

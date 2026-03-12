@@ -14,6 +14,7 @@ import demo.Enum.BlocksType;
 import demo.Events.KeyboardInput;
 import demo.Events.MouseInput;
 import demo.Geometry.SubChunk;
+import demo.LAN.NetworkEvent;
 
 /**
  * Une joueur 
@@ -84,6 +85,7 @@ public class Player {
         }
         
         this.setPosition(this.position.x, this.position.y, this.position.z);
+        NetworkEvent.sendPosition(this.position.x, this.position.y, this.position.z);
     }
 
     private boolean canMoveToWithBuffer(float x, float z, float radius) {
@@ -126,6 +128,7 @@ public class Player {
             this.velocityY = 0f;
             this.isFalling = false;
             this.setPosition(0, 100, 0);
+            NetworkEvent.sendPosition(this.position.x, this.position.y, this.position.z);
             return;
         }
 
@@ -144,6 +147,7 @@ public class Player {
             this.isFalling = true;
         }
         this.setPosition(this.position.x, this.position.y, this.position.z);
+        NetworkEvent.sendPosition(this.position.x, this.position.y, this.position.z);
     }
 
     private boolean isInsidePlayer(int px, int py, int pz){
@@ -234,6 +238,7 @@ public class Player {
                         });
                         this.breakCooldown = this.breakPlaceDelay;
                         block = BlocksType.AIR;
+                        NetworkEvent.sendBreak(bx, by, bz);
                     }
                 } else {
                     this.breakCooldown = 0;
@@ -259,6 +264,7 @@ public class Player {
                         } catch (Exception e) {
                             // hors du monde
                         }
+                        NetworkEvent.sendPlace(BlocksType.COBBLESTONE, px, py, pz);
                     } 
                 } else {
                     this.placeCooldown = 0;
