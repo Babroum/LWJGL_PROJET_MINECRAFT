@@ -111,6 +111,8 @@ public class SubChunk extends Node3D{
         }
         // rempli le buffer de la maille avec les données pack (vertex packing)
         this.mesh.fillSubChunkVertexBufferWithArray();
+
+        this.blocks = null;
     }
 
     /**

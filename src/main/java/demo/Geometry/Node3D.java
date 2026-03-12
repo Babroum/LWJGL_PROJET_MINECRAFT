@@ -56,7 +56,7 @@ public class Node3D {
     public void addChild(Node3D node) throws ArrayFull{
         // Alloue le tableau seulement au premier addChild()
         if (this.children == null){
-        this.children = new Node3D[SubChunk.MAXBLOCK];
+        this.children = new Node3D[SubChunk.MAXBLOCK]; //SubChunk.MAXBLOCK
         }
         if (this.nbChildren == this.children.length){
             throw new ArrayFull();

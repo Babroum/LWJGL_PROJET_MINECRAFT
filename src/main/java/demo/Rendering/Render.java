@@ -142,7 +142,7 @@ public class Render {
             Render.getTextRender().drawText("Toggle Teleport to (0,100,0): T", 0, 80, 15, Color4f.YELLOW);      
 
             // Affiche le nombre de nœud à l'écran
-            Render.getTextRender().drawText("Node3D count : " + Render.sceneGraph.getTotalNodeCount(), 0, 100, 15, Color4f.PURPLE);         
+            //Render.getTextRender().drawText("Node3D count : " + Render.sceneGraph.getTotalNodeCount(), 0, 100, 15, Color4f.PURPLE);         
 
             // Affiche les lignes retourner par le PerformanceManager
             String[] lines = monitor.getDisplayLines();
