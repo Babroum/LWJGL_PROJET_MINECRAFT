@@ -1,6 +1,5 @@
 package demo;
 
-import java.io.IOError;
 import java.io.IOException;
 import java.util.Scanner;
 
@@ -20,12 +19,7 @@ public class App
         int choix = Integer.parseInt(scanner.nextLine());
         if (choix == 1){
             GameServer server = new GameServer();
-            Thread serverThread = new Thread(
-                try{
-                    server.start();
-                }
-                catch (IOException e){}
-            );
+            Thread serverThread = new Thread(() -> {try{server.start();}catch (IOException e){}});
             serverThread.setDaemon(true);
             serverThread.start();
             GameClient.connect("127.0.0.1", 5555);
@@ -35,6 +29,7 @@ public class App
             String ip = scanner.nextLine();
             GameClient.connect(ip, 5555);
         }
+        scanner.close();
         // création de la fenêtre 
         new Window(1200,800);
         // donne le draw en paramètre

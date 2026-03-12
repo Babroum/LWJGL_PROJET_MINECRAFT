@@ -10,6 +10,7 @@ import demo.Managers.ChunksManager;
 import demo.Rendering.Camera;
 import demo.Rendering.Window;
 import demo.Player;
+import demo.LAN.GameClient;
 
 /**
  * Définis les listeners GLFW
