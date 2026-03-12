@@ -62,6 +62,11 @@ public class SubChunk extends Node3D{
         int[] downMask  = new int[SubChunk.CHUNKSIZEZ * SubChunk.CHUNKSIZEX];
     }
 
+    // obligé sinon les threads qui construisent les chunks pour modifié les infos
+    // Thread A écrit dans northAxis[0], Thread B écrit dans northAxis[0] au même moment -> les données se corrompent mutuellement
+    // c'est pour cela qu'un threadlocal, va créer une instance de FACE_DATA_LOCAL sur chaque thread
+    private static final ThreadLocal<FaceData> FACE_DATA_LOCAL = ThreadLocal.withInitial(() -> new FaceData());
+
     @ChunkThread
     public SubChunk(){
         this.quads = new ArrayList<Quad>();
@@ -92,7 +97,9 @@ public class SubChunk extends Node3D{
         // Utilisé pour calculer quelles faces sont visibles (face culling)
         // les tableaux sont créer seulement pour le face culling puis après détruit par le GC 
         // car il ne servent plus à rien tant que le chunk n'est pas rebuils
+
         FaceData faceData = new FaceData();
+        //FaceData faceData = FACE_DATA_LOCAL.get(); TODO : fait bug le face culling
 
         if (this.quads == null) this.quads = new ArrayList<>(); // réinitialise si null après un précédent mesh
 
@@ -104,7 +111,7 @@ public class SubChunk extends Node3D{
         java.util.Set<Byte> types = new java.util.HashSet<>();
         for(byte b : this.blocks){
             if(b != (byte)BlocksType.AIR.getId()) types.add(b);
-        }
+        }     
 
         // calcule le greedy meshing pour chaque type de block
         for(byte blockType : types){
@@ -165,29 +172,6 @@ public class SubChunk extends Node3D{
         // Libère les buffers GPU
         this.mesh.deleteSubChunkVBOVAO();
         this.cleanup();
-    }
-
-    /**
-     * Ajoute un sol au subChunk
-     * @param Y int, hauteur du sol
-     * @param nbFloor int, épaisseur du sol
-     * @param type BlocksType
-     */
-    @ChunkThread
-    public void addFloorToSubChunk(int Y, int nbFloor, BlocksType type){
-        if (Y < 0 || Y + nbFloor > SubChunk.CHUNKSIZEY
-        ){throw new IncorrectCoordinates("Coordonées dans le subChunk invalide");}
-
-        this.isGenerating = true;
-        for(int y = Y; y < Y + nbFloor; y++){
-            for(int x = 0; x < SubChunk.CHUNKSIZEX; x++){
-                for (int z = 0; z < SubChunk.CHUNKSIZEZ; z++){
-                    this.addBlockToSubChunk(type, x, y, z);          
-                }    
-            }
-        }  
-        this.isGenerating = false;
-        this.rebuildSubChunk();
     }
 
     /**
@@ -272,6 +256,56 @@ public class SubChunk extends Node3D{
     private void uploadSubChunkMesh(byte blockType){
 
         for(Quad quad : this.quads){
+            int x = quad.x;
+            int y = quad.y;
+            int z = quad.z;
+            switch (quad.direction) {
+                case Directions.WEST:
+                    quad.ao0 = computeAO(x-1, y+1, z,   x-1, y, z-1, x-1, y+1, z-1);
+                    quad.ao1 = computeAO(x-1, y+1, z,   x-1, y, z+1, x-1, y+1, z+1);
+                    quad.ao2 = computeAO(x-1, y-1, z,   x-1, y, z-1, x-1, y-1, z-1);
+                    quad.ao3 = computeAO(x-1, y-1, z,   x-1, y, z+1, x-1, y-1, z+1);
+                    break;
+
+                case Directions.EAST:
+                    quad.ao0 = computeAO(x+1, y+1, z,   x+1, y, z-1, x+1, y+1, z-1);
+                    quad.ao1 = computeAO(x+1, y+1, z,   x+1, y, z+1, x+1, y+1, z+1);
+                    quad.ao2 = computeAO(x+1, y-1, z,   x+1, y, z-1, x+1, y-1, z-1);
+                    quad.ao3 = computeAO(x+1, y-1, z,   x+1, y, z+1, x+1, y-1, z+1);
+                    break;
+
+                case Directions.NORTH:
+                    quad.ao0 = computeAO(x-1, y, z+1,   x, y+1, z+1, x-1, y+1, z+1);
+                    quad.ao1 = computeAO(x+1, y, z+1,   x, y+1, z+1, x+1, y+1, z+1);
+                    quad.ao2 = computeAO(x-1, y, z+1,   x, y-1, z+1, x-1, y-1, z+1);
+                    quad.ao3 = computeAO(x+1, y, z+1,   x, y-1, z+1, x+1, y-1, z+1);
+                    break;
+
+                case Directions.SOUTH:
+                    quad.ao0 = computeAO(x-1, y, z-1,   x, y+1, z-1, x-1, y+1, z-1);
+                    quad.ao1 = computeAO(x+1, y, z-1,   x, y+1, z-1, x+1, y+1, z-1);
+                    quad.ao2 = computeAO(x-1, y, z-1,   x, y-1, z-1, x-1, y-1, z-1);
+                    quad.ao3 = computeAO(x+1, y, z-1,   x, y-1, z-1, x+1, y-1, z-1);
+                    break;
+
+                case Directions.UP:
+                    quad.ao0 = computeAO(x-1,y+1,z,  x,y+1,z-1,  x-1,y+1,z-1); // A
+                    quad.ao1 = computeAO(x+1,y+1,z,  x,y+1,z-1,  x+1,y+1,z-1); // B
+                    quad.ao2 = computeAO(x-1,y+1,z,  x,y+1,z+1,  x-1,y+1,z+1); // C
+                    quad.ao3 = computeAO(x+1,y+1,z,  x,y+1,z+1,  x+1,y+1,z+1); // D
+                    break;
+                    
+                case Directions.DOWN:
+                    quad.ao0 = computeAO(x-1,y-1,z,  x,y-1,z-1,  x-1,y-1,z-1); // A
+                    quad.ao1 = computeAO(x+1,y-1,z,  x,y-1,z-1,  x+1,y-1,z-1); // B
+                    quad.ao2 = computeAO(x-1,y-1,z,  x,y-1,z+1,  x-1,y-1,z+1); // C
+                    quad.ao3 = computeAO(x+1,y-1,z,  x,y-1,z+1,  x+1,y-1,z+1); // D
+                    break;
+
+                default:
+                    break;
+            }               
+
             BlocksType type = BlocksType.fromId(blockType);
             if(type == BlocksType.NULL) continue;
             int textureId = TexturesManager.getIndex(type.getTexture(quad.direction));
@@ -504,6 +538,66 @@ public class SubChunk extends Node3D{
         }
     }
 
+    /**
+     * Détermine si un block est solide <br>
+     * Si le block n'est pas dans le chunk (voisin d'un chunk) <br>
+     * On demande au voisin
+     * @param x
+     * @param y
+     * @param z
+     * @return
+     */
+    private boolean isBlockSolid(int x, int y, int z){
+        // dans le subchunk courant
+        if (x >= 0 && x < CHUNKSIZEX && y >= 0 && y < CHUNKSIZEY && z >= 0 && z < CHUNKSIZEZ){
+            int index = x + y * CHUNKSIZEX + z * CHUNKSIZEX * CHUNKSIZEY;
+            return this.blocks[index] != (byte)BlocksType.AIR.getId();
+        }
+        // en dehors délègue aux voisins, blocks en bordure
+        if (y >= CHUNKSIZEY && this.upNeighbor != null){
+            return this.upNeighbor.isBlockSolid(x, y - CHUNKSIZEY, z);
+        }
+        if (y < 0 && this.downNeighbor != null){
+            return this.downNeighbor.isBlockSolid(x, y + CHUNKSIZEY, z);
+        }
+        if (x >= CHUNKSIZEX && this.westNeighbor != null){
+            return this.westNeighbor.isBlockSolid(x - CHUNKSIZEX, y, z);
+        }
+        if (x < 0 && this.eastNeighbor != null){
+            return this.eastNeighbor.isBlockSolid(x + CHUNKSIZEX, y, z);
+        }
+        if (z >= CHUNKSIZEZ && this.northNeighbor != null){
+            return this.northNeighbor.isBlockSolid(x, y, z - CHUNKSIZEZ);
+        }
+        if (z < 0 && this.southNeighbor != null){
+            return this.southNeighbor.isBlockSolid(x, y, z + CHUNKSIZEZ);
+        }
+        return false;
+    }
+
+    /**
+     * Calcule l'ambient occlusion à appliquer sur le block
+     * @param side1X
+     * @param side1Y
+     * @param side1Z
+     * @param side2X
+     * @param side2Y
+     * @param side2Z
+     * @param cornerX
+     * @param cornerY
+     * @param cornerZ
+     * @return
+     */
+    private byte computeAO(int side1X, int side1Y, int side1Z,
+                           int side2X, int side2Y, int side2Z,
+                           int cornerX, int cornerY, int cornerZ){
+        boolean s1 = isBlockSolid(side1X, side1Y, side1Z);
+        boolean s2 = isBlockSolid(side2X, side2Y, side2Z);
+        boolean c  = isBlockSolid(cornerX, cornerY, cornerZ);
+
+        if (s1 && s2) return 3;
+        return (byte)((s1 ? 1 : 0) + (s2 ? 1 : 0) + (c ? 1 : 0));
+    }
 
 
     /**

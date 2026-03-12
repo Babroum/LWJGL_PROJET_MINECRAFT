@@ -119,7 +119,7 @@
           <arguments>
             <argument>-XX:+UseZGC</argument> <!-- active le ZGC, un garbage collector moderne conçu pour avoir des pauses ultra-courtes -->
             <argument>-Xms128m</argument> <!-- la JVM démarre avec 128 Mo de heap réservé -->
-            <argument>-Xmx512m</argument> <!-- la heap ne peut jamais dépasser 512 Mo -->
+            <argument>-Xmx512m</argument><!-- la heap ne peut jamais dépasser 512 Mo -->
             <!-- <argument>-Xlog:gc*:stdout:time,uptime</argument>  a mettre pour afficher les logs mémoires-->
             <argument>-cp</argument>
             <classpath/>

@@ -63,21 +63,6 @@ public class Chunk extends Node3D{
             this.subChunks[i].setSubChunkPosition(this.x, i * SubChunk.CHUNKSIZEY, this.z);
         }
     }
-
-    /**
-     * Ajoute un sol au chunk
-     * @param y int, hauteur du sol
-     * @param nbFloor int, épaisseur du sol
-     * @param type BlocksType
-     */
-    @ChunkThread
-    public void addFloorToChunk(int y, int nbFloor, BlocksType type){
-        int subIndex = y / SubChunk.CHUNKSIZEY;
-        // Bloque les rebuilds pendant qu'on remplit les blocs
-        this.subChunks[subIndex].setGenerating(true);
-        this.subChunks[subIndex].addFloorToSubChunk(y % SubChunk.CHUNKSIZEY, nbFloor % (SubChunk.CHUNKSIZEY + 1), type);
-        this.subChunks[subIndex].setGenerating(false);
-    }
     
     /**
      * Ajoute un block dans le chunk <br> 
@@ -160,6 +145,7 @@ public class Chunk extends Node3D{
         // si le chunk est visible on l'affiche
         if (FrustumCulling.testAABB(this.minX, this.minY, this.minZ, this.maxX, this.maxY, this.maxZ)){
             for (SubChunk sub : subChunks){
+                if (sub.mesh.getVAO() == 0) continue; // subchunk vide, rien à dessiner
                 sub.drawNode(parentModel);
             } 
         }               
