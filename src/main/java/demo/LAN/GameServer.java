@@ -30,7 +30,9 @@ public class GameServer {
                 client.send(connectedClients);
                 clients.add(client);
                 this.broadcast("JOIN:" + client.getId(), client);
-                new Thread(client).start();
+                Thread t = new Thread(client);
+                t.setDaemon(true);
+                t.start();
         }
         }
         catch (IOException e){

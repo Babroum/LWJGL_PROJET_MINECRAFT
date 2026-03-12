@@ -7,23 +7,25 @@ import java.io.PrintWriter;
 import java.net.*;
 
 public class GameClient{
-    private Socket socket;
-    private PrintWriter out;
-    private BufferedReader in;
+    private static Socket socket;
+    private static PrintWriter out;
+    private static BufferedReader in;
     public static int myId;
 
-    public void connect(String ip, int port) throws IOException{
-        this.socket = new Socket(ip, port);
-        this.out = new PrintWriter(this.socket.getOutputStream(), true);
-        this.in = new BufferedReader(new InputStreamReader(this.socket.getInputStream()));
-        new Thread(this::run).start();
+    public static void connect(String ip, int port) throws IOException{
+        GameClient.socket = new Socket(ip, port);
+        GameClient.out = new PrintWriter(GameClient.socket.getOutputStream(), true);
+        GameClient.in = new BufferedReader(new InputStreamReader(GameClient.socket.getInputStream()));
+        Thread t = new Thread(GameClient::run);
+        t.setDaemon(true);
+        t.start();
     }
 
-    public void run(){
+    public static void run(){
         String message;
         try{
             while ((message = in.readLine()) != null){
-                handleMessage(message);
+                GameClient.handleMessage(message);
             }
         }
         catch (IOException e){
@@ -31,14 +33,22 @@ public class GameClient{
         }
     }
 
-    public void handleMessage(String message){
+    private static void handleMessage(String message){
         String[] parts = message.split(":");
         switch (parts[0]) {
             case "MYID":
                 GameClient.myId = Integer.parseInt(parts[1]);
                 break;
+            
+            case "TEST":
+                System.out.println("Message reçu");
+
             default:
                 break;
         }
+    }
+
+    public static void send(String message){
+        GameClient.out.println(message);
     }
 }

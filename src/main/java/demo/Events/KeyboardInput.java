@@ -88,7 +88,11 @@ public class KeyboardInput {
 
                 case GLFW.GLFW_KEY_SPACE:
                     KeyboardInput.isJumping = true;
-
+                
+                case GLFW.GLFW_KEY_C:
+                    GameClient.send("TEST");
+                    break;
+                    
                 default:
                     break;
             }

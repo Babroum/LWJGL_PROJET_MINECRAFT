@@ -1,5 +1,11 @@
 package demo;
 
+import java.io.IOError;
+import java.io.IOException;
+import java.util.Scanner;
+
+import demo.LAN.GameClient;
+import demo.LAN.GameServer;
 import demo.Managers.BenchmarkManager;
 import demo.Managers.ChunksManager;
 import demo.Rendering.SceneGraph;
@@ -9,6 +15,26 @@ public class App
 {   
     public static void main( String[] args ) throws Exception
     {
+        Scanner scanner = new Scanner(System.in);
+        System.out.println("1 : Héberger ou 2 : Rejoindre");
+        int choix = Integer.parseInt(scanner.nextLine());
+        if (choix == 1){
+            GameServer server = new GameServer();
+            Thread serverThread = new Thread(
+                try{
+                    server.start();
+                }
+                catch (IOException e){}
+            );
+            serverThread.setDaemon(true);
+            serverThread.start();
+            GameClient.connect("127.0.0.1", 5555);
+        }
+        else if (choix == 2){
+            System.out.println("IP du server : ");
+            String ip = scanner.nextLine();
+            GameClient.connect(ip, 5555);
+        }
         // création de la fenêtre 
         new Window(1200,800);
         // donne le draw en paramètre
