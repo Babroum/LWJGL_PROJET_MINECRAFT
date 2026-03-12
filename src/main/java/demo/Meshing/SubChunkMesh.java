@@ -55,6 +55,9 @@ public class SubChunkMesh {
     // Tout les sommets de tout les objets avant la transformation en IntBuffer pack
     private int[] vertexArrayPack;
 
+    private final int[][] vertsBuffer = new int[6][7];
+    private final int[] arrayBuffer   = new int[42];
+
     /**
      * Le nombre de sommet dans la maille
      */
@@ -152,7 +155,7 @@ public class SubChunkMesh {
 
         // Les 4 coins : A=origine, B=+width, C=+height, D=+width+height
         // 2 triangles sans EBO : A-B-D, A-D-C
-        int[][] verts = new int[6][7]; // 6 sommets * {x, y, z, u, v, dir, texId}
+        int[][] verts = this.vertsBuffer; // 6 sommets * {x, y, z, u, v, dir, texId}
 
         switch(quad.direction){
             case SOUTH:
@@ -205,7 +208,7 @@ public class SubChunkMesh {
                 break;
         }
 
-        int[] array = new int[42]; // 6 sommets * 7 valeurs
+        int[] array = this.arrayBuffer; // 6 sommets * 7 valeurs
         for(int i = 0; i < 6; i++){
             array[i*7]   = verts[i][0]; // x
             array[i*7+1] = verts[i][1]; // y
@@ -300,6 +303,7 @@ public class SubChunkMesh {
 
     @OpenGLThread
     public void deleteSubChunkVBOVAO(){
+        if (this.ids == null) return;
         // ids[0]=vbo, ids[1]=vao, ids[2]=vbo border, ids[3]=vao border
         BuffersManager.deleteVBOVAO(new int[]{this.ids[0], this.ids[1]});
         this.deleteSubChunkBorderVBOVAO();
@@ -378,7 +382,7 @@ public class SubChunkMesh {
      */
     @OpenGLThread
     public void drawSubChunkMesh() throws Empty{   
-        if (this.ids == null) throw new Empty("les vbo et vao ne sont pas initialisé");
+        if (this.ids == null) return; // un subchunk sans ids est juste vide, pas une erreur
         if (this.ids[1] == 0) return; // sub-chunk vide, rien à dessiner
         TexturesManager.getTextureRender().draw();
 

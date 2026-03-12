@@ -39,8 +39,8 @@ public class Render {
     // nombre de chunk que le ChunkThread peut mettre avant de s'arreter
     // le OpenGLThread va lui afficher ce qu'il y a dans l'array et des qu'il affiche 1 chunk il le retire 
     // du array ce qui permet au ChunkThread de rajouter un nouveau chunk dans l'array
-    public static ArrayBlockingQueue<Chunk> chunkQueue = new ArrayBlockingQueue<>(16); // 16 ajout possibles max
-    public static ArrayBlockingQueue<SubChunk> dirtySubChunks = new ArrayBlockingQueue<>(64); // 64 modif possibles max
+    public static ArrayBlockingQueue<Chunk> chunkQueue = new ArrayBlockingQueue<>(256); // 256 ajout possibles max
+    public static ArrayBlockingQueue<SubChunk> dirtySubChunks = new ArrayBlockingQueue<>(512); // 512 modif possibles max
 
     private static FloatBuffer projBuffer = BufferUtils.createFloatBuffer(16);
     private static final Matrix4f projection = new Matrix4f();
@@ -142,7 +142,10 @@ public class Render {
             Render.getTextRender().drawText("Toggle Teleport to (0,100,0): T", 0, 80, 15, Color4f.YELLOW);      
 
             // Affiche le nombre de nœud à l'écran
-            Render.getTextRender().drawText("Node3D count : " + Render.sceneGraph.getTotalNodeCount(), 0, 100, 15, Color4f.PURPLE);         
+            // s'actualise toute les 60 images
+            if (Render.frameCount % 60 == 0){
+                Render.getTextRender().drawText("Node3D count : " + Render.sceneGraph.getTotalNodeCount(), 0, 100, 15, Color4f.PURPLE);         
+            }
 
             // Affiche les lignes retourner par le PerformanceManager
             String[] lines = monitor.getDisplayLines();

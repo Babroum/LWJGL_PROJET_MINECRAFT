@@ -95,8 +95,6 @@ public class BenchmarkManager {
         collectorThread = new Thread(this::collectorLoop, "BenchmarkCollector");
         collectorThread.setDaemon(true); // le thread ne bloque pas la fermeture de la JVM
         collectorThread.start();
-
-        System.out.println("[BENCH] Démarré — snapshot toutes les secondes.");
     }
 
     /**
@@ -107,7 +105,6 @@ public class BenchmarkManager {
         running = false;
         if (collectorThread != null) collectorThread.interrupt();
         exportHTML("benchmark_report.html");
-        System.out.println("[BENCH] Rapport généré : benchmark_report.html");
     }
 
     /**

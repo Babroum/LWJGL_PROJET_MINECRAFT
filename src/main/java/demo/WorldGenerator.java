@@ -60,7 +60,7 @@ public class WorldGenerator {
     /** Hauteur de référence en blocs autour de laquelle oscille la surface. */
     private static final int BASE_HEIGHT = 68;
 
-    /** Niveau de la mer. En dessous → sable, au dessus → herbe. */
+    /** Niveau de la mer. En dessous -> sable, au dessus -> herbe. */
     private static final int SEA_LEVEL = 64;
 
     /** Taille horizontale d'un chunk en blocs. */
@@ -102,28 +102,28 @@ public class WorldGenerator {
         this.minLimitNoise.SetFractalOctaves(3); // 3 octaves = bon compromis qualité/perf
 
         // maxLimitNoise
-        this.maxLimitNoise = new FastNoiseLite((int)(seed + 1)); // +1 → pattern différent de minLimit
+        this.maxLimitNoise = new FastNoiseLite((int)(seed + 1)); // +1 -> pattern différent de minLimit
         this.maxLimitNoise.SetNoiseType(FastNoiseLite.NoiseType.Perlin);
         this.maxLimitNoise.SetFrequency(0.01f); // même fréquence que minLimit
         this.maxLimitNoise.SetFractalType(FastNoiseLite.FractalType.FBm);
         this.maxLimitNoise.SetFractalOctaves(3);
 
         // selectorNoise
-        this.selectorNoise = new FastNoiseLite((int)(seed + 2)); // +2 → encore différent
+        this.selectorNoise = new FastNoiseLite((int)(seed + 2)); // +2 -> encore différent
         this.selectorNoise.SetNoiseType(FastNoiseLite.NoiseType.Perlin);
-        this.selectorNoise.SetFrequency(0.002f); // très basse fréquence → grandes zones homogènes (~500 blocs)
-        this.selectorNoise.SetFractalOctaves(2); // peu d'octaves → transitions douces entre biomes
+        this.selectorNoise.SetFrequency(0.002f); // très basse fréquence -> grandes zones homogènes (~500 blocs)
+        this.selectorNoise.SetFractalOctaves(2); // peu d'octaves -> transitions douces entre biomes
 
         // depthNoise
-        this.depthNoise = new FastNoiseLite((int)(seed + 3)); // +3 → indépendant des autres
+        this.depthNoise = new FastNoiseLite((int)(seed + 3)); // +3 -> indépendant des autres
         this.depthNoise.SetNoiseType(FastNoiseLite.NoiseType.Perlin);
-        this.depthNoise.SetFrequency(0.028f); // fréquence modérée → rivières ~35 blocs de large
+        this.depthNoise.SetFrequency(0.028f); // fréquence modérée -> rivières ~35 blocs de large
         this.depthNoise.SetFractalOctaves(3); // quelques octaves pour des bords naturels
 
         // caveNoise
         this.caveNoise = new FastNoiseLite((int)(seed + 4));
         this.caveNoise.SetNoiseType(FastNoiseLite.NoiseType.Perlin);
-        this.caveNoise.SetFrequency(0.02f);       // baisser → tunnels plus longs et espacés
+        this.caveNoise.SetFrequency(0.02f);       // baisser -> tunnels plus longs et espacés
         this.caveNoise.SetFractalType(FastNoiseLite.FractalType.FBm);
         this.caveNoise.SetFractalOctaves(3);
 
@@ -146,70 +146,70 @@ public class WorldGenerator {
      * @param worldZ coordonnée Z absolue
      * @return valeur de densité
      */
-    private double computeDensity(int worldX, int worldY, int worldZ) {
+    private float computeDensity(int worldX, int worldY, int worldZ) {
 
         // Densité de base (blend min/max)
 
         // Valeur du bruit plancher, réduite à ±0.4 pour limiter l'impact 3D
-        double minVal = this.minLimitNoise.GetNoise(worldX, worldY, worldZ) * 0.4;
+        float minVal = this.minLimitNoise.GetNoise(worldX, worldY, worldZ) * 0.4f;
 
         // Valeur du bruit plafond, même amplitude
-        double maxVal = this.maxLimitNoise.GetNoise(worldX, worldY, worldZ) * 0.4;
+        float maxVal = this.maxLimitNoise.GetNoise(worldX, worldY, worldZ) * 0.4f;
 
         // Valeur du sélecteur entre -1 et +1
-        double sel = this.selectorNoise.GetNoise(worldX, worldY, worldZ);
+        float sel = this.selectorNoise.GetNoise(worldX, worldY, worldZ);
 
         // Normalise le sélecteur entre 0.0 et 1.0 pour l'utiliser comme facteur de mix
-        double t = (sel + 1.0) / 2.0;
+        float t = (float)(sel + 1.0) / 2.0f;
 
         // Interpolation linéaire entre minVal et maxVal selon t
-        // t=0 → densité = minVal  |  t=1 → densité = maxVal
-        double density = minVal + t * (maxVal - minVal);
+        // t=0 -> densité = minVal  |  t=1 -> densité = maxVal
+        float density = minVal + t * (maxVal - minVal);
 
         // Décalage vertical par depthNoise (surface / creux)
 
-        // Bruit 2D pur (Y ignoré) → seule la position horizontale influence la hauteur
-        double raw = depthNoise.GetNoise(worldX, worldZ); // retourne [-1 ; +1]
+        // Bruit 2D pur (Y ignoré) -> seule la position horizontale influence la hauteur
+        float raw = depthNoise.GetNoise(worldX, worldZ); // retourne [-1 ; +1]
 
         // Conserve le signe mais peut appliquer une courbe (ici exposant = 1 = linéaire)
-        double sign   = raw >= 0 ? 1.0 : -1.0;
-        double curved = sign * Math.pow(Math.abs(raw), 1); // sans effet actuellement (pow 1)
+        float sign   = raw >= 0 ? 1.0f : -1.0f;
+        float curved = sign * (float)Math.pow(Math.abs(raw), 1); // sans effet actuellement (pow 1)
 
-        // Amplitude du décalage : +/-5 blocs → contrôle la variation vallon/creux
-        // Augmenter ce chiffre → collines et creux plus prononcés
-        double depth = curved * 5;
+        // Amplitude du décalage : +/-5 blocs -> contrôle la variation vallon/creux
+        // Augmenter ce chiffre -> collines et creux plus prononcés
+        float depth = curved * 5f;
 
         // Zone montagneuse
 
         // Réutilise le selectorNoise en 2D (sans Y) pour identifier les zones de montagnes
-        // Basse fréquence → les zones montagneuses s'étendent sur ~500 blocs
-        double mountainSel = this.selectorNoise.GetNoise(worldX, worldZ);
+        // Basse fréquence -> les zones montagneuses s'étendent sur ~500 blocs
+        float mountainSel = this.selectorNoise.GetNoise(worldX, worldZ);
 
         if (mountainSel > 0.3) {
             // Seuil : au-delà de 0.55, on entre dans une zone montagneuse (~22% du terrain)
-            // Diminuer le seuil (ex. 0.4) → plus de montagnes
-            // Augmenter le seuil (ex. 0.7) → montagnes très rares
+            // Diminuer le seuil (ex. 0.4) -> plus de montagnes
+            // Augmenter le seuil (ex. 0.7) -> montagnes très rares
 
             // t2 : progression de 0 à 1 dans la zone montagneuse (0 au bord, 1 au centre)
-            double t2 = (mountainSel - 0.3) / 0.45;
+            float t2 = (float)(mountainSel - 0.3) / 0.45f;
 
-            // Courbe en carré → transition douce aux bords de la montagne
-            // Multiplier 22.0 → montagnes plus hautes
+            // Courbe en carré -> transition douce aux bords de la montagne
+            // Multiplier 22.0 -> montagnes plus hautes
             depth += t2 * t2 * 30.0;
         }
 
         // Chute verticale (force la présence d'une surface)
 
         // Décalage par rapport à la hauteur de référence (positif = au-dessus, négatif = dessous)
-        double heightOffset = (worldY - BASE_HEIGHT);
+        float heightOffset = (worldY - BASE_HEIGHT);
 
-        double verticalFalloff;
+        float verticalFalloff;
         if (heightOffset > 0) {
-            // Au-dessus : chute rapide → sommet des collines bien défini
-            verticalFalloff = heightOffset * 0.75;
+            // Au-dessus : chute rapide -> sommet des collines bien défini
+            verticalFalloff = heightOffset * 0.75f;
         } else {
-            // En dessous : chute douce → roche bien remplie en profondeur
-            verticalFalloff = heightOffset * 0.35;
+            // En dessous : chute douce -> roche bien remplie en profondeur
+            verticalFalloff = heightOffset * 0.35f;
         }
 
         density += depth - verticalFalloff;
@@ -226,17 +226,13 @@ public class WorldGenerator {
      * @param chunk  le chunk à remplir (ses sous-chunks sont modifiés en place)
      * @param chunkX index X du chunk en unités de chunk
      * @param chunkZ index Z du chunk en unités de chunk
-     * @return tableau de blocs bruts (les sous-chunks sont déjà mis à jour)
      */
-    public byte[] generateChunk(Chunk chunk, int chunkX, int chunkZ) {
+    public void generateChunk(Chunk chunk, int chunkX, int chunkZ) {
 
-        // Tableau de sortie (non utilisé par les sous-chunks mais retourné par la méthode)
-        byte[] blocks = new byte[WorldGenerator.CHUNK_SIZE * WorldGenerator.CHUNK_HEIGHT * WorldGenerator.CHUNK_SIZE];
-
-        // PASSE 1 : grille basse résolution
+        // PASSE 1 : grille basse résolution       
 
         // Tableau 3D de densités pré-calculées aux nœuds de la grille
-        double[][][] grid = new double[WorldGenerator.GRID_X][WorldGenerator.GRID_Y][WorldGenerator.GRID_Z];
+        float[] grid = new float[WorldGenerator.GRID_X * WorldGenerator.GRID_Y * WorldGenerator.GRID_Z];
 
         for (int ix = 0; ix < WorldGenerator.GRID_X; ix++) {
             for (int iy = 0; iy < WorldGenerator.GRID_Y; iy++) {
@@ -248,7 +244,7 @@ public class WorldGenerator {
                     int worldZ = chunkZ * 16 + iz * WorldGenerator.STEP_XZ;
 
                     // Stocke la densité au nœud courant
-                    grid[ix][iy][iz] = computeDensity(worldX, worldY, worldZ);
+                    grid[ix * WorldGenerator.GRID_Y * WorldGenerator.GRID_Z + iy * WorldGenerator.GRID_Z + iz] = computeDensity(worldX, worldY, worldZ);
                 }
             }
         }
@@ -257,6 +253,9 @@ public class WorldGenerator {
 
         for (int bx = 0; bx < WorldGenerator.CHUNK_SIZE; bx++) {
             for (int bz = 0; bz < WorldGenerator.CHUNK_SIZE; bz++) {
+                SubChunk currentSub = chunk.getSubChunk(0);
+                int currentSubIndex = 0;
+                boolean isCave = false;
                 for (int by = 0; by < WorldGenerator.CHUNK_HEIGHT; by++) {
 
                     // Identifie la cellule de grille contenant ce bloc (coin inférieur-gauche)
@@ -265,61 +264,61 @@ public class WorldGenerator {
                     int cz = bz / WorldGenerator.STEP_XZ; // indice cellule en Z
 
                     // Position normalisée [0.0 ; 1.0[ du bloc à l'intérieur de la cellule
-                    double tx = (double)(bx % WorldGenerator.STEP_XZ) / WorldGenerator.STEP_XZ;
-                    double ty = (double)(by % WorldGenerator.STEP_Y)  / WorldGenerator.STEP_Y;
-                    double tz = (double)(bz % WorldGenerator.STEP_XZ) / WorldGenerator.STEP_XZ;
+                    float tx = (float)(bx % WorldGenerator.STEP_XZ) / WorldGenerator.STEP_XZ;
+                    float ty = (float)(by % WorldGenerator.STEP_Y)  / WorldGenerator.STEP_Y;
+                    float tz = (float)(bz % WorldGenerator.STEP_XZ) / WorldGenerator.STEP_XZ;
 
-                    // Les 8 coins de la cellule (notation : c[x][y][z] avec 0=bas/gauche, 1=haut/droite)
-                    double c000 = grid[cx  ][cy  ][cz  ]; // coin (0,0,0)
-                    double c100 = grid[cx+1][cy  ][cz  ]; // coin (+x,0,0)
-                    double c010 = grid[cx  ][cy  ][cz+1]; // coin (0,0,+z)
-                    double c110 = grid[cx+1][cy  ][cz+1]; // coin (+x,0,+z)
-                    double c001 = grid[cx  ][cy+1][cz  ]; // coin (0,+y,0)
-                    double c101 = grid[cx+1][cy+1][cz  ]; // coin (+x,+y,0)
-                    double c011 = grid[cx  ][cy+1][cz+1]; // coin (0,+y,+z)
-                    double c111 = grid[cx+1][cy+1][cz+1]; // coin (+x,+y,+z)
+                    // Les 8 coins de la cellule 
+                    
+                    float c000 = grid[ cx    * GRID_Y * GRID_Z +  cy    * GRID_Z +  cz   ]; // coin (0,0,0)
+                    float c100 = grid[(cx+1) * GRID_Y * GRID_Z +  cy    * GRID_Z +  cz   ]; // coin (+x,0,0)
+                    float c010 = grid[ cx    * GRID_Y * GRID_Z +  cy    * GRID_Z + (cz+1)]; // coin (0,0,+z)
+                    float c110 = grid[(cx+1) * GRID_Y * GRID_Z +  cy    * GRID_Z + (cz+1)]; // coin (+x,0,+z)
+                    float c001 = grid[ cx    * GRID_Y * GRID_Z + (cy+1) * GRID_Z +  cz   ]; // coin (0,+y,0)
+                    float c101 = grid[(cx+1) * GRID_Y * GRID_Z + (cy+1) * GRID_Z +  cz   ]; // coin (+x,+y,0)
+                    float c011 = grid[ cx    * GRID_Y * GRID_Z + (cy+1) * GRID_Z + (cz+1)]; // coin (0,+y,+z)
+                    float c111 = grid[(cx+1) * GRID_Y * GRID_Z + (cy+1) * GRID_Z + (cz+1)]; // coin (+x,+y,+z)
 
                     // Interpolation sur l'axe X (produit 4 valeurs sur les arêtes de la face basse/haute)
-                    double x00 = c000 + tx * (c100 - c000); // face basse,  z=0
-                    double x10 = c010 + tx * (c110 - c010); // face basse,  z=1
-                    double x01 = c001 + tx * (c101 - c001); // face haute,  z=0
-                    double x11 = c011 + tx * (c111 - c011); // face haute,  z=1
+                    float x00 = c000 + tx * (c100 - c000); // face basse,  z=0
+                    float x10 = c010 + tx * (c110 - c010); // face basse,  z=1
+                    float x01 = c001 + tx * (c101 - c001); // face haute,  z=0
+                    float x11 = c011 + tx * (c111 - c011); // face haute,  z=1
 
                     // Interpolation sur l'axe Z (produit 2 valeurs sur les arêtes basse/haute)
-                    double z0  = x00  + tz * (x10  - x00);  // face basse,  après interp Z
-                    double z1  = x01  + tz * (x11  - x01);  // face haute,  après interp Z
+                    float z0  = x00  + tz * (x10  - x00);  // face basse,  après interp Z
+                    float z1  = x01  + tz * (x11  - x01);  // face haute,  après interp Z
 
-                    // Interpolation finale sur Y → valeur de densité du bloc
-                    double density = z0 + ty * (z1 - z0);
+                    // Interpolation finale sur Y -> valeur de densité du bloc
+                    float density = z0 + ty * (z1 - z0);
 
                     // Grottes 
                     // Calculé directement par bloc (pas interpolé) pour éviter le lissage
                     // L'intersection des deux bruits proches de 0 forme des tunnels horizontaux
-                    // Augmenter le seuil (0.08) → tunnels plus larges
                     int worldX = chunkX * WorldGenerator.CHUNK_SIZE + bx;
                     int worldZ = chunkZ * WorldGenerator.CHUNK_SIZE + bz;
-                    if (by < SEA_LEVEL - 5) {
-                        double cave1 = this.caveNoise.GetNoise(worldX, by, worldZ);
-                        double cave2 = this.caveNoise2.GetNoise(worldX, by, worldZ);
-                        if (Math.abs(cave1) < 0.06 && Math.abs(cave2) < 0.06) {
-                            density = -1.0; // force l'air directement
-                        }
+                    // skip les blocs pairs sur Y, copie le résultat du bloc précédent
+                    // divise les appels noise par 2, variation visuelle négligeable sur des tunnels
+                    if (by < SEA_LEVEL - 5 && by % 2 == 0) { // évalue seulement 1 bloc sur 2
+                        float cave1 = caveNoise.GetNoise(worldX, by, worldZ);
+                        float cave2 = caveNoise2.GetNoise(worldX, by, worldZ);
+                        isCave = Math.abs(cave1) < 0.06 && Math.abs(cave2) < 0.06;
                     }
 
-                    // Écriture dans le sous-chunk
-
-                    // Détermine dans quel sous-chunk se trouve ce bloc
-                    int subChunkIndex = by / WorldGenerator.CHUNK_SIZE;  // ex. by=20 → subChunk 1
-                    int localY        = by % WorldGenerator.CHUNK_SIZE;  // coordonnée Y locale dans le sous-chunk
-
-                    SubChunk subChunk = chunk.getSubChunk(subChunkIndex);
-
+                    // by impair réutilise le résultat du by-1 précédent
+                    if (isCave) density = -1.0f;
+                    // Écriture dans le sous-chunk   
+                    int subChunkIndex = by / WorldGenerator.CHUNK_SIZE;
+                    if (subChunkIndex != currentSubIndex) {
+                        currentSubIndex = subChunkIndex;
+                        currentSub = chunk.getSubChunk(subChunkIndex);
+                    }
+                    int localY = by % WorldGenerator.CHUNK_SIZE;
                     // Calcul de l'index linéaire dans le tableau du sous-chunk
                     // Layout : X + localY * SIZE + Z * CHUNK_HEIGHT
                     int idx = bx + localY * WorldGenerator.CHUNK_SIZE + bz * WorldGenerator.CHUNK_HEIGHT;
-
-                    // Affectation : positif → pierre, négatif/nul → air
-                    subChunk.blocks[idx] = (density > 0)
+                    // Affectation : positif -> pierre, négatif/nul -> air
+                    currentSub.blocks[idx] = (density > 0)
                         ? (byte) BlocksType.STONE.getId()
                         : (byte) BlocksType.AIR.getId();
                 }
@@ -328,8 +327,6 @@ public class WorldGenerator {
 
         // PASSE 3 : couches de surface
         applySurfaceLayers(chunk);
-
-        return blocks;
     }
 
     // Couches de surface
@@ -337,8 +334,8 @@ public class WorldGenerator {
     /**
      * Applique les couches de surface sur un chunk déjà rempli.
      * Descend colonne par colonne depuis Y=255 :
-     * premier bloc solide → herbe ou sable selon SEA_LEVEL,
-     * 3 blocs suivants → terre, Y=0 → bedrock.
+     * premier bloc solide -> herbe ou sable selon SEA_LEVEL,
+     * 3 blocs suivants -> terre, Y=0 -> bedrock.
      * Les grottes ne sont pas affectées (surfacePlaced bloque le reset).
      *
      * @param chunk le chunk à modifier
@@ -352,43 +349,49 @@ public class WorldGenerator {
                 // -1 = on n'a pas encore trouvé la surface de cette colonne
                 // >0 = nombre de blocs de terre restant à placer en dessous
                 int dirtDepth = -1;
+
+                SubChunk currentSub = chunk.getSubChunk(Chunk.SUBCHUNKCOUNT - 1);
+                int currentSubIndex = Chunk.SUBCHUNKCOUNT - 1;
                 
                 // Parcours de haut en bas pour trouver la surface
                 for (int by = 255; by >= 0; by--) {
 
                     // Calcul du sous-chunk et de la position locale
                     int subChunkIndex = by / WorldGenerator.CHUNK_SIZE;
+                    if (subChunkIndex != currentSubIndex) {
+                        currentSubIndex = subChunkIndex;
+                        currentSub = chunk.getSubChunk(subChunkIndex);
+                    }
                     int localY        = by % WorldGenerator.CHUNK_SIZE;
-                    SubChunk subChunk = chunk.getSubChunk(subChunkIndex);
                     int idx = bx + localY * WorldGenerator.CHUNK_SIZE + bz * WorldGenerator.CHUNK_HEIGHT;
 
-                    // Y=0 → bedrock : toujours présent, fin de colonne
+                    // Y=0 -> bedrock : toujours présent, fin de colonne
                     if (by == 0) {
-                        subChunk.blocks[idx] = (byte) BlocksType.BEDROCK.getId();
+                        currentSub.blocks[idx] = (byte) BlocksType.BEDROCK.getId();
                         continue;
                     }
 
-                    // Bloc air avant la surface → on continue vers le bas
-                    if (subChunk.blocks[idx] == (byte) BlocksType.AIR.getId() && !surfacePlaced) {
+                    // Bloc air avant la surface -> on continue vers le bas
+                    if (currentSub.blocks[idx] == (byte) BlocksType.AIR.getId() && !surfacePlaced) {
                         dirtDepth = -1;
                         continue;
                     }
 
-                    // Premier bloc solide rencontré → c'est la surface
+                    // Premier bloc solide rencontré -> c'est la surface
                     if (dirtDepth == -1 && !surfacePlaced) {
                         surfacePlaced = true;
                         dirtDepth = 3; // 3 blocs de dirt sous la surface
 
                         if (by >= WorldGenerator.SEA_LEVEL)
-                            subChunk.blocks[idx] = (byte) BlocksType.GRASS.getId();
+                            currentSub.blocks[idx] = (byte) BlocksType.GRASS.getId();
                         else
-                            subChunk.blocks[idx] = (byte) BlocksType.SAND.getId();
+                            currentSub.blocks[idx] = (byte) BlocksType.SAND.getId();
 
                     } else if (dirtDepth > 0) {
-                        subChunk.blocks[idx] = (byte) BlocksType.DIRT.getId();
+                        currentSub.blocks[idx] = (byte) BlocksType.DIRT.getId();
                         dirtDepth--;
                     }
-                    // dirtDepth == 0 → le reste reste en pierre
+                    // dirtDepth == 0 -> le reste reste en pierre
                 }
             }
         }

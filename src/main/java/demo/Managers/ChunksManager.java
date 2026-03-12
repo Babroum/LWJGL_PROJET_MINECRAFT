@@ -1,7 +1,10 @@
 package demo.Managers;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.concurrent.*;
 
 import org.joml.Math;
 
@@ -18,7 +21,24 @@ public class ChunksManager {
 
     // HashMap fait pareil mais linked permet de garder l'ordre dans lequel c'est insérer
     // C'est comme un dictionnaire, clé valeur
-    private static LinkedHashMap<String, Chunk> chunks = new LinkedHashMap<>();
+    // String remplacé par Long, optimisation
+    private static LinkedHashMap<Long, Chunk> chunks = new LinkedHashMap<>();
+
+    // -2 pour laisser les threads OpenGL et game logic respirer
+    // Un ExecutorService c'est un pool de N threads qui restent en vie et se partagent le travail.
+    private static final ExecutorService pool = Executors.newFixedThreadPool(
+        Math.max(1, Runtime.getRuntime().availableProcessors() - 2),
+        r -> { // explique au pool ce qu'il doit faire quand il créer un thread (ThreadFactory)
+            Thread t = new Thread(r);
+            t.setDaemon(true);
+            return t;
+        }
+    );
+
+    // construit la clé pour le HashMap
+    private static long chunkKey(int x, int z) {
+        return ((long) x << 32) | (z & 0xFFFFFFFFL);
+    }
 
     /**
      * Créer les chunks entre les coordonées
@@ -39,31 +59,59 @@ public class ChunksManager {
      * Génère les chunks (maillages)
      * @param generator un seed
      */
-    public static void generateChunks(WorldGenerator generator) {
+    public static void generateChunks(ThreadLocal<WorldGenerator> generator) {
+        // les threads travaille chacun de leur côté mais pour chaque chunk on attend avant de passer à l'étape suivante
+
+        // chaque chunk est généré indépendamment, aucune dépendance inter-chunks
+        // Future — c'est un ticket de résultat en attente.
+        // le ? permet de dire que la tache ne retourne rien (void), on attend pas un résultat mais on s'en sert juste pour attendre la fin
+        
+        List<Future<?>> futures = new ArrayList<>();
         for (Chunk chunk : chunks.values()) {
-            int chunkX = chunk.x / SubChunk.CHUNKSIZEX;
-            int chunkZ = chunk.z / SubChunk.CHUNKSIZEZ;
-            generator.generateChunk(chunk, chunkX, chunkZ);
-            BenchmarkManager.getInstance().recordChunkGenerated();
+            // submit permet au pool de mettre en file d'attente la tâche puis thread worker la prend dès qu'il est libre
+            // passe la commande au resto d'un plat
+            futures.add(pool.submit(() -> { // pool.submit() retourne un Future
+                int cx = chunk.x / SubChunk.CHUNKSIZEX;
+                int cz = chunk.z / SubChunk.CHUNKSIZEZ;
+                generator.get().generateChunk(chunk, cx, cz); // ThreadLocal → thread-safe
+                BenchmarkManager.getInstance().recordChunkGenerated();
+            }));
+        }
+        // Attend que TOUS les chunks soient générés avant de passer à finalizeChunks
+        for (Future<?> f : futures) {
+            // get() présente le ticket de la commande au comptoire du resto
+            // Le plat est prêt -> on le récupères immédiatement
+            // Le plat cuit encore -> on attends qu'il soit prêt, bloqué là
+            try { f.get(); } catch (Exception e) { Thread.currentThread().interrupt(); }
+
+            // après le get on est sur que c'est finit
         }
     }
 
     /**
      * Finis la génération en connectant les voisins et calculant les faces à caché entre voisins
      */
-    public static void finalizeChunks() {
+    public static void finalizeChunks() {        
+        // les 3 passes restent séquentielles entre elles,
+        // mais les chunks sont traités en parallèle à l'intérieur de chaque passe
+        List<Future<?>> futures = new ArrayList<>();
+
+        // Passe 1 : linkNeighbors — lit/écrit uniquement les refs du chunk courant → parallel safe
         for (Chunk chunk : chunks.values()){
-            for (SubChunk sub : chunk.subChunks){
-                sub.linkNeighbors();
-            }
+            futures.add(pool.submit(() -> { for (SubChunk sub : chunk.subChunks) sub.linkNeighbors(); }));
         }
+            
+        for (Future<?> f : futures) try { f.get(); } catch (Exception e) {
+            futures.clear();
+        } 
+
+        // Passe 3 : meshing — indépendant entre chunks une fois les BitSets calculés
         for (Chunk chunk : chunks.values()){
-            for (SubChunk sub : chunk.subChunks){
-                sub.fillSubChunkBitSet();
-            }
+            futures.add(pool.submit(() -> finalizeChunk(chunk)));
         }
-        for (Chunk chunk : chunks.values()){
-            finalizeChunk(chunk);
+            
+        for (Future<?> f : futures) {
+            try { f.get(); } catch (Exception e) {}
         }
     }
     
@@ -76,7 +124,7 @@ public class ChunksManager {
      */
     @ChunkThread
     public static Chunk createChunk(int x, int z) throws IncorrectCoordinates{
-        String coord = String.valueOf(x)+","+String.valueOf(z);
+        long coord = chunkKey(x, z);
         if (ChunksManager.chunks.containsKey(coord)) 
             {throw new IncorrectCoordinates("Le chunk x: " + x + " z: "+ z + " existe déjà");}
         Chunk chunk = new Chunk(x, z);
@@ -90,8 +138,7 @@ public class ChunksManager {
      */
     @ChunkThread
     public static void finalizeChunk(Chunk chunk){
-        // remplir le BitSet
-        for (SubChunk sub : chunk.subChunks) {
+        for (SubChunk sub : chunk.subChunks){
             sub.fillSubChunkBitSet();
         }
         // générer le mesh avec un BitSet correct
@@ -99,7 +146,9 @@ public class ChunksManager {
             sub.mesh.setupSubChunkBuffers(sub.bitSet.cardinality()); // recrée vertexArrayPack avant de générer
             sub.generateSubChunkMesh();
             // met le thread en pause si l'array est plein, le thread se relance automatiquement au moment ou OpenGLThread poll un chunk
-            try { Render.dirtySubChunks.put(sub); } catch(InterruptedException e) { Thread.currentThread().interrupt(); }
+            if (sub.mesh.getVertexCount() > 0) {   // n'envoie pas les subchunks vides au GPU
+                try { Render.dirtySubChunks.put(sub); } catch(InterruptedException e) { Thread.currentThread().interrupt(); }
+            }
         }
         try { Render.chunkQueue.put(chunk); } catch(InterruptedException e) { Thread.currentThread().interrupt(); }
     }
@@ -113,7 +162,7 @@ public class ChunksManager {
      */
     @ChunkThread
     public static Chunk getChunk(int x, int z) throws IncorrectCoordinates{
-        String coord = String.valueOf(x)+","+String.valueOf(z);
+        long coord = chunkKey(x, z);
         if (!ChunksManager.chunks.containsKey(coord)){
             throw new IncorrectCoordinates("Le chunk x: " + x + " z: "+ z + " n'existe pas");
         }
@@ -136,7 +185,7 @@ public class ChunksManager {
      */
     @OpenGLThread
     public static void removeChunk(int x, int z) throws IncorrectCoordinates{
-        String coord = String.valueOf(x)+","+String.valueOf(z);
+        long coord = chunkKey(x, z);
         if (!ChunksManager.chunks.containsKey(coord)){
             throw new IncorrectCoordinates("Le chunk x: " + x + " z: "+ z + " n'existe pas");
         }    

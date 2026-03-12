@@ -94,6 +94,8 @@ public class SubChunk extends Node3D{
         // car il ne servent plus à rien tant que le chunk n'est pas rebuils
         FaceData faceData = new FaceData();
 
+        if (this.quads == null) this.quads = new ArrayList<>(); // réinitialise si null après un précédent mesh
+
         // calcule le face culling
         this.calculateSubChunkFaceCulling(faceData);
 
@@ -111,6 +113,8 @@ public class SubChunk extends Node3D{
         }
         // rempli le buffer de la maille avec les données pack (vertex packing)
         this.mesh.fillSubChunkVertexBufferWithArray();
+
+        this.quads = null;
     }
 
     /**
@@ -143,6 +147,7 @@ public class SubChunk extends Node3D{
      */
     @OpenGLThread
     public void setupSubChunkVBOVAO(){
+        if (this.mesh.getVertexCount() == 0) return;  // subchunk vide, rien à uploader
         // créer les vbo vao avec le buffer rempli
         this.mesh.createSubChunkVBOVAO();
         if (KeyboardInput.isChunkBorderShow && this.mesh.getBorderVAO() == 0 && this.mesh.getVertexCount() > 0){

@@ -45,25 +45,25 @@ public class Node3D {
      * Tableau de nœud enfant.
      */
     private Node3D[] children = null; // alloué seulement si addChild() est appelé
+    private final Matrix4f model = new Matrix4f(); // réutilisé à chaque frame, zéro allocation
     public FloatBuffer buffer = MemoryUtil.memAllocFloat(16);
     private int nbChildren;
 
     /**
      * Ajoute un nœud au tableau de nœud.
-     * @param node Node3D
+     * @param node nœud à ajouté au nœud actuel
      * @throws ArrayFull
      */
     public void addChild(Node3D node) throws ArrayFull{
         // Alloue le tableau seulement au premier addChild()
         if (this.children == null){
-        this.children = new Node3D[SubChunk.MAXBLOCK];
+        this.children = new Node3D[50_000];
         }
         if (this.nbChildren == this.children.length){
             throw new ArrayFull();
         }
-        synchronized (this.children){
-            this.children[this.nbChildren] = node;
-        }       
+
+        this.children[this.nbChildren] = node;     
         this.nbChildren++;
     }
 
@@ -75,27 +75,22 @@ public class Node3D {
     public void drawNode(Matrix4f parentModel){
         // Crée la model matrix   
         // Placement des nœuds enfants relativement à la position de ce nœud
-        Matrix4f model = new Matrix4f(parentModel)
+        this.model.set(parentModel)
             .translate(this.x, this.y, this.z); // Position aux coordonnées X, Y, Z
             //.rotateX((float) Math.toRadians(this.angleX)) // Rotation autour de l'axe X
             //.rotateY((float) Math.toRadians(this.angleY)) // Rotation autour de l'axe Y
             //.rotateZ((float) Math.toRadians(this.angleZ)) // Rotation autour de l'axe Z
             //.scale(this.scaleX, this.scaleY, this.scaleZ); // Application des facteurs d'échelle
-        model.get(this.buffer);
+        this.model.get(this.buffer);
         ShadersManager.runModel(this.buffer);
 
         // Dessin spécifique
         this.drawSpecific();
 
         if (this.children != null){
-            synchronized (this.children)
-            {
-                for (int i = 0; i < this.nbChildren; i++){
-                    //if(!(this.children[i] instanceof Object3D)){
-                        this.children[i].drawNode(model);
-                    //}
-                }
-            } 
+            for (int i = 0; i < this.nbChildren; i++) {
+                this.children[i].drawNode(this.model);
+            }
         }   
     }
 

@@ -50,27 +50,12 @@ public class SceneGraph {
         return this.getNumberOfNode(root) - 1;
     }
 
-    // calcule récursivement le nombre de sommet
+    // calcule le nombre de sommet
     private int getNumberOfVertex(Node3D node){
         int count = 0;
-        // si le nœud est un object3D/Clone et qu'il a un mesh alors on récupère le nombre de sommet du mesh
-        if (node instanceof Chunk){
-            for (Chunk chunk : ChunksManager.getAllChunks()){
-                for (SubChunk sub : chunk.getAllSubChunks()){
-                    if (sub.mesh != null){
-                        count += sub.mesh.getVertexCount();
-                    }
-                }
-            }       
-        }
-
-        // pour chaque enfant du nœud on calcule le nombre de sommet récursivement
-        Node3D[] children = node.getChildren();
-        if (children != null){
-            for (Node3D child : children){
-                if (child != null){
-                    count += this.getNumberOfVertex(child);
-                }
+        for (Chunk chunk : ChunksManager.getAllChunks()) {
+            for (SubChunk sub : chunk.getAllSubChunks()) {
+                if (sub.mesh != null) count += sub.mesh.getVertexCount();
             }
         }
         return count;
