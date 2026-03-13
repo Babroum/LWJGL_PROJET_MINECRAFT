@@ -11,7 +11,7 @@ public class NetworkEvent{
         GameClient.send("BREAK:" + x + ":" + y + ":" + z);
     }
 
-    public static void sendPlace(BlocksType blockType, int x, int y, int z){
+    public static void sendPlace(int blockType, int x, int y, int z){
         GameClient.send("PLACE:" + blockType + ":" + x + ":" + y + ":" + z);
     }
 }

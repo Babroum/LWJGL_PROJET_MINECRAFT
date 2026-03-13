@@ -33,6 +33,8 @@ public class Window {
      */
     public static int height;
 
+    public static String name;
+
     // Référence de la fenêtre
     public static long window;
     private static WindowCloseEventManager windowCloseEventManager = new WindowCloseEventManager();
@@ -42,16 +44,17 @@ public class Window {
      * Créer une fenêtre de taille 300 x 300
      */
     public Window(){
-        this(300, 300);
+        this(300, 300, "");
     }    
     /**
      * Créer une fenêtre de taille données
      * @param width int
      * @param height int
      */
-    public Window(int width, int height){
+    public Window(int width, int height, String name){
         Window.width = Math.max(150, width);
         Window.height = Math.max(150, height); 
+        Window.name = name;
         new InputManager();  
     }
 
@@ -80,7 +83,7 @@ public class Window {
         GLFW.glfwWindowHint(GLFW.GLFW_MAXIMIZED, GLFW.GLFW_FALSE); // La fenêtre essayera d'atteindre la taille demandée
         GLFW.glfwWindowHint(GLFW.GLFW_DOUBLEBUFFER, GLFW.GLFW_TRUE);
 
-        Window.window = GLFW.glfwCreateWindow(Window.width, Window.height, "Wankraft", NULL, NULL); // Créer la fenêtre
+        Window.window = GLFW.glfwCreateWindow(Window.width, Window.height, "Wankraft " + Window.name, NULL, NULL); // Créer la fenêtre
         if (Window.window == MemoryUtil.NULL) {
             Window.closeGLFW();
             throw new RuntimeException("Impossible de créer la fenêtre");

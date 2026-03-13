@@ -8,7 +8,9 @@ import java.net.*;
 
 import org.joml.Vector3f;
 
+import demo.Player;
 import demo.Managers.PlayersManager;
+import demo.Enum.BlocksType;
 
 public class GameClient{
     private static Socket socket;
@@ -50,12 +52,28 @@ public class GameClient{
 
             case "POS":
                 int id = Integer.parseInt(parts[1]);
-                float x = Float.parseFloat(parts[2]);
-                float y = Float.parseFloat(parts[3]);
-                float z = Float.parseFloat(parts[4]);
+                float x = (float)Math.floor(Float.parseFloat(parts[2]));
+                float y = (float)Math.floor(Float.parseFloat(parts[3]));
+                float z = (float)Math.floor(Float.parseFloat(parts[4]));
                 PlayersManager.otherPlayers.put(id, new Vector3f(x, y, z));
                 break;
 
+            case "PLACE":                
+                System.out.println(message);
+                int type = Integer.parseInt(parts[1]);
+                int px = Integer.parseInt(parts[2]);
+                int py = Integer.parseInt(parts[3]);
+                int pz = Integer.parseInt(parts[4]);
+                PlayersManager.player.placeBlock(BlocksType.fromId(type),px, py, pz);
+
+            case "BREAK":                
+                System.out.println(message);
+                int bx = Integer.parseInt(parts[1]);
+                int by = Integer.parseInt(parts[2]);
+                int bz = Integer.parseInt(parts[3]);
+                PlayersManager.player.breakBlock(bx, by, bz);
+                break;
+            
             default:
                 break;
         }

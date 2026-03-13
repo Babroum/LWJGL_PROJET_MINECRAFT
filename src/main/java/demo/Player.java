@@ -217,29 +217,18 @@ public class Player {
                 int bx = (int) Math.floor(hit.x);
                 int by = (int) Math.floor(hit.y);
                 int bz = (int) Math.floor(hit.z);
- 
-                // récupère le block à tel position
+
                 block = ChunksManager.getBlock(bx, by, bz);
-                // pareil pour le chunk
                 sub = ChunksManager.getSubChunk(bx, by, bz);
 
                 // si on clique gauche et que la souris n'est pas débloqué, on casse le block si il existe
                 if (MouseInput.isLeftButtonPressed() && KeyboardInput.isMouseLock) {
                     // Si on a un bloc et que le cooldown est prêt et que ce n'est pas de la bedrock
                     if (block != BlocksType.AIR && this.breakCooldown <= 0f && block != BlocksType.BEDROCK) {
-                        // le thread ne prend que des constantes, donc on copie 
-                        final SubChunk subToModify = sub;
-                        final int fbx = bx, fby = by, fbz = bz;
-                        chunkModifyThread.submit(() -> {
-                            int localX = ChunksManager.floorMod(fbx, SubChunk.CHUNKSIZEX);
-                            int localY = ChunksManager.floorMod(fby, SubChunk.CHUNKSIZEY);
-                            int localZ = ChunksManager.floorMod(fbz, SubChunk.CHUNKSIZEZ);
-                            subToModify.removeBlockFromSubChunk(localX, localY, localZ);
-                        });
-                        this.breakCooldown = this.breakPlaceDelay;
-                        block = BlocksType.AIR;
+                        this.breakBlock(bx, by, bz);
                         NetworkEvent.sendBreak(bx, by, bz);
                     }
+                    this.breakCooldown = this.breakPlaceDelay;
                 } else {
                     this.breakCooldown = 0;
                 }  
@@ -251,25 +240,14 @@ public class Player {
                     int pz = (int) Math.floor(place.z);
                     // on vérifie pour etre sur qu'il n'y ait pas de bloc
                     if (ChunksManager.getBlock(px, py, pz) == BlocksType.AIR && this.placeCooldown <= 0f && !this.isInsidePlayer(px, py, pz)){
-                        try {
-                            final SubChunk sub2 = ChunksManager.getSubChunk(px, py, pz);
-                            // convertir en coordonnées locales du subchunk
-                            int localX = ChunksManager.floorMod(px, SubChunk.CHUNKSIZEX);
-                            int localY = ChunksManager.floorMod(py, SubChunk.CHUNKSIZEY);
-                            int localZ = ChunksManager.floorMod(pz, SubChunk.CHUNKSIZEZ);
-                            chunkModifyThread.submit(() -> {
-                                sub2.addBlockToSubChunk(BlocksType.COBBLESTONE, localX, localY, localZ);
-                            });
-                            this.placeCooldown = this.breakPlaceDelay;
-                        } catch (Exception e) {
-                            // hors du monde
-                        }
-                        NetworkEvent.sendPlace(BlocksType.COBBLESTONE, px, py, pz);
-                    } 
+                        this.placeBlock(BlocksType.COBBLESTONE, px, py, pz);
+                        NetworkEvent.sendPlace(BlocksType.COBBLESTONE.getId(), px, py, pz);
+                    }
+                    this.placeCooldown = this.breakPlaceDelay; 
                 } else {
                     this.placeCooldown = 0;
                 }     
-
+                
                 // si le block regarder n'est pas le même que le précédent on créer les buffers
                 if (block != BlocksType.AIR){
                     this.hasBlockBorder = true;
@@ -307,6 +285,39 @@ public class Player {
         t.setDaemon(true);
         return t;
     });
+
+    public void breakBlock(int bx, int by, int bz){
+        try{        
+            SubChunk sub = ChunksManager.getSubChunk(bx, by, bz);
+            // le thread ne prend que des constantes, donc on copie 
+            final SubChunk subToModify = sub;
+            final int fbx = bx, fby = by, fbz = bz;
+            chunkModifyThread.submit(() -> {
+                int localX = ChunksManager.floorMod(fbx, SubChunk.CHUNKSIZEX);
+                int localY = ChunksManager.floorMod(fby, SubChunk.CHUNKSIZEY);
+                int localZ = ChunksManager.floorMod(fbz, SubChunk.CHUNKSIZEZ);
+                subToModify.removeBlockFromSubChunk(localX, localY, localZ);
+            });
+        }catch(Exception e){
+            // jsp comment atterir ici !
+        }        
+    }
+    
+    public void placeBlock(BlocksType type, int px, int py, int pz){
+        try {
+            final SubChunk sub2 = ChunksManager.getSubChunk(px, py, pz);
+            // convertir en coordonnées locales du subchunk
+            int localX = ChunksManager.floorMod(px, SubChunk.CHUNKSIZEX);
+            int localY = ChunksManager.floorMod(py, SubChunk.CHUNKSIZEY);
+            int localZ = ChunksManager.floorMod(pz, SubChunk.CHUNKSIZEZ);
+            chunkModifyThread.submit(() -> {
+                sub2.addBlockToSubChunk(type, localX, localY, localZ);
+            });
+            
+        } catch (Exception e) {
+            // hors du monde
+        }        
+    }
 
     /**
      * Retourne la camera de la scène

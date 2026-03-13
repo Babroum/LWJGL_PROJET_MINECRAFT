@@ -28,25 +28,27 @@ public class App
             System.out.println("IP du server : ");
             String ip = scanner.nextLine();
             GameClient.connect(ip, 5555);
+        }else{
+            
         }
         scanner.close();
         // création de la fenêtre 
-        new Window(1200,800);
+        new Window(1200,800, choix == 1 ? "Server" : "Client");
         // donne le draw en paramètre
         // l'exécutera après l'initialisation d'opengl
         Window.startWindow(() -> draw(Window.getSceneGraph()));        
     }
 
     public static void draw(SceneGraph scene){
-        BenchmarkManager.getInstance().start(); // ← démarre ici
+        BenchmarkManager.getInstance().start(); // <- démarre ici
 
         WorldGenerator generator = new WorldGenerator(4949849L); // seed
         // thread de génération
         Thread generationThread = new Thread(() -> {
-            ChunksManager.createChunks(-24, 24, -24, 24);  // 2304 chunks 
+            //ChunksManager.createChunks(-24, 24, -24, 24);  // 2304 chunks 
             //ChunksManager.createChunks(-16, 16, -16, 16); // 1024 chunks
             //ChunksManager.createChunks(-10, 10, -10, 10); // 400 chunks
-            //ChunksManager.createChunks(-2, 2, -2, 2); // 16 chunks
+            ChunksManager.createChunks(-2, 2, -2, 2); // 16 chunks
             ChunksManager.generateChunks(generator);
             ChunksManager.finalizeChunks();
         }); 
@@ -55,11 +57,4 @@ public class App
         generationThread.setDaemon(true);
         generationThread.start();
     }  
-
-    /*
-    export JAVA_HOME=/home/linuxbrew/.linuxbrew/opt/openjdk@21
-    mvn clean                                                                                   
-    mvn package
-    mvn exec:java
-    */
 }
