@@ -299,7 +299,7 @@ public class WorldGenerator {
                     int worldZ = chunkZ * WorldGenerator.CHUNK_SIZE + bz;
                     // skip les blocs pairs sur Y, copie le résultat du bloc précédent
                     // divise les appels noise par 2, variation visuelle négligeable sur des tunnels
-                    if (by < SEA_LEVEL - 5 && by % 2 == 0) { // évalue seulement 1 bloc sur 2
+                    if (by < SEA_LEVEL - 5) {
                         float cave1 = caveNoise.GetNoise(worldX, by, worldZ);
                         float cave2 = caveNoise2.GetNoise(worldX, by, worldZ);
                         isCave = Math.abs(cave1) < 0.06 && Math.abs(cave2) < 0.06;

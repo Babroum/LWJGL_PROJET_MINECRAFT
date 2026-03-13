@@ -8,6 +8,7 @@ flat in int dir; // direction de la face
 flat in int isBorder; // détermine si c'est les bordures de subchunk à afficher ou non
 in vec2 uv; // coordonnées uv 
 in float AO;
+in float lightValue;
 
 out vec4 FragColor;
 
@@ -22,15 +23,17 @@ void main()
     
     // lumière simple de base
     
-    float light;
-         if (dir == 0) light = 0.8; // NORTH
-    else if (dir == 1) light = 0.8; // SOUTH
-    else if (dir == 2) light = 0.8; // WEST 
-    else if (dir == 3) light = 0.8; // EAST
-    else if (dir == 4) light = 1.0; // UP, pleine lumière
-    else               light = 0.5; // DOWN, sombre
+    float dirFactor;
+         if (dir == 0) dirFactor = 0.8;
+    else if (dir == 1) dirFactor = 0.8;
+    else if (dir == 2) dirFactor = 0.8;
+    else if (dir == 3) dirFactor = 0.8;
+    else if (dir == 4) dirFactor = 1.0;
+    else               dirFactor = 0.5;
 
-    float aoFactor = 1.0 - AO  * 0.2;
+    float light = lightValue * dirFactor;
+
+    float aoFactor = 1.0 - AO  * 0.15 * light;
     // ao=0 -> 1.0 - 0*0.2 = 1.0 -> pleine lumière
     // ao=1 -> 1.0 - 1*0.2 = 0.8 -> légèrement sombre
     // ao=2 -> 1.0 - 2*0.2 = 0.6 -> plus sombre

@@ -1,6 +1,7 @@
 package demo.Geometry;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
 
@@ -38,6 +39,7 @@ public class SubChunk extends Node3D{
     // donne au mesh le subChunk au quel il appartient
     public SubChunkMesh mesh = new SubChunkMesh();
     public byte[] blocks;
+    public byte[] lightMap;
 
     private List<Quad> quads;
 
@@ -60,6 +62,13 @@ public class SubChunk extends Node3D{
         int[] eastMask  = new int[SubChunk.CHUNKSIZEY * SubChunk.CHUNKSIZEX];
         int[] upMask    = new int[SubChunk.CHUNKSIZEZ * SubChunk.CHUNKSIZEX];
         int[] downMask  = new int[SubChunk.CHUNKSIZEZ * SubChunk.CHUNKSIZEX];
+
+        int[] northAoMask = new int[SubChunk.CHUNKSIZEY * SubChunk.CHUNKSIZEZ * SubChunk.CHUNKSIZEX];
+        int[] southAoMask = new int[SubChunk.CHUNKSIZEY * SubChunk.CHUNKSIZEZ * SubChunk.CHUNKSIZEX];
+        int[] westAoMask  = new int[SubChunk.CHUNKSIZEY * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEX];
+        int[] eastAoMask  = new int[SubChunk.CHUNKSIZEY * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEX];
+        int[] upAoMask    = new int[SubChunk.CHUNKSIZEZ * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEX];
+        int[] downAoMask  = new int[SubChunk.CHUNKSIZEZ * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEX];
     }
 
     // obligé sinon les threads qui construisent les chunks pour modifié les infos
@@ -70,7 +79,9 @@ public class SubChunk extends Node3D{
     @ChunkThread
     public SubChunk(){
         this.quads = new ArrayList<Quad>();
-        this.blocks = new byte[SubChunk.MAXBLOCK];     
+        this.blocks = new byte[SubChunk.MAXBLOCK];    
+        this.lightMap = new byte[SubChunk.MAXBLOCK]; 
+        Arrays.fill(this.lightMap, (byte)15);
         // définit la taille du buffer et du tableau de vertex  
         this.mesh.setupSubChunkBuffers(this.bitSet.cardinality());   
     }
@@ -256,60 +267,12 @@ public class SubChunk extends Node3D{
     private void uploadSubChunkMesh(byte blockType){
 
         for(Quad quad : this.quads){
-            int x = quad.x;
-            int y = quad.y;
-            int z = quad.z;
-            switch (quad.direction) {
-                case Directions.WEST:
-                    quad.ao0 = computeAO(x-1, y+1, z,   x-1, y, z-1, x-1, y+1, z-1);
-                    quad.ao1 = computeAO(x-1, y+1, z,   x-1, y, z+1, x-1, y+1, z+1);
-                    quad.ao2 = computeAO(x-1, y-1, z,   x-1, y, z-1, x-1, y-1, z-1);
-                    quad.ao3 = computeAO(x-1, y-1, z,   x-1, y, z+1, x-1, y-1, z+1);
-                    break;
-
-                case Directions.EAST:
-                    quad.ao0 = computeAO(x+1, y+1, z,   x+1, y, z-1, x+1, y+1, z-1);
-                    quad.ao1 = computeAO(x+1, y+1, z,   x+1, y, z+1, x+1, y+1, z+1);
-                    quad.ao2 = computeAO(x+1, y-1, z,   x+1, y, z-1, x+1, y-1, z-1);
-                    quad.ao3 = computeAO(x+1, y-1, z,   x+1, y, z+1, x+1, y-1, z+1);
-                    break;
-
-                case Directions.NORTH:
-                    quad.ao0 = computeAO(x-1, y, z+1,   x, y+1, z+1, x-1, y+1, z+1);
-                    quad.ao1 = computeAO(x+1, y, z+1,   x, y+1, z+1, x+1, y+1, z+1);
-                    quad.ao2 = computeAO(x-1, y, z+1,   x, y-1, z+1, x-1, y-1, z+1);
-                    quad.ao3 = computeAO(x+1, y, z+1,   x, y-1, z+1, x+1, y-1, z+1);
-                    break;
-
-                case Directions.SOUTH:
-                    quad.ao0 = computeAO(x-1, y, z-1,   x, y+1, z-1, x-1, y+1, z-1);
-                    quad.ao1 = computeAO(x+1, y, z-1,   x, y+1, z-1, x+1, y+1, z-1);
-                    quad.ao2 = computeAO(x-1, y, z-1,   x, y-1, z-1, x-1, y-1, z-1);
-                    quad.ao3 = computeAO(x+1, y, z-1,   x, y-1, z-1, x+1, y-1, z-1);
-                    break;
-
-                case Directions.UP:
-                    quad.ao0 = computeAO(x-1,y+1,z,  x,y+1,z-1,  x-1,y+1,z-1); // A
-                    quad.ao1 = computeAO(x+1,y+1,z,  x,y+1,z-1,  x+1,y+1,z-1); // B
-                    quad.ao2 = computeAO(x-1,y+1,z,  x,y+1,z+1,  x-1,y+1,z+1); // C
-                    quad.ao3 = computeAO(x+1,y+1,z,  x,y+1,z+1,  x+1,y+1,z+1); // D
-                    break;
-                    
-                case Directions.DOWN:
-                    quad.ao0 = computeAO(x-1,y-1,z,  x,y-1,z-1,  x-1,y-1,z-1); // A
-                    quad.ao1 = computeAO(x+1,y-1,z,  x,y-1,z-1,  x+1,y-1,z-1); // B
-                    quad.ao2 = computeAO(x-1,y-1,z,  x,y-1,z+1,  x-1,y-1,z+1); // C
-                    quad.ao3 = computeAO(x+1,y-1,z,  x,y-1,z+1,  x+1,y-1,z+1); // D
-                    break;
-
-                default:
-                    break;
-            }               
-
             BlocksType type = BlocksType.fromId(blockType);
             if(type == BlocksType.NULL) continue;
             int textureId = TexturesManager.getIndex(type.getTexture(quad.direction));
-            this.mesh.addQuadVertexToArray(quad, textureId);
+            int blocksIndex = quad.x + quad.y * SubChunk.CHUNKSIZEX + quad.z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
+            int light = this.lightMap[blocksIndex] & 0xF;
+            this.mesh.addQuadVertexToArray(quad, textureId, light);
         }        
     }
 
@@ -425,8 +388,25 @@ public class SubChunk extends Node3D{
 
                     int westBit = (faceData.westAxis[y + z * SubChunk.CHUNKSIZEY] >>> (31 - x)) & 1;
                     faceData.westMask[y + x * SubChunk.CHUNKSIZEX] |= (westBit << (31 - z));  
+                    if(westBit == 1){
+                        int ao0 = computeAO(x+1,y,z-1,  x+1,y-1,z,  x+1,y-1,z-1);
+                        int ao1 = computeAO(x+1,y,z+1,  x+1,y-1,z,  x+1,y-1,z+1);
+                        int ao2 = computeAO(x+1,y,z-1,  x+1,y+1,z,  x+1,y+1,z-1);
+                        int ao3 = computeAO(x+1,y,z+1,  x+1,y+1,z,  x+1,y+1,z+1);
+                        int ligne = y + x * SubChunk.CHUNKSIZEX;
+                        faceData.westAoMask[ligne * SubChunk.CHUNKSIZEX + z] = ao0|(ao1<<2)|(ao2<<4)|(ao3<<6);
+                    }
+
                     int eastBit = (faceData.eastAxis[y + z * SubChunk.CHUNKSIZEY] >> (31 - x)) & 1;
                     faceData.eastMask[y + x * SubChunk.CHUNKSIZEX] |= (eastBit << (31 - z));
+                    if(eastBit == 1){
+                        int ao0 = computeAO(x,y,z-1,  x,y-1,z,  x,y-1,z-1);
+                        int ao1 = computeAO(x,y,z+1,  x,y-1,z,  x,y-1,z+1);
+                        int ao2 = computeAO(x,y,z-1,  x,y+1,z,  x,y+1,z-1);
+                        int ao3 = computeAO(x,y,z+1,  x,y+1,z,  x,y+1,z+1);
+                        int ligne = y + x * SubChunk.CHUNKSIZEX;
+                        faceData.eastAoMask[ligne * SubChunk.CHUNKSIZEX + z] = ao0|(ao1<<2)|(ao2<<4)|(ao3<<6);
+                    }
                 }
             }
         }        
@@ -439,8 +419,25 @@ public class SubChunk extends Node3D{
                     // En gros je récup tous les bits d'un int d'Axis, que je met en 1er position des int de mask a chaque boucle
                     int northBit = (faceData.northAxis[y + x * SubChunk.CHUNKSIZEY] >>> (31 - z)) & 1; // décalle de 31 bits + z vers la droite puis récupère le 1er bit
                     faceData.northMask[y + z * SubChunk.CHUNKSIZEZ] |= (northBit << (31 - x));
+                    if(northBit == 1){
+                        int ao0 = computeAO(x-1,y,z+1,  x,y-1,z+1,  x-1,y-1,z+1);
+                        int ao1 = computeAO(x+1,y,z+1,  x,y-1,z+1,  x+1,y-1,z+1);
+                        int ao2 = computeAO(x-1,y,z+1,  x,y+1,z+1,  x-1,y+1,z+1);
+                        int ao3 = computeAO(x+1,y,z+1,  x,y+1,z+1,  x+1,y+1,z+1);
+                        int ligne = y + z * SubChunk.CHUNKSIZEZ;
+                        faceData.northAoMask[ligne * SubChunk.CHUNKSIZEX + x] = ao0|(ao1<<2)|(ao2<<4)|(ao3<<6);
+                    }
+
                     int southBit = (faceData.southAxis[y + x * SubChunk.CHUNKSIZEY] >> (31 - z)) & 1; // décalle de 31 bits - z vers la droite puis récupère le 1er bit*
                     faceData.southMask[y + z * SubChunk.CHUNKSIZEZ] |= (southBit << (31 - x));
+                    if(southBit == 1){
+                        int ao0 = computeAO(x-1,y,z,  x,y-1,z,  x-1,y-1,z);
+                        int ao1 = computeAO(x+1,y,z,  x,y-1,z,  x+1,y-1,z);
+                        int ao2 = computeAO(x-1,y,z,  x,y+1,z,  x-1,y+1,z);
+                        int ao3 = computeAO(x+1,y,z,  x,y+1,z,  x+1,y+1,z);
+                        int ligne = y + z * SubChunk.CHUNKSIZEZ;
+                        faceData.southAoMask[ligne * SubChunk.CHUNKSIZEX + x] = ao0|(ao1<<2)|(ao2<<4)|(ao3<<6);
+                    }
 
                 }
             }
@@ -453,22 +450,39 @@ public class SubChunk extends Node3D{
 
                     int upBit = (faceData.upAxis[z + x * SubChunk.CHUNKSIZEZ] >>> (31 - y)) & 1;
                     faceData.upMask[z + y * SubChunk.CHUNKSIZEZ] |= (upBit << (31 - x));
+                    if(upBit == 1){
+                        int ao0 = computeAO(x-1,y+1,z,  x,y+1,z-1,  x-1,y+1,z-1);
+                        int ao1 = computeAO(x+1,y+1,z,  x,y+1,z-1,  x+1,y+1,z-1);
+                        int ao2 = computeAO(x-1,y+1,z,  x,y+1,z+1,  x-1,y+1,z+1);
+                        int ao3 = computeAO(x+1,y+1,z,  x,y+1,z+1,  x+1,y+1,z+1);
+                        int ligne = z + y * SubChunk.CHUNKSIZEZ;
+                        faceData.upAoMask[ligne * SubChunk.CHUNKSIZEX + x] = ao0|(ao1<<2)|(ao2<<4)|(ao3<<6);
+                    }
+
                     int downBit = (faceData.downAxis[z + x * SubChunk.CHUNKSIZEZ] >>> (31 - y)) & 1;
                     faceData.downMask[z + y * SubChunk.CHUNKSIZEZ] |= (downBit << (31 - x));
+                    if(downBit == 1){
+                        int ao0 = computeAO(x-1,y,z,  x,y,z-1,  x-1,y,z-1);
+                        int ao1 = computeAO(x+1,y,z,  x,y,z-1,  x+1,y,z-1);
+                        int ao2 = computeAO(x-1,y,z,  x,y,z+1,  x-1,y,z+1);
+                        int ao3 = computeAO(x+1,y,z,  x,y,z+1,  x+1,y,z+1);
+                        int ligne = z + y * SubChunk.CHUNKSIZEZ;
+                        faceData.downAoMask[ligne * SubChunk.CHUNKSIZEX + x] = ao0|(ao1<<2)|(ao2<<4)|(ao3<<6);
+                    }
                 }
             }
         }
 
-        this.greedyMeshingPerFace(faceData.westMask, Directions.WEST);
-        this.greedyMeshingPerFace(faceData.eastMask, Directions.EAST);
-        this.greedyMeshingPerFace(faceData.northMask, Directions.NORTH);
-        this.greedyMeshingPerFace(faceData.southMask, Directions.SOUTH);
-        this.greedyMeshingPerFace(faceData.upMask, Directions.UP);
-        this.greedyMeshingPerFace(faceData.downMask, Directions.DOWN);
+        this.greedyMeshingPerFace(faceData.westMask, faceData.westAoMask, Directions.WEST);
+        this.greedyMeshingPerFace(faceData.eastMask, faceData.eastAoMask, Directions.EAST);
+        this.greedyMeshingPerFace(faceData.northMask, faceData.northAoMask, Directions.NORTH);
+        this.greedyMeshingPerFace(faceData.southMask, faceData.southAoMask, Directions.SOUTH);
+        this.greedyMeshingPerFace(faceData.upMask, faceData.upAoMask, Directions.UP);
+        this.greedyMeshingPerFace(faceData.downMask, faceData.downAoMask, Directions.DOWN);
     }
 
     // fait le greedy pour chaque face
-    private void greedyMeshingPerFace(int[] faceMask, Directions dir){
+    private void greedyMeshingPerFace(int[] faceMask, int[] faceAoMask, Directions dir){
         for(int ligne = 0; ligne < faceMask.length; ligne++){
             int i = 0; // indice en largeur byte car dépasse pas 15
             while(i < SubChunk.CHUNKSIZEX){              
@@ -480,7 +494,8 @@ public class SubChunk extends Node3D{
                     i++;
                 }
                 coord[0] = i;// x commence à i
-                while((i < SubChunk.CHUNKSIZEX) && ((faceMask[ligne] >>> (31 - i)) & 1) != 0){ // tant que l'on a pas trouvé la 1er face vide
+                while((i < SubChunk.CHUNKSIZEX) && ((faceMask[ligne] >>> (31 - i)) & 1) != 0
+                    && faceAoMask[ligne * SubChunk.CHUNKSIZEX + i] == faceAoMask[ligne * SubChunk.CHUNKSIZEX + coord[0]]){
                     i++;
                 }
                 coord[1] = i;// x se termine à i
@@ -502,7 +517,16 @@ public class SubChunk extends Node3D{
                 while((ligne + j < sliceStart + SubChunk.CHUNKSIZEX)
                     && (ligne + j < faceMask.length) 
                     && (faceMask[ligne + j] & mask) == mask){
-                    faceMask[ligne + j] = faceMask[ligne + j] & ~mask; // garde tout les bits sauf ceux qui sont parcourut
+
+                    boolean aoMatch = true;
+                    for(int k = coord[0]; k < coord[1]; k++){
+                        if(faceAoMask[(ligne+j) * SubChunk.CHUNKSIZEX + k] != faceAoMask[ligne * SubChunk.CHUNKSIZEX + k]){
+                            aoMatch = false;
+                            break;
+                        }
+                    }
+                    if(!aoMatch) break;
+                    faceMask[ligne + j] = faceMask[ligne + j] & ~mask;
                     j++;
                 }
                 // le quad descent de j
@@ -532,7 +556,9 @@ public class SubChunk extends Node3D{
                         default:
                             qx = qy = qz = 0;
                     }
-                    this.quads.add(new Quad(qx, qy, qz, coord[1] - coord[0], coord[2], dir)); 
+                    int packedAo = faceAoMask[ligne * SubChunk.CHUNKSIZEX + coord[0]];
+                    this.quads.add(new Quad(qx, qy, qz, coord[1]-coord[0], coord[2], dir,
+                        packedAo & 0x3, (packedAo>>2) & 0x3, (packedAo>>4) & 0x3, (packedAo>>6) & 0x3));
                 }   
             }           
         }

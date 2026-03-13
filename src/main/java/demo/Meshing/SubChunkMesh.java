@@ -113,7 +113,7 @@ public class SubChunkMesh {
     //    x       y       z     u   v   dir     textureId
     // 4096 textures max
     @ChunkThread
-    public void addObjectFaceVertexToArray(int[] array, int cubeX, int cubeY, int cubeZ, int w, int h) throws ArrayEmpty{
+    public void addObjectFaceVertexToArray(int[] array, int cubeX, int cubeY, int cubeZ, int w, int h, int light) throws ArrayEmpty{
         if (array.length < 8){
             throw new ArrayEmpty();
         }
@@ -136,6 +136,7 @@ public class SubChunkMesh {
             packed2 |= (w)          << 27; // 5 bits
             packed2 |= (h)          << 22; // 5 bits
             packed2 |= (array[i+7] & 0x3) << 20; // 2 bits valeur 0-3
+            packed2 |= (light & 0xF)    << 16; // 4 bits valeur 0-15
  
             this.vertexArrayPack[this.vertexCount * 2] = packed;
             this.vertexArrayPack[this.vertexCount * 2 + 1] = packed2;
@@ -146,7 +147,7 @@ public class SubChunkMesh {
 
 
     @ChunkThread
-    public void addQuadVertexToArray(Quad quad, int textureId) {
+    public void addQuadVertexToArray(Quad quad, int textureId, int light) {
         int x = quad.x;
         int y = quad.y;
         int z = quad.z;
@@ -168,12 +169,12 @@ public class SubChunkMesh {
                 verts[5] = new int[]{x,   y,   z, 1, 1, d, textureId, quad.ao0};
                 break;
             case NORTH:
-                verts[0] = new int[]{x+w, y,   z+1, 1, 1, d, textureId, quad.ao0};
-                verts[1] = new int[]{x,   y,   z+1, 0, 1, d, textureId, quad.ao1};
-                verts[2] = new int[]{x,   y+h, z+1, 0, 0, d, textureId, quad.ao3};
-                verts[3] = new int[]{x,   y+h, z+1, 0, 0, d, textureId, quad.ao3};
-                verts[4] = new int[]{x+w, y+h, z+1, 1, 0, d, textureId, quad.ao2};
-                verts[5] = new int[]{x+w, y,   z+1, 1, 1, d, textureId, quad.ao0};
+                verts[0] = new int[]{x+w, y,   z+1, 1, 1, d, textureId, quad.ao1}; // ← ao1
+                verts[1] = new int[]{x,   y,   z+1, 0, 1, d, textureId, quad.ao0}; // ← ao0
+                verts[2] = new int[]{x,   y+h, z+1, 0, 0, d, textureId, quad.ao2}; // ← ao2
+                verts[3] = new int[]{x,   y+h, z+1, 0, 0, d, textureId, quad.ao2};
+                verts[4] = new int[]{x+w, y+h, z+1, 1, 0, d, textureId, quad.ao3}; // ← ao3
+                verts[5] = new int[]{x+w, y,   z+1, 1, 1, d, textureId, quad.ao1};
                 break;
             case WEST:
                 verts[0] = new int[]{x+1, y,   z,   1, 1, d, textureId, quad.ao0};
@@ -184,12 +185,12 @@ public class SubChunkMesh {
                 verts[5] = new int[]{x+1, y,   z,   1, 1, d, textureId, quad.ao0};
                 break;
             case EAST:
-                verts[0] = new int[]{x, y,   z+w, 1, 1, d, textureId, quad.ao0};
-                verts[1] = new int[]{x, y,   z,   0, 1, d, textureId, quad.ao1};
-                verts[2] = new int[]{x, y+h, z,   0, 0, d, textureId, quad.ao3};
-                verts[3] = new int[]{x, y+h, z,   0, 0, d, textureId, quad.ao3};
-                verts[4] = new int[]{x, y+h, z+w, 1, 0, d, textureId, quad.ao2};
-                verts[5] = new int[]{x, y,   z+w, 1, 1, d, textureId, quad.ao0};
+                verts[0] = new int[]{x, y,   z+w, 1, 1, d, textureId, quad.ao1}; // ← ao1
+                verts[1] = new int[]{x, y,   z,   0, 1, d, textureId, quad.ao0}; // ← ao0
+                verts[2] = new int[]{x, y+h, z,   0, 0, d, textureId, quad.ao2}; // ← ao2
+                verts[3] = new int[]{x, y+h, z,   0, 0, d, textureId, quad.ao2};
+                verts[4] = new int[]{x, y+h, z+w, 1, 0, d, textureId, quad.ao3}; // ← ao3
+                verts[5] = new int[]{x, y,   z+w, 1, 1, d, textureId, quad.ao1};
                 break;
             case UP: // y fixe à y+1, s'étend sur X et Z
                 verts[0] = new int[]{x,   y+1, z,   0, 0, d, textureId, quad.ao0};
@@ -222,7 +223,7 @@ public class SubChunkMesh {
         }
 
         try {
-            this.addObjectFaceVertexToArray(array, 0, 0, 0, w, h);
+            this.addObjectFaceVertexToArray(array, 0, 0, 0, w, h, light);
         } catch(ArrayEmpty e){ e.printStackTrace(); }
     }
 
