@@ -257,12 +257,13 @@ public class Player {
                             chunkModifyThread.submit(() -> {                                
                                 // place le bloc sans rebuild
                                 int index = localX + localY * SubChunk.CHUNKSIZEX + localZ * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
-                                sub2.blocks[index] = (byte)BlocksType.COBBLESTONE.getId();
+                                sub2.blocks[index] = (byte)BlocksType.GLOWSTONE.getId();
                                 sub2.fillSubChunkBitSet();
-
-                                // propage la lumière
-                                Set<SubChunk> dirty = sub2.propagateLightFrom(localX, localY, localZ, (byte)15);
-                                for(SubChunk s : dirty) s.rebuildSubChunk();
+                                if (BlocksType.GLOWSTONE.getId() == sub2.blocks[index]){
+                                    // propage la lumière
+                                    Set<SubChunk> dirty = sub2.propagateLightFrom(localX, localY, localZ, (byte)15);
+                                    for(SubChunk s : dirty) s.rebuildSubChunk();
+                                }                                
                             });
                             this.placeCooldown = this.breakPlaceDelay;
                         } catch (Exception e) {

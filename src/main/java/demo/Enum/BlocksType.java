@@ -15,6 +15,7 @@ public enum BlocksType {
     HOMER(6),
     SAND(7),
     BEDROCK(8),
+    GLOWSTONE(9),
     NULL(-1);
 
     private Cube cube; // valeur d'instance, chaque valeur à le sien
@@ -45,8 +46,6 @@ public enum BlocksType {
                 if(direction == Directions.UP)     return TexturesType.GRASS_TOP;
                 if(direction == Directions.DOWN)   return TexturesType.DIRT;
                 return TexturesType.GRASS_SIDE; // le type de texture à appliqué
-            case STONE:
-                return TexturesType.STONE;
             default:
                 return TexturesType.valueOf(this.name());
         }

@@ -14,5 +14,6 @@ public enum TexturesType {
     HOMER,
     SAND,
     BEDROCK,
+    GLOWSTONE,
     NULL;
 }

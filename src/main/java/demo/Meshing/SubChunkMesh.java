@@ -158,12 +158,12 @@ public class SubChunkMesh {
                 verts[5] = new int[]{x,   y,   z+w, 1, 1, d, textureId, quad.ao1, quad.light1};
                 break;
             case UP:
-                verts[0] = new int[]{x,   y+1, z,   0, 0, d, textureId, quad.ao0, quad.light0};
-                verts[1] = new int[]{x+w, y+1, z,   1, 0, d, textureId, quad.ao1, quad.light1};
-                verts[2] = new int[]{x+w, y+1, z+h, 1, 1, d, textureId, quad.ao3, quad.light3};
-                verts[3] = new int[]{x+w, y+1, z+h, 1, 1, d, textureId, quad.ao3, quad.light3};
-                verts[4] = new int[]{x,   y+1, z+h, 0, 1, d, textureId, quad.ao2, quad.light2};
-                verts[5] = new int[]{x,   y+1, z,   0, 0, d, textureId, quad.ao0, quad.light0};
+                verts[0] = new int[]{x,   y+1, z,   0, 1, d, textureId, quad.ao0, quad.light0};
+                verts[1] = new int[]{x+w, y+1, z,   0, 0, d, textureId, quad.ao1, quad.light1};
+                verts[2] = new int[]{x+w, y+1, z+h, 1, 0, d, textureId, quad.ao3, quad.light3};
+                verts[3] = new int[]{x+w, y+1, z+h, 1, 0, d, textureId, quad.ao3, quad.light3};
+                verts[4] = new int[]{x,   y+1, z+h, 1, 1, d, textureId, quad.ao2, quad.light2};
+                verts[5] = new int[]{x,   y+1, z,   0, 1, d, textureId, quad.ao0, quad.light0};
                 break;
             case DOWN:
                 verts[0] = new int[]{x,   y,   z+h, 0, 0, d, textureId, quad.ao0, quad.light0};
