@@ -28,8 +28,8 @@ public class App
             System.out.println("IP du server : ");
             String ip = scanner.nextLine();
             GameClient.connect(ip, 5555);
-        }else{
-            
+        }else if (choix == 3){
+            GameClient.connect("127.0.0.1", 5555);
         }
         scanner.close();
         // création de la fenêtre 

@@ -8,7 +8,6 @@ import java.net.*;
 
 import org.joml.Vector3f;
 
-import demo.Player;
 import demo.Managers.PlayersManager;
 import demo.Enum.BlocksType;
 

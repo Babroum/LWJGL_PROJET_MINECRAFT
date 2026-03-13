@@ -9,6 +9,7 @@ public class GameServer {
     private static final int PORT = 5555;
     private List<ClientHandler> clients = new CopyOnWriteArrayList<>();
     private int nextId = 1;
+    private List<String> log = new CopyOnWriteArrayList<>();
 
     /**
      * pour instancier un client coté serveur et le mettre dans la listes des clients connectés
@@ -27,7 +28,20 @@ public class GameServer {
                 for (ClientHandler connectedClient : this.clients){
                         connectedClients += connectedClient.getId() + ":";
                 }
+                // envoyer le log du serveur (à changer)
                 client.send(connectedClients);
+                try{
+                    Thread.sleep(5000);
+                }
+                catch (InterruptedException ie){}
+                
+                for (String message : log){
+                    client.send(message);
+                    try{
+                    Thread.sleep(10);
+                }
+                catch (InterruptedException ie){}
+                }
                 clients.add(client);
                 this.broadcast("JOIN:" + client.getId(), client);
                 Thread t = new Thread(client);
@@ -47,6 +61,10 @@ public class GameServer {
      * @param sender
      */
     public void broadcast(String message, ClientHandler sender){
+        String[] parts = message.split(":");
+        if (parts[0].equals("BREAK") || parts[0].equals("PLACE")){
+            this.log(message);
+        }
         for (ClientHandler client : this.clients){
             if (client.getId() != sender.getId()){
                 client.send(message);
@@ -61,5 +79,9 @@ public class GameServer {
     public void remove(ClientHandler client){
         this.clients.remove(client);
         this.broadcast("LEAVE:" + client.getId(), client);
+    }
+
+    public void log(String message){
+        this.log.add(message);
     }
 }

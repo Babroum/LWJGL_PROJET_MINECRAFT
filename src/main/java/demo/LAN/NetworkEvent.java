@@ -1,7 +1,5 @@
 package demo.LAN;
 
-import demo.Enum.BlocksType;
-
 public class NetworkEvent{
     public static void sendPosition(float x, float y, float z){
         GameClient.send("POS:" + GameClient.myId + ":" + x + ":" + y + ":" + z);
