@@ -234,6 +234,9 @@ public class WorldGenerator {
         // Tableau 3D de densités pré-calculées aux nœuds de la grille
         float[] grid = new float[WorldGenerator.GRID_X * WorldGenerator.GRID_Y * WorldGenerator.GRID_Z];
 
+        float[] caveGrid1 = new float[GRID_X * GRID_Y * GRID_Z];
+        float[] caveGrid2 = new float[GRID_X * GRID_Y * GRID_Z];
+
         for (int ix = 0; ix < WorldGenerator.GRID_X; ix++) {
             for (int iy = 0; iy < WorldGenerator.GRID_Y; iy++) {
                 for (int iz = 0; iz < WorldGenerator.GRID_Z; iz++) {
@@ -245,6 +248,8 @@ public class WorldGenerator {
 
                     // Stocke la densité au nœud courant
                     grid[ix * WorldGenerator.GRID_Y * WorldGenerator.GRID_Z + iy * WorldGenerator.GRID_Z + iz] = computeDensity(worldX, worldY, worldZ);
+                    caveGrid1[ix * WorldGenerator.GRID_Y * WorldGenerator.GRID_Z + iy * WorldGenerator.GRID_Z + iz] = caveNoise.GetNoise(worldX, worldY, worldZ);
+                    caveGrid2[ix * WorldGenerator.GRID_Y * WorldGenerator.GRID_Z + iy * WorldGenerator.GRID_Z + iz] = caveNoise2.GetNoise(worldX, worldY, worldZ);
                 }
             }
         }
@@ -255,7 +260,6 @@ public class WorldGenerator {
             for (int bz = 0; bz < WorldGenerator.CHUNK_SIZE; bz++) {
                 SubChunk currentSub = chunk.getSubChunk(0);
                 int currentSubIndex = 0;
-                boolean isCave = false;
                 for (int by = 0; by < WorldGenerator.CHUNK_HEIGHT; by++) {
 
                     // Identifie la cellule de grille contenant ce bloc (coin inférieur-gauche)
@@ -268,45 +272,13 @@ public class WorldGenerator {
                     float ty = (float)(by % WorldGenerator.STEP_Y)  / WorldGenerator.STEP_Y;
                     float tz = (float)(bz % WorldGenerator.STEP_XZ) / WorldGenerator.STEP_XZ;
 
-                    // Les 8 coins de la cellule 
-                    
-                    float c000 = grid[ cx    * GRID_Y * GRID_Z +  cy    * GRID_Z +  cz   ]; // coin (0,0,0)
-                    float c100 = grid[(cx+1) * GRID_Y * GRID_Z +  cy    * GRID_Z +  cz   ]; // coin (+x,0,0)
-                    float c010 = grid[ cx    * GRID_Y * GRID_Z +  cy    * GRID_Z + (cz+1)]; // coin (0,0,+z)
-                    float c110 = grid[(cx+1) * GRID_Y * GRID_Z +  cy    * GRID_Z + (cz+1)]; // coin (+x,0,+z)
-                    float c001 = grid[ cx    * GRID_Y * GRID_Z + (cy+1) * GRID_Z +  cz   ]; // coin (0,+y,0)
-                    float c101 = grid[(cx+1) * GRID_Y * GRID_Z + (cy+1) * GRID_Z +  cz   ]; // coin (+x,+y,0)
-                    float c011 = grid[ cx    * GRID_Y * GRID_Z + (cy+1) * GRID_Z + (cz+1)]; // coin (0,+y,+z)
-                    float c111 = grid[(cx+1) * GRID_Y * GRID_Z + (cy+1) * GRID_Z + (cz+1)]; // coin (+x,+y,+z)
+                    float density     = trilinear(grid,      cx, cy, cz, tx, ty, tz);
+                    float cave1Interp = trilinear(caveGrid1, cx, cy, cz, tx, ty, tz);
+                    float cave2Interp = trilinear(caveGrid2, cx, cy, cz, tx, ty, tz);
 
-                    // Interpolation sur l'axe X (produit 4 valeurs sur les arêtes de la face basse/haute)
-                    float x00 = c000 + tx * (c100 - c000); // face basse,  z=0
-                    float x10 = c010 + tx * (c110 - c010); // face basse,  z=1
-                    float x01 = c001 + tx * (c101 - c001); // face haute,  z=0
-                    float x11 = c011 + tx * (c111 - c011); // face haute,  z=1
-
-                    // Interpolation sur l'axe Z (produit 2 valeurs sur les arêtes basse/haute)
-                    float z0  = x00  + tz * (x10  - x00);  // face basse,  après interp Z
-                    float z1  = x01  + tz * (x11  - x01);  // face haute,  après interp Z
-
-                    // Interpolation finale sur Y -> valeur de densité du bloc
-                    float density = z0 + ty * (z1 - z0);
-
-                    // Grottes 
-                    // Calculé directement par bloc (pas interpolé) pour éviter le lissage
-                    // L'intersection des deux bruits proches de 0 forme des tunnels horizontaux
-                    int worldX = chunkX * WorldGenerator.CHUNK_SIZE + bx;
-                    int worldZ = chunkZ * WorldGenerator.CHUNK_SIZE + bz;
-                    // skip les blocs pairs sur Y, copie le résultat du bloc précédent
-                    // divise les appels noise par 2, variation visuelle négligeable sur des tunnels
-                    if (by < SEA_LEVEL - 5) {
-                        float cave1 = caveNoise.GetNoise(worldX, by, worldZ);
-                        float cave2 = caveNoise2.GetNoise(worldX, by, worldZ);
-                        isCave = Math.abs(cave1) < 0.06 && Math.abs(cave2) < 0.06;
+                    if (by < SEA_LEVEL - 5 && Math.abs(cave1Interp) < 0.06f && Math.abs(cave2Interp) < 0.06f){
+                        density = -1.0f;
                     }
-
-                    // by impair réutilise le résultat du by-1 précédent
-                    if (isCave) density = -1.0f;
                     // Écriture dans le sous-chunk   
                     int subChunkIndex = by / WorldGenerator.CHUNK_SIZE;
                     if (subChunkIndex != currentSubIndex) {
@@ -327,6 +299,30 @@ public class WorldGenerator {
 
         // PASSE 3 : couches de surface
         applySurfaceLayers(chunk);
+    }
+
+    private float trilinear(float[] grid, int cx, int cy, int cz, float tx, float ty, float tz){
+        // Les 8 coins de la cellule 
+        float c000 = grid[ cx    * GRID_Y * GRID_Z +  cy    * GRID_Z +  cz   ]; // coin (0,0,0)
+        float c100 = grid[(cx+1) * GRID_Y * GRID_Z +  cy    * GRID_Z +  cz   ]; // coin (+x,0,0)
+        float c010 = grid[ cx    * GRID_Y * GRID_Z +  cy    * GRID_Z + (cz+1)]; // coin (0,0,+z)
+        float c110 = grid[(cx+1) * GRID_Y * GRID_Z +  cy    * GRID_Z + (cz+1)]; // coin (+x,0,+z)
+        float c001 = grid[ cx    * GRID_Y * GRID_Z + (cy+1) * GRID_Z +  cz   ]; // coin (0,+y,0)
+        float c101 = grid[(cx+1) * GRID_Y * GRID_Z + (cy+1) * GRID_Z +  cz   ]; // coin (+x,+y,0)
+        float c011 = grid[ cx    * GRID_Y * GRID_Z + (cy+1) * GRID_Z + (cz+1)]; // coin (0,+y,+z)
+        float c111 = grid[(cx+1) * GRID_Y * GRID_Z + (cy+1) * GRID_Z + (cz+1)]; // coin (+x,+y,+z)
+
+        // Interpolation sur l'axe X (produit 4 valeurs sur les arêtes de la face basse/haute)
+        float x00 = c000 + tx * (c100 - c000); // face basse,  z=0
+        float x10 = c010 + tx * (c110 - c010); // face basse,  z=1
+        float x01 = c001 + tx * (c101 - c001); // face haute,  z=0
+        float x11 = c011 + tx * (c111 - c011); // face haute,  z=1
+
+        // Interpolation sur l'axe Z (produit 2 valeurs sur les arêtes basse/haute)
+        float z0  = x00  + tz * (x10  - x00); // face basse,  après interp Z
+        float z1  = x01  + tz * (x11  - x01); // face haute,  après interp Z
+         // Interpolation finale sur Y -> valeur de densité du bloc
+        return z0 + ty * (z1 - z0);
     }
 
     // Couches de surface
