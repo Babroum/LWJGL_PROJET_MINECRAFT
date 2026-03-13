@@ -14,6 +14,7 @@ import demo.Enum.BlocksType;
 import demo.Events.KeyboardInput;
 import demo.Events.MouseInput;
 import demo.Geometry.SubChunk;
+import demo.Rendering.Render;
 
 /**
  * Une joueur 

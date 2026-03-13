@@ -152,6 +152,58 @@ public class SubChunk extends Node3D{
     }
 
     /**
+     * Récupère la lumière d'un block
+     * @param x
+     * @param y
+     * @param z
+     * @return
+     */
+    public byte getLightAt(int x, int y, int z){
+        if (x >= 0 && x < CHUNKSIZEX && y >= 0 && y < CHUNKSIZEY && z >= 0 && z < CHUNKSIZEZ){
+            return this.lightMap[x + y * CHUNKSIZEX + z * CHUNKSIZEX * CHUNKSIZEY];
+        }
+        if (y >= CHUNKSIZEY && this.upNeighbor != null)
+            return this.upNeighbor.getLightAt(x, y - CHUNKSIZEY, z);
+        if (y < 0 && this.downNeighbor != null)
+            return this.downNeighbor.getLightAt(x, y + CHUNKSIZEY, z);
+        if (x >= CHUNKSIZEX && this.westNeighbor != null)
+            return this.westNeighbor.getLightAt(x - CHUNKSIZEX, y, z);
+        if (x < 0 && this.eastNeighbor != null)
+            return this.eastNeighbor.getLightAt(x + CHUNKSIZEX, y, z);
+        if (z >= CHUNKSIZEZ && this.northNeighbor != null)
+            return this.northNeighbor.getLightAt(x, y, z - CHUNKSIZEZ);
+        if (z < 0 && this.southNeighbor != null)
+            return this.southNeighbor.getLightAt(x, y, z + CHUNKSIZEZ);
+        return 0;
+    }
+
+    /**
+     * Définis la lumière d'un block
+     * @param x
+     * @param y
+     * @param z
+     * @param value
+     */
+    public void setLightAt(int x, int y, int z, byte value){
+        if (x >= 0 && x < CHUNKSIZEX && y >= 0 && y < CHUNKSIZEY && z >= 0 && z < CHUNKSIZEZ){
+            this.lightMap[x + y * CHUNKSIZEX + z * CHUNKSIZEX * CHUNKSIZEY] = value;
+            return;
+        }
+        if (y >= CHUNKSIZEY && this.upNeighbor != null)
+            { this.upNeighbor.setLightAt(x, y - CHUNKSIZEY, z, value); return; }
+        if (y < 0 && this.downNeighbor != null)
+            { this.downNeighbor.setLightAt(x, y + CHUNKSIZEY, z, value); return; }
+        if (x >= CHUNKSIZEX && this.westNeighbor != null)
+            { this.westNeighbor.setLightAt(x - CHUNKSIZEX, y, z, value); return; }
+        if (x < 0 && this.eastNeighbor != null)
+            { this.eastNeighbor.setLightAt(x + CHUNKSIZEX, y, z, value); return; }
+        if (z >= CHUNKSIZEZ && this.northNeighbor != null)
+            { this.northNeighbor.setLightAt(x, y, z - CHUNKSIZEZ, value); return; }
+        if (z < 0 && this.southNeighbor != null)
+            { this.southNeighbor.setLightAt(x, y, z + CHUNKSIZEZ, value); return; }
+    }
+
+    /**
      * Retourne tout les blocks du sous chunk
      * @return byte[]
      */
