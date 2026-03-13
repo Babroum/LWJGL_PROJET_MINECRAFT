@@ -41,7 +41,7 @@ public class ClientHandler implements Runnable{
      * @param message
      */
     public void send(String message){
-        System.out.println(message);
+        this.out.println(message);
     }
 
     /**
