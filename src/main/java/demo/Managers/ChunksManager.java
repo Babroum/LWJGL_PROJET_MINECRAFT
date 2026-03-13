@@ -107,18 +107,24 @@ public class ChunksManager {
         // Passe 2 : propagation lumière sky — colonne par colonne sur tout le chunk
         for (Chunk chunk : chunks.values()){
             futures.add(pool.submit(() -> {
+                // parcours chaque chunk en x, z
                 for (int x = 0; x < SubChunk.CHUNKSIZEX; x++){
                     for (int z = 0; z < SubChunk.CHUNKSIZEZ; z++){
+                        // true car on suppose que le sommet de la colenne est à ciel ouvert
+                        // elle ne repasse jamais a true des qu'un block solide est trouvé passe à false
                         boolean open = true; // commence à ciel ouvert depuis le sommet
+
                         // descend de haut en bas à travers tous les subchunks
                         for (int i = Chunk.SUBCHUNKCOUNT - 1; i >= 0; i--){
                             SubChunk sub = chunk.getSubChunk(i);
+                            // descend de haut en bas à travers le subchunk
                             for (int y = SubChunk.CHUNKSIZEY - 1; y >= 0; y--){
                                 int idx = x + y * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
+
                                 if (sub.blocks[idx] != (byte)BlocksType.AIR.getId()){
-                                    open = false;
+                                    open = false; // bloc solide on stoppe la lumière pour la suite
                                 } else if (open){
-                                    sub.lightMap[idx] = (byte)15;
+                                    sub.lightMap[idx] = (byte)1; // bloc air et ciel ouvert alors pleine lumière
                                 }
                             }
                         }

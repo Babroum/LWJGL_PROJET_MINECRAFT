@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.ArrayDeque;
 
 import org.joml.Matrix4f;
 
@@ -119,7 +122,7 @@ public class SubChunk extends Node3D{
 
         // collecte les types uniques
         // le Set n'accepte pas les doublons donc si j'ai 500 GRASS dans le set il n'y aura que 1 GRASS
-        java.util.Set<Byte> types = new java.util.HashSet<>();
+        Set<Byte> types = new HashSet<>();
         for(byte b : this.blocks){
             if(b != (byte)BlocksType.AIR.getId()) types.add(b);
         }     
@@ -178,6 +181,26 @@ public class SubChunk extends Node3D{
     }
 
     /**
+     * Retourne la lumière de la face
+     * @param x
+     * @param y
+     * @param z
+     * @param dir
+     * @return
+     */
+    private int getLightExposedAt(int x, int y, int z, Directions dir){
+        switch(dir){
+            case SOUTH: return getLightAt(x, y, z-1) & 0xF;
+            case NORTH: return getLightAt(x, y, z+1) & 0xF;
+            case EAST:  return getLightAt(x-1, y, z) & 0xF;
+            case WEST:  return getLightAt(x+1, y, z) & 0xF;
+            case DOWN:  return getLightAt(x, y-1, z) & 0xF;
+            case UP:    return getLightAt(x, y+1, z) & 0xF;
+            default: return 15;
+        }
+    }
+
+    /**
      * Définis la lumière d'un block
      * @param x
      * @param y
@@ -203,30 +226,83 @@ public class SubChunk extends Node3D{
             { this.southNeighbor.setLightAt(x, y, z + CHUNKSIZEZ, value); return; }
     }
 
-    public void propagateLightFrom(int x, int y, int z, byte lightValue){
-        java.util.ArrayDeque<Long> queue = new java.util.ArrayDeque<>();
-        this.setLightAt(x, y, z, lightValue);
-        queue.add(((long)x << 40) | ((long)y << 24) | ((long)z << 8) | (lightValue & 0xFF));
+    /**
+     * Retourne le chunk à tel position
+     * @param x
+     * @param y
+     * @param z
+     * @return
+     */
+    private SubChunk getSubChunkAt(int x, int y, int z){
+        if (x >= 0 && x < CHUNKSIZEX && y >= 0 && y < CHUNKSIZEY && z >= 0 && z < CHUNKSIZEZ)
+            return this;
+        if (y >= CHUNKSIZEY && this.upNeighbor != null)
+            return this.upNeighbor.getSubChunkAt(x, y - CHUNKSIZEY, z);
+        if (y < 0 && this.downNeighbor != null)
+            return this.downNeighbor.getSubChunkAt(x, y + CHUNKSIZEY, z);
+        if (x >= CHUNKSIZEX && this.westNeighbor != null)
+            return this.westNeighbor.getSubChunkAt(x - CHUNKSIZEX, y, z);
+        if (x < 0 && this.eastNeighbor != null)
+            return this.eastNeighbor.getSubChunkAt(x + CHUNKSIZEX, y, z);
+        if (z >= CHUNKSIZEZ && this.northNeighbor != null)
+            return this.northNeighbor.getSubChunkAt(x, y, z - CHUNKSIZEZ);
+        if (z < 0 && this.southNeighbor != null)
+            return this.southNeighbor.getSubChunkAt(x, y, z + CHUNKSIZEZ);
+        return this;
+    }
 
+    /**
+     * Propage la lumière sur chaque block voisin en faisant -1 à la lumière <br>
+     * S'arrete quand la lumière égale 0
+     * @param x
+     * @param y
+     * @param z
+     * @param lightValue
+     */
+    public Set<SubChunk> propagateLightFrom(int x, int y, int z, byte lightValue){
+        Set<SubChunk> dirty = new HashSet<>();
+        ArrayDeque<Long> queue = new ArrayDeque<>();
+        this.setLightAt(x, y, z, lightValue); // pose la lumière dans la lightMap
+
+        dirty.add(this);
+        // décale x de 24 bits mais seulement 8 utilisés, 16 pour y et z et 8 pour la lumière
+        // offset de 32 pour les valeurs négatives
+        queue.add(((long)(x+32) << 40) | ((long)(y+32) << 24) | ((long)(z+32) << 8) | (lightValue & 0xFF)); // long pour éviter d'allouer un int[]
+
+        // blocks voisins
         int[][] neighbors = {{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1}};
 
         while(!queue.isEmpty()){
             long cur = queue.poll();
-            int cx = (int)(cur >> 40) & 0xFF;
-            int cy = (int)(cur >> 24) & 0xFF;
-            int cz = (int)(cur >> 8)  & 0xFF;
-            int cl = (int)(cur)       & 0xFF;
+            int cx = ((int)(cur >> 40) & 0xFF) - 32; // x
+            int cy = ((int)(cur >> 24) & 0xFF) - 32; // y
+            int cz = ((int)(cur >> 8)  & 0xFF) - 32; // z
+            int cl = (int)(cur)       & 0xFF; // lumière
+
+            // quand la lumière vaut 1 (newlight = 0) donc propager du noir sert à rien
             if(cl <= 1) continue;
+
+            // regarde les 6 voisins
 
             for(int[] n : neighbors){
                 int nx = cx+n[0], ny = cy+n[1], nz = cz+n[2];
+                // si pas air on skip
                 if(isBlockSolid(nx, ny, nz)) continue;
+                // light - 1
                 byte newLight = (byte)(cl - 1);
+                // 0xFF -> récup les 8 derniers bits donc la lumière
+                // si la lumière dans la lightMap >= a la nouvelle lumière alors on skip
+                // si un block est pareil ou plus lumineux alors inutile de le retraiter
                 if((getLightAt(nx, ny, nz) & 0xFF) >= (newLight & 0xFF)) continue;
+                // définit la nouvelle lumière
                 setLightAt(nx, ny, nz, newLight);
-                queue.add(((long)nx << 40) | ((long)ny << 24) | ((long)nz << 8) | (newLight & 0xFF));
+                // collecte le subchunk affecté
+                dirty.add(this.getSubChunkAt(nx, ny, nz));
+                // ajoute le block
+                queue.add(((long)(nx + 32) << 40) | ((long)(ny + 32) << 24) | ((long)(nz + 32) << 8) | (newLight & 0xFF));
             }
         }
+        return dirty;
     }
 
     /**
@@ -337,7 +413,7 @@ public class SubChunk extends Node3D{
     }
 
     @ChunkThread
-    private void rebuildSubChunk(){
+    public void rebuildSubChunk(){
         this.fillSubChunkBitSet();
         synchronized(this.mesh){
             this.mesh.setupSubChunkBuffers(this.bitSet.cardinality());
@@ -653,8 +729,32 @@ public class SubChunk extends Node3D{
                             qx = qy = qz = 0;
                     }
                     int packedAo = faceAoMask[ligne * SubChunk.CHUNKSIZEX + coord[0]];
-                    this.quads.add(new Quad(qx, qy, qz, coord[1]-coord[0], coord[2], dir,
-                        packedAo & 0x3, (packedAo>>2) & 0x3, (packedAo>>4) & 0x3, (packedAo>>6) & 0x3));
+                    int w = coord[1] - coord[0];
+                    int h = coord[2];
+                    int l0, l1, l2, l3;
+                    switch(dir){
+                        case NORTH: case SOUTH:
+                            l0 = getLightExposedAt(qx,   qy,   qz, dir);
+                            l1 = getLightExposedAt(qx+w, qy,   qz, dir);
+                            l2 = getLightExposedAt(qx,   qy+h, qz, dir);
+                            l3 = getLightExposedAt(qx+w, qy+h, qz, dir);
+                            break;
+                        case EAST: case WEST:
+                            l0 = getLightExposedAt(qx, qy,   qz,   dir);
+                            l1 = getLightExposedAt(qx, qy,   qz+w, dir);
+                            l2 = getLightExposedAt(qx, qy+h, qz,   dir);
+                            l3 = getLightExposedAt(qx, qy+h, qz+w, dir);
+                            break;
+                        default: // UP, DOWN
+                            l0 = getLightExposedAt(qx,   qy, qz,   dir);
+                            l1 = getLightExposedAt(qx+w, qy, qz,   dir);
+                            l2 = getLightExposedAt(qx,   qy, qz+h, dir);
+                            l3 = getLightExposedAt(qx+w, qy, qz+h, dir);
+                            break;
+                    }
+                    this.quads.add(new Quad(qx, qy, qz, w, h, dir,
+                        packedAo & 0x3, (packedAo>>2) & 0x3, (packedAo>>4) & 0x3, (packedAo>>6) & 0x3,
+                        l0, l1, l2, l3));
                 }   
             }           
         }

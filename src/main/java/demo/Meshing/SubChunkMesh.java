@@ -161,8 +161,8 @@ public class SubChunkMesh {
 
         switch(quad.direction){
             case SOUTH:
-                verts[0] = new int[]{x,   y,   z, 1, 1, d, textureId, quad.ao0};
-                verts[1] = new int[]{x+w, y,   z, 0, 1, d, textureId, quad.ao1};
+                verts[0] = new int[]{x,   y,   z, 1, 1, d, textureId, quad.ao0, quad.light0};
+                verts[1] = new int[]{x+w, y,   z, 0, 1, d, textureId, quad.ao1, quad.light1};
                 verts[2] = new int[]{x+w, y+h, z, 0, 0, d, textureId, quad.ao3};
                 verts[3] = new int[]{x+w, y+h, z, 0, 0, d, textureId, quad.ao3};
                 verts[4] = new int[]{x,   y+h, z, 1, 0, d, textureId, quad.ao2};
