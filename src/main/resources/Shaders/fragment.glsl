@@ -31,7 +31,7 @@ void main()
     else if (dir == 4) dirFactor = 1.0;
     else               dirFactor = 0.5;
 
-    float light = lightValue * dirFactor;
+    float light = max(lightValue * dirFactor, 0.1);
 
     float aoFactor = 1.0 - AO  * 0.15 * light;
     // ao=0 -> 1.0 - 0*0.2 = 1.0 -> pleine lumière

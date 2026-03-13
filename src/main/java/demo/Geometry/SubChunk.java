@@ -81,7 +81,7 @@ public class SubChunk extends Node3D{
         this.quads = new ArrayList<Quad>();
         this.blocks = new byte[SubChunk.MAXBLOCK];    
         this.lightMap = new byte[SubChunk.MAXBLOCK]; 
-        Arrays.fill(this.lightMap, (byte)15);
+        Arrays.fill(this.lightMap, (byte)0);
         // définit la taille du buffer et du tableau de vertex  
         this.mesh.setupSubChunkBuffers(this.bitSet.cardinality());   
     }
@@ -203,6 +203,32 @@ public class SubChunk extends Node3D{
             { this.southNeighbor.setLightAt(x, y, z + CHUNKSIZEZ, value); return; }
     }
 
+    public void propagateLightFrom(int x, int y, int z, byte lightValue){
+        java.util.ArrayDeque<Long> queue = new java.util.ArrayDeque<>();
+        this.setLightAt(x, y, z, lightValue);
+        queue.add(((long)x << 40) | ((long)y << 24) | ((long)z << 8) | (lightValue & 0xFF));
+
+        int[][] neighbors = {{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1}};
+
+        while(!queue.isEmpty()){
+            long cur = queue.poll();
+            int cx = (int)(cur >> 40) & 0xFF;
+            int cy = (int)(cur >> 24) & 0xFF;
+            int cz = (int)(cur >> 8)  & 0xFF;
+            int cl = (int)(cur)       & 0xFF;
+            if(cl <= 1) continue;
+
+            for(int[] n : neighbors){
+                int nx = cx+n[0], ny = cy+n[1], nz = cz+n[2];
+                if(isBlockSolid(nx, ny, nz)) continue;
+                byte newLight = (byte)(cl - 1);
+                if((getLightAt(nx, ny, nz) & 0xFF) >= (newLight & 0xFF)) continue;
+                setLightAt(nx, ny, nz, newLight);
+                queue.add(((long)nx << 40) | ((long)ny << 24) | ((long)nz << 8) | (newLight & 0xFF));
+            }
+        }
+    }
+
     /**
      * Retourne tout les blocks du sous chunk
      * @return byte[]
@@ -276,6 +302,16 @@ public class SubChunk extends Node3D{
         ){throw new IncorrectCoordinates("Coordonées dans le subChunk invalide");}
         int index = x + y * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
         this.blocks[index] = (byte)BlocksType.AIR.getId();
+
+        // propage la lumière depuis les 6 voisins vers le bloc nouvellement libéré
+        for(int[] n : new int[][]{{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1}}){
+            int nx = x+n[0], ny = y+n[1], nz = z+n[2];
+            byte neighborLight = getLightAt(nx, ny, nz);
+            if((neighborLight & 0xFF) > 1){
+                propagateLightFrom(nx, ny, nz, neighborLight);
+            }
+        }
+
         this.fillSubChunkBitSet();
 
         // rebuild les voisins si le bloc est en bordure
@@ -322,8 +358,16 @@ public class SubChunk extends Node3D{
             BlocksType type = BlocksType.fromId(blockType);
             if(type == BlocksType.NULL) continue;
             int textureId = TexturesManager.getIndex(type.getTexture(quad.direction));
-            int blocksIndex = quad.x + quad.y * SubChunk.CHUNKSIZEX + quad.z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
-            int light = this.lightMap[blocksIndex] & 0xF;
+            int lx = quad.x, ly = quad.y, lz = quad.z;
+            switch(quad.direction){
+                case SOUTH: lz -= 1; break;
+                case NORTH: lz += 1; break;
+                case EAST:  lx -= 1; break;
+                case WEST:  lx += 1; break;
+                case DOWN:  ly -= 1; break;
+                case UP:    ly += 1; break;
+            }
+            int light = getLightAt(lx, ly, lz) & 0xF;
             this.mesh.addQuadVertexToArray(quad, textureId, light);
         }        
     }

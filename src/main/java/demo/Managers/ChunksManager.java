@@ -101,9 +101,33 @@ public class ChunksManager {
             futures.add(pool.submit(() -> { for (SubChunk sub : chunk.subChunks) sub.linkNeighbors(); }));
         }
             
-        for (Future<?> f : futures) try { f.get(); } catch (Exception e) {
-            futures.clear();
-        } 
+        for (Future<?> f : futures) try { f.get(); } catch (Exception e) {}
+        futures.clear(); 
+
+        // Passe 2 : propagation lumière sky — colonne par colonne sur tout le chunk
+        for (Chunk chunk : chunks.values()){
+            futures.add(pool.submit(() -> {
+                for (int x = 0; x < SubChunk.CHUNKSIZEX; x++){
+                    for (int z = 0; z < SubChunk.CHUNKSIZEZ; z++){
+                        boolean open = true; // commence à ciel ouvert depuis le sommet
+                        // descend de haut en bas à travers tous les subchunks
+                        for (int i = Chunk.SUBCHUNKCOUNT - 1; i >= 0; i--){
+                            SubChunk sub = chunk.getSubChunk(i);
+                            for (int y = SubChunk.CHUNKSIZEY - 1; y >= 0; y--){
+                                int idx = x + y * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
+                                if (sub.blocks[idx] != (byte)BlocksType.AIR.getId()){
+                                    open = false;
+                                } else if (open){
+                                    sub.lightMap[idx] = (byte)15;
+                                }
+                            }
+                        }
+                    }
+                }
+            }));
+        }
+        for (Future<?> f : futures) try { f.get(); } catch (Exception e) {}
+        futures.clear();
 
         // Passe 3 : meshing — indépendant entre chunks une fois les BitSets calculés
         for (Chunk chunk : chunks.values()){
