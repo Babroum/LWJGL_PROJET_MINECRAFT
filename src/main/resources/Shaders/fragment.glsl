@@ -31,12 +31,8 @@ void main()
     else if (dir == 4) dirFactor = 1.0;
     else               dirFactor = 0.5;
 
-    float aoFactor = 1.0 - AO * 0.12;
-    float light = lightValue * dirFactor;
-    // ao=0 -> 1.0 - 0*0.2 = 1.0 -> pleine lumière
-    // ao=1 -> 1.0 - 1*0.2 = 0.8 -> légèrement sombre
-    // ao=2 -> 1.0 - 2*0.2 = 0.6 -> plus sombre
-    // ao=3 -> 1.0 - 3*0.2 = 0.4 -> coin très sombre
+    float aoFactor  = 1.0 - (AO / 3.0) * 0.35;  // fixe, géométrique
+    float light     = max(lightValue, 0.04) * dirFactor;
 
     // calcule la taille texture par rapport au coordonnées uv et la texture
     vec4 texColor = texture(tex, vec3(fract(uv), float(texId))); 

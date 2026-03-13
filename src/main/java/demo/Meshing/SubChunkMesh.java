@@ -78,7 +78,7 @@ public class SubChunkMesh {
     //    x       y       z     u   v   dir     textureId
     // 4096 textures max
     @ChunkThread
-    public void addObjectFaceVertexToArray(int[] array, int cubeX, int cubeY, int cubeZ, int w, int h) throws ArrayEmpty{
+    public void addObjectFaceVertexToArray(int[] array, int w, int h) throws ArrayEmpty{
         if (array.length < 9){
             throw new ArrayEmpty();
         }
@@ -88,13 +88,13 @@ public class SubChunkMesh {
             // |= c'est le OU permet de combiner sans supprimer les valeurs
             // le x max est 15 donc pourquoi pas avoir << 28 car 15 = 1111 donc 4 bits
             // le centre du cube n'est pas centré donc pour avoir le sommet le plus loin on fait x + 1 donc 15 + 1 = 16 ce qui dépasse 4bits
-            packed |= (array[i]   + cubeX)  << 27; // 5 bits, décale de 27 bits (donc prend les 5 premiers bits, 32 - 27 = 5)
-            packed |= (array[i+1] + cubeY)  << 22; // 5 bits
-            packed |= (array[i+2] + cubeZ)  << 17; // 5 bits
-            packed |= (array[i+3])          << 16; // 1 bit
-            packed |= (array[i+4])          << 15; // 1 bit
-            packed |=  array[i+5]           << 12; // 3 bits
-            packed |=  array[i+6];                 // 12 bits
+            packed |= (array[i])    << 27; // 5 bits, décale de 27 bits (donc prend les 5 premiers bits, 32 - 27 = 5)
+            packed |= (array[i+1])  << 22; // 5 bits
+            packed |= (array[i+2])  << 17; // 5 bits
+            packed |= (array[i+3])  << 16; // 1 bit
+            packed |= (array[i+4])  << 15; // 1 bit
+            packed |=  array[i+5]   << 12; // 3 bits
+            packed |=  array[i+6];         // 12 bits
 
             // coordonnées UV 
             int packed2 = 0;
@@ -125,21 +125,21 @@ public class SubChunkMesh {
         int[][] verts = this.vertsBuffer; // 6 sommets * {x, y, z, u, v, dir, texId, ao, light}
 
         switch(quad.direction){
-            case SOUTH:
-                verts[0] = new int[]{x,   y,   z, 1, 1, d, textureId, quad.ao0, quad.light0};
-                verts[1] = new int[]{x+w, y,   z, 0, 1, d, textureId, quad.ao1, quad.light1};
-                verts[2] = new int[]{x+w, y+h, z, 0, 0, d, textureId, quad.ao3, quad.light3};
-                verts[3] = new int[]{x+w, y+h, z, 0, 0, d, textureId, quad.ao3, quad.light3};
-                verts[4] = new int[]{x,   y+h, z, 1, 0, d, textureId, quad.ao2, quad.light2};
-                verts[5] = new int[]{x,   y,   z, 1, 1, d, textureId, quad.ao0, quad.light0};
-                break;
             case NORTH:
-                verts[0] = new int[]{x+w, y,   z+1, 1, 1, d, textureId, quad.ao1, quad.light0}; // ← ao1
-                verts[1] = new int[]{x,   y,   z+1, 0, 1, d, textureId, quad.ao0, quad.light1}; // ← ao0
-                verts[2] = new int[]{x,   y+h, z+1, 0, 0, d, textureId, quad.ao2, quad.light3}; // ← ao2
-                verts[3] = new int[]{x,   y+h, z+1, 0, 0, d, textureId, quad.ao2, quad.light3};
-                verts[4] = new int[]{x+w, y+h, z+1, 1, 0, d, textureId, quad.ao3, quad.light2}; // ← ao3
-                verts[5] = new int[]{x+w, y,   z+1, 1, 1, d, textureId, quad.ao1, quad.light0};
+                verts[0] = new int[]{x+w, y,   z+1, 1, 1, d, textureId, quad.ao1, quad.light1};
+                verts[1] = new int[]{x,   y,   z+1, 0, 1, d, textureId, quad.ao0, quad.light0};
+                verts[2] = new int[]{x,   y+h, z+1, 0, 0, d, textureId, quad.ao2, quad.light2};
+                verts[3] = new int[]{x,   y+h, z+1, 0, 0, d, textureId, quad.ao2, quad.light2};
+                verts[4] = new int[]{x+w, y+h, z+1, 1, 0, d, textureId, quad.ao3, quad.light3};
+                verts[5] = new int[]{x+w, y,   z+1, 1, 1, d, textureId, quad.ao1, quad.light1};
+                break;
+            case SOUTH:
+                verts[0] = new int[]{x,   y,   z,   1, 1, d, textureId, quad.ao0, quad.light0};
+                verts[1] = new int[]{x+w, y,   z,   0, 1, d, textureId, quad.ao1, quad.light1};
+                verts[2] = new int[]{x+w, y+h, z,   0, 0, d, textureId, quad.ao3, quad.light3};
+                verts[3] = new int[]{x+w, y+h, z,   0, 0, d, textureId, quad.ao3, quad.light3};
+                verts[4] = new int[]{x,   y+h, z,   1, 0, d, textureId, quad.ao2, quad.light2};
+                verts[5] = new int[]{x,   y,   z,   1, 1, d, textureId, quad.ao0, quad.light0};
                 break;
             case WEST:
                 verts[0] = new int[]{x+1, y,   z,   1, 1, d, textureId, quad.ao0, quad.light0};
@@ -150,14 +150,14 @@ public class SubChunkMesh {
                 verts[5] = new int[]{x+1, y,   z,   1, 1, d, textureId, quad.ao0, quad.light0};
                 break;
             case EAST:
-                verts[0] = new int[]{x, y,   z+w, 1, 1, d, textureId, quad.ao1, quad.light0}; // ← ao1
-                verts[1] = new int[]{x, y,   z,   0, 1, d, textureId, quad.ao0, quad.light1}; // ← ao0
-                verts[2] = new int[]{x, y+h, z,   0, 0, d, textureId, quad.ao2, quad.light3}; // ← ao2
-                verts[3] = new int[]{x, y+h, z,   0, 0, d, textureId, quad.ao2, quad.light3};
-                verts[4] = new int[]{x, y+h, z+w, 1, 0, d, textureId, quad.ao3, quad.light2}; // ← ao3
-                verts[5] = new int[]{x, y,   z+w, 1, 1, d, textureId, quad.ao1, quad.light0};
+                verts[0] = new int[]{x,   y,   z+w, 1, 1, d, textureId, quad.ao1, quad.light1};
+                verts[1] = new int[]{x,   y,   z,   0, 1, d, textureId, quad.ao0, quad.light0};
+                verts[2] = new int[]{x,   y+h, z,   0, 0, d, textureId, quad.ao2, quad.light2};
+                verts[3] = new int[]{x,   y+h, z,   0, 0, d, textureId, quad.ao2, quad.light2};
+                verts[4] = new int[]{x,   y+h, z+w, 1, 0, d, textureId, quad.ao3, quad.light3};
+                verts[5] = new int[]{x,   y,   z+w, 1, 1, d, textureId, quad.ao1, quad.light1};
                 break;
-            case UP: // y fixe à y+1, s'étend sur X et Z
+            case UP:
                 verts[0] = new int[]{x,   y+1, z,   0, 0, d, textureId, quad.ao0, quad.light0};
                 verts[1] = new int[]{x+w, y+1, z,   1, 0, d, textureId, quad.ao1, quad.light1};
                 verts[2] = new int[]{x+w, y+1, z+h, 1, 1, d, textureId, quad.ao3, quad.light3};
@@ -165,13 +165,13 @@ public class SubChunkMesh {
                 verts[4] = new int[]{x,   y+1, z+h, 0, 1, d, textureId, quad.ao2, quad.light2};
                 verts[5] = new int[]{x,   y+1, z,   0, 0, d, textureId, quad.ao0, quad.light0};
                 break;
-            case DOWN: // y fixe à y, Z inversé
-                verts[0] = new int[]{x,   y, z+h, 0, 0, d, textureId, quad.ao0, quad.light0};
-                verts[1] = new int[]{x+w, y, z+h, 1, 0, d, textureId, quad.ao1, quad.light1};
-                verts[2] = new int[]{x+w, y, z,   1, 1, d, textureId, quad.ao3, quad.light3};
-                verts[3] = new int[]{x+w, y, z,   1, 1, d, textureId, quad.ao3, quad.light3};
-                verts[4] = new int[]{x,   y, z,   0, 1, d, textureId, quad.ao2, quad.light2};
-                verts[5] = new int[]{x,   y, z+h, 0, 0, d, textureId, quad.ao0, quad.light0};
+            case DOWN:
+                verts[0] = new int[]{x,   y,   z+h, 0, 0, d, textureId, quad.ao0, quad.light0};
+                verts[1] = new int[]{x+w, y,   z+h, 1, 0, d, textureId, quad.ao1, quad.light1};
+                verts[2] = new int[]{x+w, y,   z,   1, 1, d, textureId, quad.ao3, quad.light3};
+                verts[3] = new int[]{x+w, y,   z,   1, 1, d, textureId, quad.ao3, quad.light3};
+                verts[4] = new int[]{x,   y,   z,   0, 1, d, textureId, quad.ao2, quad.light2};
+                verts[5] = new int[]{x,   y,   z+h, 0, 0, d, textureId, quad.ao0, quad.light0};
                 break;
         }
 
@@ -189,7 +189,7 @@ public class SubChunkMesh {
         }
 
         try {
-            this.addObjectFaceVertexToArray(array, 0, 0, 0, w, h);
+            this.addObjectFaceVertexToArray(array, w, h);
         } catch(ArrayEmpty e){ e.printStackTrace(); }
     }
 
