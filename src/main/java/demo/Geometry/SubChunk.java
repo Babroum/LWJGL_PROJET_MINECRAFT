@@ -290,22 +290,16 @@ public class SubChunk extends Node3D{
      * @return Retourne true si aucun bloc solide ne bloque la colonne jusqu'au ciel
      */
     private boolean isColumnOpenToSky(int x, int y, int z) {
-        // regarde les blocks au dessus dans le même subChunk
-        for (int cy = y + 1; cy < CHUNKSIZEY; cy++) {
-            if (blocks[x + cy * CHUNKSIZEX + z * CHUNKSIZEX * CHUNKSIZEY] != (byte) BlocksType.AIR.getId())
-                return false;
+        int chunkX = (int) Math.floor((float)this.x / CHUNKSIZEX);
+        int chunkZ = (int) Math.floor((float)this.z / CHUNKSIZEZ);
+        try {
+            Chunk chunk = ChunksManager.getChunk(chunkX, chunkZ);
+            int globalY = this.y + y; // this.y = base monde du subchunk, y = local 0-15
+            // globalY > heightMap = au-dessus du premier solide = ciel ouvert
+            return globalY > chunk.heightMap[x + z * CHUNKSIZEX];
+        } catch (IncorrectCoordinates e) {
+            return false;
         }
-        // regarde les blocks au dessus dans le subChunk Up
-        SubChunk above = upNeighbor;
-        while (above != null) {
-            for (int cy = 0; cy < CHUNKSIZEY; cy++) {
-                if (above.blocks[x + cy * CHUNKSIZEX + z * CHUNKSIZEX * CHUNKSIZEY] != (byte) BlocksType.AIR.getId())
-                    // si il y a un block alors false
-                    return false;
-            }
-            above = above.upNeighbor;
-        }
-        return true;
     }
 
     /**
@@ -504,6 +498,25 @@ public class SubChunk extends Node3D{
         return dirty;
     }
 
+    /**
+     * Lance le BFS depuis tous les blocs déjà éclairés de ce subChunk. <br>
+     * Utilisé après le remplissage vertical du skylight pour propager latéralement.
+     */
+    @ChunkThread
+    public void propagateExistingLight() {
+        ArrayDeque<Long> queue = new ArrayDeque<>();
+        Set<SubChunk> dummy = new HashSet<>(); // ignoré pendant la génération initiale
+        for (int i = 0; i < MAXBLOCK; i++) {
+            if (lightMap[i] > 0) {
+                int lx = i % CHUNKSIZEX;
+                int ly = (i / CHUNKSIZEX) % CHUNKSIZEY;
+                int lz = i / (CHUNKSIZEX * CHUNKSIZEY);
+                queue.add(encodeLightEntry(lx, ly, lz, lightMap[i] & 0xFF));
+            }
+        }
+        bfsPropagate(queue, dummy);
+    }
+
     // ---------------------------- FIN Lumière ----------------------------
 
     /**
@@ -624,6 +637,14 @@ public class SubChunk extends Node3D{
         int index = x + y * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
         this.blocks[index] = (byte) type.getId();
         this.lightMap[index] = 0;
+
+        // met à jour le heightMap du chunk parent
+        int chunkX = (int) Math.floor((float)this.x / CHUNKSIZEX);
+        int chunkZ = (int) Math.floor((float)this.z / CHUNKSIZEZ);
+        try {
+            ChunksManager.getChunk(chunkX, chunkZ).updateHeightMapAt(x, z);
+        } catch (IncorrectCoordinates e) {}
+
         // Ne rebuild pas pendant la génération initiale
         if (!this.isGenerating && rebuild){
             this.rebuildSubChunk();
@@ -645,7 +666,14 @@ public class SubChunk extends Node3D{
             z < 0 || z >= SubChunk.CHUNKSIZEZ
         ){throw new IncorrectCoordinates("Coordonées dans le subChunk invalide");}
         int index = x + y * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
-        this.blocks[index] = (byte)BlocksType.AIR.getId();
+        this.blocks[index] = (byte) BlocksType.AIR.getId();
+
+        // met à jour le heightMap avant isColumnOpenToSky qui le consulte
+        int chunkX = (int) Math.floor((float)this.x / CHUNKSIZEX);
+        int chunkZ = (int) Math.floor((float)this.z / CHUNKSIZEZ);
+        try {
+            ChunksManager.getChunk(chunkX, chunkZ).updateHeightMapAt(x, z);
+        } catch (IncorrectCoordinates e) {}
 
         this.fillSubChunkBitSet();
 

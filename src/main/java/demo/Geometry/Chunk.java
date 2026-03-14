@@ -1,5 +1,7 @@
 package demo.Geometry;
 
+import java.util.Arrays;
+
 import org.joml.Matrix4f;
 
 import demo.Annotations.ChunkThread;
@@ -24,6 +26,9 @@ public class Chunk extends Node3D{
     private int maxX;
     private int maxY;
     private int maxZ;
+
+    /** Y global du premier bloc solide de la colonne, -1 si colonne entièrement vide */
+    public int[] heightMap = new int[SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEZ];
     
     /**
      * Initialise les subChunks du chunks
@@ -48,6 +53,42 @@ public class Chunk extends Node3D{
         this.maxZ = this.minZ + SubChunk.CHUNKSIZEZ;
         
         Render.monitor.addChunkCount();
+    }
+
+    /**
+     * Calcule le heightMap pour toutes les colonnes du chunk.
+     * Doit être appelé après génération des blocs, avant propagation lumière.
+     */
+    @ChunkThread
+    public void buildHeightMap() {
+        Arrays.fill(heightMap, -1);
+        for (int x = 0; x < SubChunk.CHUNKSIZEX; x++) {
+            for (int z = 0; z < SubChunk.CHUNKSIZEZ; z++) {
+                updateHeightMapAt(x, z);
+            }
+        }
+    }
+
+    /**
+     * Recalcule le heightMap pour une seule colonne.
+     * Appelé après chaque ajout/suppression de bloc.
+     * @param x coordonnée locale x (0-15)
+     * @param z coordonnée locale z (0-15)
+     */
+    @ChunkThread
+    public void updateHeightMapAt(int x, int z) {
+        heightMap[x + z * SubChunk.CHUNKSIZEX] = -1;
+        // descend de haut en bas à travers tous les subChunks
+        outer: // label d'une boucle 
+        for (int i = SUBCHUNKCOUNT - 1; i >= 0; i--) {
+            for (int y = SubChunk.CHUNKSIZEY - 1; y >= 0; y--) {
+                int idx = x + y * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
+                if (subChunks[i].blocks[idx] != (byte) BlocksType.AIR.getId()) {
+                    heightMap[x + z * SubChunk.CHUNKSIZEX] = i * SubChunk.CHUNKSIZEY + y;
+                    break outer; // permet de casser la boucle for avec le label outer pour évité de faire un double break
+                }
+            }
+        }
     }
 
     /**
