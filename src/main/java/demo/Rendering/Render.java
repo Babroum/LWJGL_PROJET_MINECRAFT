@@ -133,25 +133,13 @@ public class Render {
 
             // Affiche la pos du joueur
             Vector3f pos = PlayersManager.player.getPosition();
-            Render.getTextRender().drawText(String.format("Position: (%.2f, %.2f, %.2f)%n", pos.x, pos.y - 1.5f, pos.z), Window.width / 2,20, 15, Color4f.RED);
-
-            // Affiche la touche à appuyer pour toggle le wireframe
-            Render.getTextRender().drawText("Toggle WireFrameMode : E", 0, 20, 15, Color4f.YELLOW);
-            Render.getTextRender().drawText("Toggle MouseLock : P", 0, 40, 15, Color4f.YELLOW);       
-            Render.getTextRender().drawText("Toggle ChunkBorder : B", 0, 60, 15, Color4f.YELLOW);   
-            Render.getTextRender().drawText("Toggle Teleport to (0,100,0): T", 0, 80, 15, Color4f.YELLOW);      
-
-            // Affiche le nombre de nœud à l'écran
-            // s'actualise toute les 60 images
-            if (Render.frameCount % 60 == 0){
-                Render.getTextRender().drawText("Node3D count : " + Render.sceneGraph.getTotalNodeCount(), 0, 100, 15, Color4f.PURPLE);         
-            }
+            Render.getTextRender().drawText(String.format("Position: (%.2f, %.2f, %.2f)%n", pos.x, pos.y - 1.5f, pos.z), Window.width / 2,20, 15, Color4f.RED); 
 
             // Affiche les lignes retourner par le PerformanceManager
             String[] lines = monitor.getDisplayLines();
             for(int i = 0; i < lines.length; i++){
                 if(lines[i] != null){
-                    Render.getTextRender().drawText(lines[i], 0, 120 + i * 20, 15, Color4f.PURPLE);
+                    Render.getTextRender().drawText(lines[i], 0, 20 + i * 20, 15, Color4f.PURPLE);
                 }
             }
 

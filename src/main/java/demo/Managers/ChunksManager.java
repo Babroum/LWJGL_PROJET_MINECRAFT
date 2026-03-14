@@ -19,6 +19,8 @@ import demo.Rendering.Render;
 
 public class ChunksManager {
 
+    public static final byte SKY_LIGHT = (byte) 10;
+
     // HashMap fait pareil mais linked permet de garder l'ordre dans lequel c'est insérer
     // C'est comme un dictionnaire, clé valeur
     // String remplacé par Long, optimisation
@@ -124,7 +126,7 @@ public class ChunksManager {
                                 if (sub.blocks[idx] != (byte)BlocksType.AIR.getId()){
                                     open = false; // bloc solide on stoppe la lumière pour la suite
                                 } else if (open){
-                                    sub.lightMap[idx] = (byte)1; // bloc air et ciel ouvert alors pleine lumière
+                                    sub.lightMap[idx] = SKY_LIGHT; // bloc air et ciel ouvert alors pleine lumière
                                 }
                             }
                         }

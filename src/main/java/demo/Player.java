@@ -15,7 +15,6 @@ import demo.Enum.BlocksType;
 import demo.Events.KeyboardInput;
 import demo.Events.MouseInput;
 import demo.Geometry.SubChunk;
-import demo.Rendering.Render;
 
 /**
  * Une joueur 
@@ -47,6 +46,8 @@ public class Player {
     private float breakCooldown = 0f;
     private float placeCooldown = 0f;
     private float breakPlaceDelay = 200f; // temps en millisecondes pour casser/poser un bloc
+
+    public BlocksType blockInHand = BlocksType.COBBLESTONE; // pour test
 
     public Player(){
         this.position = this.camera.getPosition();
@@ -232,7 +233,8 @@ public class Player {
                             int localX = ChunksManager.floorMod(fbx, SubChunk.CHUNKSIZEX);
                             int localY = ChunksManager.floorMod(fby, SubChunk.CHUNKSIZEY);
                             int localZ = ChunksManager.floorMod(fbz, SubChunk.CHUNKSIZEZ);
-                            subToModify.removeBlockFromSubChunk(localX, localY, localZ);
+
+                            subToModify.removeBlockFromSubChunk(localX, localY, localZ);                            
                         });
                         this.breakCooldown = this.breakPlaceDelay;
                         block = BlocksType.AIR;
@@ -249,21 +251,25 @@ public class Player {
                     // on vérifie pour etre sur qu'il n'y ait pas de bloc
                     if (ChunksManager.getBlock(px, py, pz) == BlocksType.AIR && this.placeCooldown <= 0f && !this.isInsidePlayer(px, py, pz)){
                         try {
-                            final SubChunk sub2 = ChunksManager.getSubChunk(px, py, pz);
-                            // convertir en coordonnées locales du subchunk
-                            int localX = ChunksManager.floorMod(px, SubChunk.CHUNKSIZEX);
-                            int localY = ChunksManager.floorMod(py, SubChunk.CHUNKSIZEY);
-                            int localZ = ChunksManager.floorMod(pz, SubChunk.CHUNKSIZEZ);
-                            chunkModifyThread.submit(() -> {                                
-                                // place le bloc sans rebuild
-                                int index = localX + localY * SubChunk.CHUNKSIZEX + localZ * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
-                                sub2.blocks[index] = (byte)BlocksType.GLOWSTONE.getId();
-                                sub2.fillSubChunkBitSet();
-                                if (BlocksType.GLOWSTONE.getId() == sub2.blocks[index]){
+                            final SubChunk sub2 = ChunksManager.getSubChunk(px, py, pz);                            
+                            chunkModifyThread.submit(() -> {  
+                                // convertir en coordonnées locales du subchunk
+                                int localX = ChunksManager.floorMod(px, SubChunk.CHUNKSIZEX);
+                                int localY = ChunksManager.floorMod(py, SubChunk.CHUNKSIZEY);
+                                int localZ = ChunksManager.floorMod(pz, SubChunk.CHUNKSIZEZ);     
+                                
+                                sub2.addBlockToSubChunk(blockInHand, localX, localY, localZ, false);  
+
+                                if (BlocksType.GLOWSTONE.getId() == blockInHand.getId()){                                    
                                     // propage la lumière
                                     Set<SubChunk> dirty = sub2.propagateLightFrom(localX, localY, localZ, (byte)15);
-                                    for(SubChunk s : dirty) s.rebuildSubChunk();
-                                }                                
+                                    for (SubChunk s : dirty) { s.rebuildSubChunk(); }
+                                }else{                                    
+                                    Set<SubChunk> dirty = sub2.cutSkyLightColumn(localX, localY, localZ);
+                                    dirty.add(sub2);
+                                    for (SubChunk s : dirty) { s.rebuildSubChunk(); }
+                                }
+
                             });
                             this.placeCooldown = this.breakPlaceDelay;
                         } catch (Exception e) {

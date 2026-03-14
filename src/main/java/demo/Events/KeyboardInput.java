@@ -3,10 +3,12 @@ package demo.Events;
 import org.lwjgl.glfw.GLFW;
 
 import demo.Annotations.OpenGLThread;
+import demo.Enum.BlocksType;
 import demo.Geometry.Chunk;
 import demo.Geometry.SubChunk;
 import demo.Managers.AudioManager;
 import demo.Managers.ChunksManager;
+import demo.Managers.PlayersManager;
 import demo.Rendering.Camera;
 import demo.Rendering.Window;
 import demo.Player;
@@ -88,6 +90,15 @@ public class KeyboardInput {
 
                 case GLFW.GLFW_KEY_SPACE:
                     KeyboardInput.isJumping = true;
+                    break;
+
+                case GLFW.GLFW_KEY_1:
+                    PlayersManager.player.blockInHand = BlocksType.COBBLESTONE;
+                    break;
+
+                case GLFW.GLFW_KEY_2:
+                    PlayersManager.player.blockInHand = BlocksType.GLOWSTONE;
+                    break;
 
                 default:
                     break;
