@@ -8,7 +8,6 @@ flat in int dir; // direction de la face
 flat in int isBorder; // détermine si c'est les bordures de subchunk à afficher ou non
 in vec2 uv; // coordonnées uv 
 in float AO;
-in float lightValue;
 
 out vec4 FragColor;
 
@@ -32,9 +31,8 @@ void main()
     else               dirFactor = 0.5;
 
     float aoFactor  = 1.0 - (AO / 3.0) * 0.35;  // fixe, géométrique
-    float light     = max(lightValue, 0.04) * dirFactor;
 
     // calcule la taille texture par rapport au coordonnées uv et la texture
     vec4 texColor = texture(tex, vec3(fract(uv), float(texId))); 
-    FragColor = vec4(texColor.rgb * light * aoFactor, texColor.a);
+    FragColor = vec4(texColor.rgb * dirFactor * aoFactor, texColor.a);
 }

@@ -15,11 +15,9 @@ public class Quad {
     public String direction;
     public BlockDefinition type = Blocks.GRASS;
     public int ao0, ao1, ao2, ao3; // coins A, B, C, D
-    public int light;
 
     public Quad(int x, int y, int z, int width, int height, String direction,
-                int ao0, int ao1, int ao2, int ao3,
-                int light){
+                int ao0, int ao1, int ao2, int ao3){
         this.x = x;
         this.y = y;
         this.z = z;
@@ -30,6 +28,5 @@ public class Quad {
         this.ao1 = ao1;
         this.ao2 = ao2;
         this.ao3 = ao3;
-        this.light = light;
     }
 }

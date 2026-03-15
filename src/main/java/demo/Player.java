@@ -1,6 +1,5 @@
 package demo;
 
-import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -257,18 +256,7 @@ public class Player {
                                 int localY = ChunksManager.floorMod(py, SubChunk.CHUNKSIZEY);
                                 int localZ = ChunksManager.floorMod(pz, SubChunk.CHUNKSIZEZ);     
                                 
-                                byte oldLight = sub2.getLightAt(localX, localY, localZ);
-                                sub2.addBlockToSubChunk(blockInHand, localX, localY, localZ, false);  
-
-                                if (Blocks.GLOWSTONE == blockInHand){                                    
-                                    // propage la lumière
-                                    Set<SubChunk> dirty = sub2.propagateLightFrom(localX, localY, localZ, (byte)15);
-                                    for (SubChunk s : dirty) { s.rebuildSubChunk(); }
-                                }else{                                    
-                                    Set<SubChunk> dirty = sub2.cutSkyLightColumn(localX, localY, localZ, oldLight);
-                                    dirty.add(sub2);
-                                    for (SubChunk s : dirty) { s.rebuildSubChunk(); }
-                                }                               
+                                sub2.addBlockToSubChunk(blockInHand, localX, localY, localZ, true);                            
                             });
                             this.placeCooldown = this.breakPlaceDelay;
                         } catch (Exception e) {

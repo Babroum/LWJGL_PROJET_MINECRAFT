@@ -55,8 +55,8 @@ public class SubChunkMesh {
     // Tout les sommets de tout les objets avant la transformation en IntBuffer pack
     private int[] vertexArrayPack;
 
-    private final int[][] vertsBuffer = new int[6][9];
-    private final int[] arrayBuffer   = new int[54]; // 6 * 9
+    private final int[][] vertsBuffer = new int[6][8];
+    private final int[] arrayBuffer   = new int[48]; // 6 * 8
 
     /**
      * Le nombre de sommet dans la maille
@@ -83,7 +83,7 @@ public class SubChunkMesh {
             throw new ArrayEmpty();
         }
         // on garde la face
-        for(int i = 0; i < array.length; i += 9){
+        for(int i = 0; i < array.length; i += 8){
             int packed = 0;
             // |= c'est le OU permet de combiner sans supprimer les valeurs
             // le x max est 15 donc pourquoi pas avoir << 28 car 15 = 1111 donc 4 bits
@@ -101,7 +101,6 @@ public class SubChunkMesh {
             packed2 |= (w)                  << 27; // 5 bits
             packed2 |= (h)                  << 22; // 5 bits
             packed2 |= (array[i+7] & 0x3)   << 20; // 2 bits valeur 0-3
-            packed2 |= (array[i+8] & 0xF)   << 16; // 4 bits valeur 0-15
  
             this.vertexArrayPack[this.vertexCount * 2] = packed;
             this.vertexArrayPack[this.vertexCount * 2 + 1] = packed2;
@@ -127,71 +126,70 @@ public class SubChunkMesh {
         switch(quad.direction){
             case "north":
                 d = 0;
-                verts[0] = new int[]{x+w, y,   z+1, 1, 1, d, textureId, quad.ao1, quad.light};
-                verts[1] = new int[]{x,   y,   z+1, 0, 1, d, textureId, quad.ao0, quad.light};
-                verts[2] = new int[]{x,   y+h, z+1, 0, 0, d, textureId, quad.ao2, quad.light};
-                verts[3] = new int[]{x,   y+h, z+1, 0, 0, d, textureId, quad.ao2, quad.light};
-                verts[4] = new int[]{x+w, y+h, z+1, 1, 0, d, textureId, quad.ao3, quad.light};
-                verts[5] = new int[]{x+w, y,   z+1, 1, 1, d, textureId, quad.ao1, quad.light};
+                verts[0] = new int[]{x+w, y,   z+1, 1, 1, d, textureId, quad.ao1};
+                verts[1] = new int[]{x,   y,   z+1, 0, 1, d, textureId, quad.ao0};
+                verts[2] = new int[]{x,   y+h, z+1, 0, 0, d, textureId, quad.ao2};
+                verts[3] = new int[]{x,   y+h, z+1, 0, 0, d, textureId, quad.ao2};
+                verts[4] = new int[]{x+w, y+h, z+1, 1, 0, d, textureId, quad.ao3};
+                verts[5] = new int[]{x+w, y,   z+1, 1, 1, d, textureId, quad.ao1};
                 break;
             case "south":
                 d = 1;
-                verts[0] = new int[]{x,   y,   z,   1, 1, d, textureId, quad.ao0, quad.light};
-                verts[1] = new int[]{x+w, y,   z,   0, 1, d, textureId, quad.ao1, quad.light};
-                verts[2] = new int[]{x+w, y+h, z,   0, 0, d, textureId, quad.ao3, quad.light};
-                verts[3] = new int[]{x+w, y+h, z,   0, 0, d, textureId, quad.ao3, quad.light};
-                verts[4] = new int[]{x,   y+h, z,   1, 0, d, textureId, quad.ao2, quad.light};
-                verts[5] = new int[]{x,   y,   z,   1, 1, d, textureId, quad.ao0, quad.light};
+                verts[0] = new int[]{x,   y,   z,   1, 1, d, textureId, quad.ao0};
+                verts[1] = new int[]{x+w, y,   z,   0, 1, d, textureId, quad.ao1};
+                verts[2] = new int[]{x+w, y+h, z,   0, 0, d, textureId, quad.ao3};
+                verts[3] = new int[]{x+w, y+h, z,   0, 0, d, textureId, quad.ao3};
+                verts[4] = new int[]{x,   y+h, z,   1, 0, d, textureId, quad.ao2};
+                verts[5] = new int[]{x,   y,   z,   1, 1, d, textureId, quad.ao0};
                 break;           
             case "west":                
                 d = 2;
-                verts[0] = new int[]{x+1, y,   z,   1, 1, d, textureId, quad.ao0, quad.light};
-                verts[1] = new int[]{x+1, y,   z+w, 0, 1, d, textureId, quad.ao1, quad.light};
-                verts[2] = new int[]{x+1, y+h, z+w, 0, 0, d, textureId, quad.ao3, quad.light};
-                verts[3] = new int[]{x+1, y+h, z+w, 0, 0, d, textureId, quad.ao3, quad.light};
-                verts[4] = new int[]{x+1, y+h, z,   1, 0, d, textureId, quad.ao2, quad.light};
-                verts[5] = new int[]{x+1, y,   z,   1, 1, d, textureId, quad.ao0, quad.light};
+                verts[0] = new int[]{x+1, y,   z,   1, 1, d, textureId, quad.ao0};
+                verts[1] = new int[]{x+1, y,   z+w, 0, 1, d, textureId, quad.ao1};
+                verts[2] = new int[]{x+1, y+h, z+w, 0, 0, d, textureId, quad.ao3};
+                verts[3] = new int[]{x+1, y+h, z+w, 0, 0, d, textureId, quad.ao3};
+                verts[4] = new int[]{x+1, y+h, z,   1, 0, d, textureId, quad.ao2};
+                verts[5] = new int[]{x+1, y,   z,   1, 1, d, textureId, quad.ao0};
                 break;            
             case "east":
                 d = 3;
-                verts[0] = new int[]{x,   y,   z+w, 1, 1, d, textureId, quad.ao1, quad.light};
-                verts[1] = new int[]{x,   y,   z,   0, 1, d, textureId, quad.ao0, quad.light};
-                verts[2] = new int[]{x,   y+h, z,   0, 0, d, textureId, quad.ao2, quad.light};
-                verts[3] = new int[]{x,   y+h, z,   0, 0, d, textureId, quad.ao2, quad.light};
-                verts[4] = new int[]{x,   y+h, z+w, 1, 0, d, textureId, quad.ao3, quad.light};
-                verts[5] = new int[]{x,   y,   z+w, 1, 1, d, textureId, quad.ao1, quad.light};
+                verts[0] = new int[]{x,   y,   z+w, 1, 1, d, textureId, quad.ao1};
+                verts[1] = new int[]{x,   y,   z,   0, 1, d, textureId, quad.ao0};
+                verts[2] = new int[]{x,   y+h, z,   0, 0, d, textureId, quad.ao2};
+                verts[3] = new int[]{x,   y+h, z,   0, 0, d, textureId, quad.ao2};
+                verts[4] = new int[]{x,   y+h, z+w, 1, 0, d, textureId, quad.ao3};
+                verts[5] = new int[]{x,   y,   z+w, 1, 1, d, textureId, quad.ao1};
                 break;
             case "up":
                 d = 4;
-                verts[0] = new int[]{x,   y+1, z,   0, 0, d, textureId, quad.ao0, quad.light};
-                verts[1] = new int[]{x+w, y+1, z,   1, 0, d, textureId, quad.ao1, quad.light};
-                verts[2] = new int[]{x+w, y+1, z+h, 1, 1, d, textureId, quad.ao3, quad.light};
-                verts[3] = new int[]{x+w, y+1, z+h, 1, 1, d, textureId, quad.ao3, quad.light};
-                verts[4] = new int[]{x,   y+1, z+h, 0, 1, d, textureId, quad.ao2, quad.light};
-                verts[5] = new int[]{x,   y+1, z,   0, 0, d, textureId, quad.ao0, quad.light};
+                verts[0] = new int[]{x,   y+1, z,   0, 0, d, textureId, quad.ao0};
+                verts[1] = new int[]{x+w, y+1, z,   1, 0, d, textureId, quad.ao1};
+                verts[2] = new int[]{x+w, y+1, z+h, 1, 1, d, textureId, quad.ao3};
+                verts[3] = new int[]{x+w, y+1, z+h, 1, 1, d, textureId, quad.ao3};
+                verts[4] = new int[]{x,   y+1, z+h, 0, 1, d, textureId, quad.ao2};
+                verts[5] = new int[]{x,   y+1, z,   0, 0, d, textureId, quad.ao0};
                 break;
             case "down":
                 d = 5;
-                verts[0] = new int[]{x,   y,   z+h, 0, 0, d, textureId, quad.ao2, quad.light};
-                verts[1] = new int[]{x+w, y,   z+h, 1, 0, d, textureId, quad.ao3, quad.light};
-                verts[2] = new int[]{x+w, y,   z,   1, 1, d, textureId, quad.ao1, quad.light};
-                verts[3] = new int[]{x+w, y,   z,   1, 1, d, textureId, quad.ao1, quad.light};
-                verts[4] = new int[]{x,   y,   z,   0, 1, d, textureId, quad.ao0, quad.light};
-                verts[5] = new int[]{x,   y,   z+h, 0, 0, d, textureId, quad.ao2, quad.light};
+                verts[0] = new int[]{x,   y,   z+h, 0, 0, d, textureId, quad.ao2};
+                verts[1] = new int[]{x+w, y,   z+h, 1, 0, d, textureId, quad.ao3};
+                verts[2] = new int[]{x+w, y,   z,   1, 1, d, textureId, quad.ao1};
+                verts[3] = new int[]{x+w, y,   z,   1, 1, d, textureId, quad.ao1};
+                verts[4] = new int[]{x,   y,   z,   0, 1, d, textureId, quad.ao0};
+                verts[5] = new int[]{x,   y,   z+h, 0, 0, d, textureId, quad.ao2};
                 break;
         }
 
-        int[] array = this.arrayBuffer; // 6 sommets * 9 valeurs
+        int[] array = this.arrayBuffer; // 6 sommets * 8 valeurs
         for(int i = 0; i < 6; i++){
-            array[i*9]   = verts[i][0]; // x
-            array[i*9+1] = verts[i][1]; // y
-            array[i*9+2] = verts[i][2]; // z
-            array[i*9+3] = verts[i][3]; // u
-            array[i*9+4] = verts[i][4]; // v
-            array[i*9+5] = d;           // dir
-            array[i*9+6] = textureId;   // textureId
-            array[i*9+7] = verts[i][7]; // ao
-            array[i*9+8] = verts[i][8]; // light
+            array[i*8]   = verts[i][0]; // x
+            array[i*8+1] = verts[i][1]; // y
+            array[i*8+2] = verts[i][2]; // z
+            array[i*8+3] = verts[i][3]; // u
+            array[i*8+4] = verts[i][4]; // v
+            array[i*8+5] = d;           // dir
+            array[i*8+6] = textureId;   // textureId
+            array[i*8+7] = verts[i][7]; // ao
         }
         try {
             this.addObjectFaceVertexToArray(array, w, h);
