@@ -3,6 +3,8 @@ package demo;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import javax.swing.plaf.synth.SynthButtonUI;
+
 import org.joml.Vector3f;
 import org.lwjgl.opengl.GL11;
 
@@ -12,6 +14,7 @@ import demo.Rendering.BlockBorderRenderer;
 import demo.Rendering.Camera;
 import demo.Events.KeyboardInput;
 import demo.Events.MouseInput;
+import demo.Geometry.Chunk;
 import demo.Geometry.SubChunk;
 
 /**
@@ -218,7 +221,8 @@ public class Player {
                 // récupère le block à tel position
                 block = ChunksManager.getBlock(bx, by, bz);
                 // pareil pour le chunk
-                sub = ChunksManager.getSubChunk(bx, by, bz);
+                Chunk chunk = ChunksManager.getChunk(bx / SubChunk.CHUNKSIZEX, bz / SubChunk.CHUNKSIZEZ);
+                sub = chunk.getSubChunk(by / SubChunk.CHUNKSIZEY);
 
                 // si on clique gauche et que la souris n'est pas débloqué, on casse le block si il existe
                 if (MouseInput.isLeftButtonPressed() && KeyboardInput.isMouseLock) {
@@ -249,7 +253,8 @@ public class Player {
                     // on vérifie pour etre sur qu'il n'y ait pas de bloc
                     if (ChunksManager.getBlock(px, py, pz) == Blocks.AIR && this.placeCooldown <= 0f && !this.isInsidePlayer(px, py, pz)){
                         try {
-                            final SubChunk sub2 = ChunksManager.getSubChunk(px, py, pz);                            
+                            Chunk chunk2 = ChunksManager.getChunk(px / SubChunk.CHUNKSIZEX, pz / SubChunk.CHUNKSIZEZ);
+                            final SubChunk sub2 = chunk2.getSubChunk(py / SubChunk.CHUNKSIZEY);                            
                             chunkModifyThread.submit(() -> {  
                                 // convertir en coordonnées locales du subchunk
                                 int localX = ChunksManager.floorMod(px, SubChunk.CHUNKSIZEX);

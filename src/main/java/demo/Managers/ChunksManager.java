@@ -57,6 +57,22 @@ public class ChunksManager {
         }
     }
 
+        /**
+     * Créer un nouveau chunk à la position donné
+     * @param x int
+     * @param z int
+     * @return Chunk
+     */
+    @ChunkThread
+    public static Chunk createChunk(int x, int z){
+        long coord = chunkKey(x, z);
+        if (ChunksManager.chunks.containsKey(coord)) 
+            {throw new RuntimeException("Le chunk x: " + x + " z: "+ z + " existe déjà");}
+        Chunk chunk = new Chunk(x, z);
+        ChunksManager.chunks.put(coord, chunk);
+        return chunk;
+    }
+
     /**
      * Génère les chunks (maillages)
      * @param generator un seed
@@ -107,29 +123,19 @@ public class ChunksManager {
         futures.clear(); 
 
         for (Chunk chunk : chunks.values()){
-            futures.add(pool.submit(() -> finalizeChunk(chunk)));
+            futures.add(pool.submit(() -> chunk.initHeightMap()));
+        }
+
+        for (Future<?> f : futures) try { f.get(); } catch (Exception e) {}
+        futures.clear(); 
+
+        for (Chunk chunk : chunks.values()){
+            futures.add(pool.submit(() -> finalizeChunk(chunk) ));
         }
             
         for (Future<?> f : futures) {
             try { f.get(); } catch (Exception e) {}
         }
-    }
-    
-    /**
-     * Créer un nouveau chunk à la position donné
-     * @param x int
-     * @param z int
-     * @return Chunk
-     * @throws IncorrectCoordinates
-     */
-    @ChunkThread
-    public static Chunk createChunk(int x, int z) throws IncorrectCoordinates{
-        long coord = chunkKey(x, z);
-        if (ChunksManager.chunks.containsKey(coord)) 
-            {throw new IncorrectCoordinates("Le chunk x: " + x + " z: "+ z + " existe déjà");}
-        Chunk chunk = new Chunk(x, z);
-        ChunksManager.chunks.put(coord, chunk);
-        return chunk;
     }
 
     /**
@@ -151,6 +157,7 @@ public class ChunksManager {
             }
         }
         try { Render.chunkQueue.put(chunk); } catch(InterruptedException e) { Thread.currentThread().interrupt(); }
+                 
     }
 
     /**
@@ -158,13 +165,12 @@ public class ChunksManager {
      * @param x int
      * @param z int
      * @return Chunk
-     * @throws IncorrectCoordinates
      */
     @ChunkThread
-    public static Chunk getChunk(int x, int z) throws IncorrectCoordinates{
+    public static Chunk getChunk(int x, int z){
         long coord = chunkKey(x, z);
         if (!ChunksManager.chunks.containsKey(coord)){
-            throw new IncorrectCoordinates("Le chunk x: " + x + " z: "+ z + " n'existe pas");
+            throw new RuntimeException("Le chunk x: " + x + " z: "+ z + " n'existe pas");
         }
         return ChunksManager.chunks.get(coord);
     }
@@ -181,13 +187,12 @@ public class ChunksManager {
      * Supprime le chunk à la position donné
      * @param x int
      * @param z int
-     * @throws IncorrectCoordinates
      */
     @OpenGLThread
-    public static void removeChunk(int x, int z) throws IncorrectCoordinates{
+    public static void removeChunk(int x, int z){
         long coord = chunkKey(x, z);
         if (!ChunksManager.chunks.containsKey(coord)){
-            throw new IncorrectCoordinates("Le chunk x: " + x + " z: "+ z + " n'existe pas");
+            throw new RuntimeException("Le chunk x: " + x + " z: "+ z + " n'existe pas");
         }    
         // Récupère le chunk
         Chunk chunk = ChunksManager.chunks.get(coord);
@@ -195,64 +200,6 @@ public class ChunksManager {
         for(SubChunk sub : chunk.subChunks) sub.removeSubChunk();
         // Et supprime le chunk du dico
         ChunksManager.chunks.remove(coord);
-    }
-
-    /**
-     * Finalise la construction de tout les chunks
-     */
-    @ChunkThread
-    public static void finalizeAllChunk(){
-        for(Chunk chunk : ChunksManager.chunks.values()){
-            ChunksManager.finalizeChunk(chunk);
-        }
-    }
-
-    /**
-     * Retourne un block dans l'un des chunks
-     * Coordonnée global
-     * @param x int
-     * @param y int
-     * @param z int
-     * @return Object3D
-     * @throws IncorrectCoordinates
-     */
-    public static BlockDefinition getBlock(int x, int y, int z) throws IncorrectCoordinates{
-        if (y < 0 || y >= SubChunk.CHUNKSIZEY * Chunk.SUBCHUNKCOUNT){throw new IncorrectCoordinates("Valeur en Y incorrect");}
-
-        int chunkX = (int) Math.floor((float) x / SubChunk.CHUNKSIZEX);
-        int chunkZ = (int) Math.floor((float) z / SubChunk.CHUNKSIZEZ);
-
-        Chunk chunk = ChunksManager.getChunk(chunkX, chunkZ);
-
-        SubChunk sub = chunk.getSubChunk(y / SubChunk.CHUNKSIZEY);
-
-        int localX = ChunksManager.floorMod(x, SubChunk.CHUNKSIZEX);
-        int localY = ChunksManager.floorMod(y, SubChunk.CHUNKSIZEY);
-        int localZ = ChunksManager.floorMod(z, SubChunk.CHUNKSIZEZ);
-  
-        return sub.getBlock(localX, localY, localZ);
-    }
-
-    /**
-     * Retourne un subChunk dans l'un des chunks
-     * Coordonnée global
-     * @param x int
-     * @param y int
-     * @param z int
-     * @return SubChunk
-     * @throws IncorrectCoordinates
-     */
-    public static SubChunk getSubChunk(int x, int y, int z) throws IncorrectCoordinates{
-        if (y < 0 || y >= SubChunk.CHUNKSIZEY * Chunk.SUBCHUNKCOUNT){throw new IncorrectCoordinates("Valeur en Y incorrect");}
-
-        int chunkX = (int) Math.floor((float) x / SubChunk.CHUNKSIZEX);
-        int chunkZ = (int) Math.floor((float) z / SubChunk.CHUNKSIZEZ);
-
-        Chunk chunk = ChunksManager.getChunk(chunkX, chunkZ);
-
-        SubChunk sub = chunk.getSubChunk(y / SubChunk.CHUNKSIZEY);
-
-        return sub;
     }
 
     /**
@@ -265,6 +212,28 @@ public class ChunksManager {
                 sub.removeSubChunk();
             }
         }
+    }
+
+    /**
+     * Retourne un block dans l'un des chunks
+     * Coordonnée global
+     * @param x int
+     * @param y int
+     * @param z int
+     * @return Object3D
+     */
+    public static BlockDefinition getBlock(int x, int y, int z){
+        if (y < 0 || y >= SubChunk.CHUNKSIZEY * Chunk.SUBCHUNKCOUNT){throw new RuntimeException("Valeur en Y incorrect");}
+
+        int chunkX = (int) Math.floor((float) x / SubChunk.CHUNKSIZEX);
+        int chunkZ = (int) Math.floor((float) z / SubChunk.CHUNKSIZEZ);
+
+        Chunk chunk = ChunksManager.getChunk(chunkX, chunkZ);
+
+        int localX = ChunksManager.floorMod(x, SubChunk.CHUNKSIZEX);
+        int localZ = ChunksManager.floorMod(z, SubChunk.CHUNKSIZEZ);
+
+        return chunk.getBlock(localX, y, localZ);
     }
 
     /**

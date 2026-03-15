@@ -47,6 +47,8 @@ public class SubChunk extends Node3D{
 
     private boolean isGenerating = false;
 
+    private Chunk parent;
+
     // contient des 1 et 0 (block plein, block vide(air))
     public BitSet bitSet = new BitSet(SubChunk.MAXBLOCK); 
 
@@ -92,20 +94,15 @@ public class SubChunk extends Node3D{
     // c'est pour cela qu'un threadlocal, va créer une instance de FACE_DATA_LOCAL sur chaque thread
     private static final ThreadLocal<FaceData> FACE_DATA_LOCAL = ThreadLocal.withInitial(() -> new FaceData());
 
-
     @ChunkThread
-    public SubChunk(){
+    public SubChunk(Chunk parent){
+        this.parent = parent;
         this.quads = new ArrayList<Quad>();
         this.blocks = new byte[SubChunk.MAXBLOCK];   
         this.lightMap = new byte[SubChunk.MAXBLOCK];   
-        for (int i = 0; i < this.lightMap.length; i++) {
-            this.lightMap[i] = (byte)0xA0; 
-        }
         // définit la taille du buffer et du tableau de vertex  
         this.mesh.setupSubChunkBuffers(this.bitSet.cardinality());   
     }
-
-    // ----------------------------- Lumière -----------------------------
 
     /**
      * Retourne la lumière du ciel sur le block.
@@ -172,11 +169,11 @@ public class SubChunk extends Node3D{
         if (newLight < 0 || newLight > 15) throw new RuntimeException("La lumière doit être comprise entre 0 et 15");
         int index = x + y * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
 
-        byte oldLight = this.lightMap[index];
-        this.lightMap[index] = (byte)((oldLight & 0x0F) | (newLight & 0xF0));
-
-        if (x >= 0 && x < CHUNKSIZEX && y >= 0 && y < CHUNKSIZEY && z >= 0 && z < CHUNKSIZEZ)
-            {this.lightMap[index] = (byte)((oldLight & 0x0F) | (newLight & 0xF0)); return; }
+        if (x >= 0 && x < CHUNKSIZEX && y >= 0 && y < CHUNKSIZEY && z >= 0 && z < CHUNKSIZEZ){
+            byte oldLight = this.lightMap[index];
+            this.lightMap[index] = (byte)((oldLight & 0x0F) | (newLight << 4));
+            return; 
+        }
         if (y >= CHUNKSIZEY && this.upNeighbor != null)
             { this.upNeighbor.setBlockSkyLight(x, y - CHUNKSIZEY, z, newLight); return; }
         if (y < 0 && this.downNeighbor != null)
@@ -200,12 +197,13 @@ public class SubChunk extends Node3D{
      */
     public void setBlockLight(int x, int y, int z, byte newLight){
         if (newLight < 0 || newLight > 15) throw new RuntimeException("La lumière doit être comprise entre 0 et 15");
-        int index = x + y * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
+        int index = x + y * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY; 
 
-        byte oldLight = this.lightMap[index];
-
-        if (x >= 0 && x < CHUNKSIZEX && y >= 0 && y < CHUNKSIZEY && z >= 0 && z < CHUNKSIZEZ)
-            {this.lightMap[index] = (byte)((oldLight & 0x0F) | (newLight & 0xF0)); return; } // garde les 4 bits à gauche et met les 4 bits à droite avec les nouvelles valeurs
+        if (x >= 0 && x < CHUNKSIZEX && y >= 0 && y < CHUNKSIZEY && z >= 0 && z < CHUNKSIZEZ){
+            byte oldLight = this.lightMap[index];
+            this.lightMap[index] = (byte)((oldLight & 0x0F) | (newLight & 0xF0));
+            return; 
+        } // garde les 4 bits à gauche et met les 4 bits à droite avec les nouvelles valeurs
         if (y >= CHUNKSIZEY && this.upNeighbor != null)
             { this.upNeighbor.setBlockLight(x, y - CHUNKSIZEY, z, newLight); return; }
         if (y < 0 && this.downNeighbor != null)
@@ -220,7 +218,6 @@ public class SubChunk extends Node3D{
             { this.southNeighbor.setBlockLight(x, y, z + CHUNKSIZEZ, newLight); return; }
     }
 
-    // --------------------------- Fin Lumière ---------------------------
 
     /**
      * Place le subChunk avec des coordonnées par rapport au autres subChunk
@@ -329,16 +326,17 @@ public class SubChunk extends Node3D{
      * @param y int
      * @param z int
      * @param rebuild
-     * @throws IncorrectCoordinates
      */
     @ChunkThread
-    public void addBlockToSubChunk(BlockDefinition type, int x, int y, int z, boolean rebuild) throws IncorrectCoordinates{
+    public void addBlockToSubChunk(BlockDefinition type, int x, int y, int z, boolean rebuild){
         if (x < 0 || x >= SubChunk.CHUNKSIZEX ||
             y < 0 || y >= SubChunk.CHUNKSIZEY ||
             z < 0 || z >= SubChunk.CHUNKSIZEZ
-        ){throw new IncorrectCoordinates("Coordonées dans le subChunk invalide");}
+        ){throw new RuntimeException("Coordonées dans le subChunk invalide");}
         int index = x + y * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
         this.blocks[index] = (byte) type.id;
+
+        this.parent.updateHeighMapAt(x, z);
 
         // Ne rebuild pas pendant la génération initiale
         if (!this.isGenerating && rebuild){
@@ -352,18 +350,19 @@ public class SubChunk extends Node3D{
      * @param x int
      * @param y int
      * @param z int
-     * @throws IncorrectCoordinates
      */
     @ChunkThread
-    public void removeBlockFromSubChunk(int x, int y, int z) throws IncorrectCoordinates{
+    public void removeBlockFromSubChunk(int x, int y, int z){
         if (x < 0 || x >= SubChunk.CHUNKSIZEX ||
             y < 0 || y >= SubChunk.CHUNKSIZEY ||
             z < 0 || z >= SubChunk.CHUNKSIZEZ
-        ){throw new IncorrectCoordinates("Coordonées dans le subChunk invalide");}
+        ){throw new RuntimeException("Coordonées dans le subChunk invalide");}
         int index = x + y * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
         this.blocks[index] = (byte) Blocks.AIR.id;
 
         this.fillSubChunkBitSet();
+
+        this.parent.updateHeighMapAt(x, z);
 
         if (x == SubChunk.CHUNKSIZEX - 1 && this.getNeighborWest() != null) { 
             this.getNeighborWest().rebuildSubChunk(); 

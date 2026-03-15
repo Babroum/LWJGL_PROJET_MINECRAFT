@@ -3,9 +3,11 @@ package demo.Geometry;
 import org.joml.Matrix4f;
 
 import demo.BlockDefinition;
+import demo.Blocks;
 import demo.Annotations.ChunkThread;
 import demo.Annotations.OpenGLThread;
 import demo.Exceptions.IncorrectCoordinates;
+import demo.Managers.LightManager;
 import demo.Rendering.FrustumCulling;
 import demo.Rendering.Render;
 
@@ -24,17 +26,22 @@ public class Chunk extends Node3D{
     private int maxX;
     private int maxY;
     private int maxZ;
+
+    /**
+     * Height map qui contient la hauteur du block (x, z) le plus proche du ciel
+     */
+    public int[] heightMap;
     
     /**
-     * Initialise les subChunks du chunks
-     * @param chunkX position du chunk en X coordonnées locales
-     * @param chunkZ position du chunk en Z coordonnées locales
+     * Initialise les subChunks du chunks.
+     * @param chunkX Coordonnées en X (locale)
+     * @param chunkZ Coordonnées en Z  (locale)
      */
     @ChunkThread
     public Chunk(int chunkX, int chunkZ){
         this.subChunks = new SubChunk[Chunk.SUBCHUNKCOUNT];
         for (int i = 0; i < this.subChunks.length; i++){
-            this.subChunks[i] = new SubChunk();
+            this.subChunks[i] = new SubChunk(this);
             this.subChunks[i].setSubChunkPosition(0, i * SubChunk.CHUNKSIZEY, 0);
         }
         this.setChunkPosition(chunkX, chunkZ);
@@ -46,8 +53,80 @@ public class Chunk extends Node3D{
         this.maxX = this.minX + SubChunk.CHUNKSIZEX;
         this.maxY = this.minY + SubChunk.CHUNKSIZEY * Chunk.SUBCHUNKCOUNT;
         this.maxZ = this.minZ + SubChunk.CHUNKSIZEZ;
+
+        this.heightMap = new int[SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEZ];
         
         Render.monitor.addChunkCount();
+    }
+
+    /**
+     * Initialise la Height map du chunk.
+     */
+    @ChunkThread
+    public void initHeightMap(){
+        for(int x = 0; x < SubChunk.CHUNKSIZEX; x++){
+            for(int z = 0; z < SubChunk.CHUNKSIZEZ; z++){
+                int y = Chunk.SUBCHUNKCOUNT * SubChunk.CHUNKSIZEY - 1;
+                while (y >= 0) {
+                    // On donne 15 à l'air ET au premier bloc solide
+                    this.getSubChunk(y / SubChunk.CHUNKSIZEY).setBlockSkyLight(x, y % SubChunk.CHUNKSIZEY, z, (byte)15);
+                    LightManager.addBlockToQueue(x + this.x, y, z + this.z, 15, 0);
+                    
+                    
+                    if (this.getBlock(x, y, z) != Blocks.AIR) {
+                        // On a touché le sol, on enregistre la hauteur
+                        this.heightMap[z + x * SubChunk.CHUNKSIZEZ] = y;
+                        break; 
+                    }
+                    y--;
+                }
+                this.heightMap[z + x * SubChunk.CHUNKSIZEZ] = y;
+            }
+        }
+    }
+
+    /**
+     * Met à jour la heightMap du chunk.
+     * @param x Coordonnées en x (locale)
+     * @param z Coordonnées en z (locale)
+     * @param valueY Nouvelle valeur 
+     */
+    @ChunkThread
+    public void updateHeighMapAt(int x, int z){
+        int y = Chunk.SUBCHUNKCOUNT * SubChunk.CHUNKSIZEY - 1;
+        while (y >= 0) {
+            // On donne 15 à l'air ET au premier bloc solide
+            this.getSubChunk(y / SubChunk.CHUNKSIZEY).setBlockSkyLight(x, y % SubChunk.CHUNKSIZEY, z, (byte)15);
+            LightManager.addBlockToQueue(x + this.x, y, z + this.z, 15, 0);
+            
+            if (this.getBlock(x, y, z) != Blocks.AIR) {
+                // On a touché le sol, on enregistre la hauteur
+                this.heightMap[z + x * SubChunk.CHUNKSIZEZ] = y;
+                break; 
+            }
+            y--;
+        }
+        this.heightMap[z + x * SubChunk.CHUNKSIZEZ] = y;
+
+        while (y >= 0) {
+            this.getSubChunk(y / SubChunk.CHUNKSIZEY).setBlockSkyLight(x, y % SubChunk.CHUNKSIZEY, z, (byte)0);
+            if (y == 0) break;
+            y--;
+        }
+    }
+
+    /**
+     * Retourne un block dans le chunk.
+     * @param x Coordonnées en x (local)
+     * @param y Coordonnées en y (local)
+     * @param z Coordonnées en z (local)
+     * @return Retourne le block trouvé
+     */
+    public BlockDefinition getBlock(int x, int y, int z){
+        if (y < 0 || y >= SubChunk.CHUNKSIZEY * Chunk.SUBCHUNKCOUNT){throw new RuntimeException("Valeur en Y incorrect");}
+        SubChunk sub = this.getSubChunk(y / SubChunk.CHUNKSIZEY);
+
+        return sub.getBlock(x, y % SubChunk.CHUNKSIZEY, z);
     }
 
     /**
@@ -97,19 +176,6 @@ public class Chunk extends Node3D{
             z < 0 || z >= SubChunk.CHUNKSIZEZ
         ){throw new IncorrectCoordinates("Coordonées dans le chunk invalide");}
         this.subChunks[y / SubChunk.CHUNKSIZEY].removeBlockFromSubChunk(x, y % SubChunk.CHUNKSIZEY, z);
-    }
-
-    /**
-     * Génère la maille des subChunks
-     */
-    @ChunkThread
-    public void generateChunkMesh(){
-        for(SubChunk sub : this.subChunks){
-            sub.fillSubChunkBitSet();
-        } 
-        for(SubChunk sub : this.subChunks){
-            sub.generateSubChunkMesh();
-        }
     }
 
     /**

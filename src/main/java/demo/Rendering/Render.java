@@ -17,6 +17,7 @@ import demo.Managers.AudioManager;
 import demo.Managers.BenchmarkManager;
 import demo.Managers.BlocksManager;
 import demo.Managers.BuffersManager;
+import demo.Managers.LightManager;
 import demo.Managers.ShadersManager;
 import demo.Managers.TextureManager;
 import demo.Others.FileLoader;
@@ -94,6 +95,8 @@ public class Render {
 
             // nettoie le frame buffer
 			GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
+
+            LightManager.updateLight();
 
             GameLoop.run((float)delta * 1000.0f);
 

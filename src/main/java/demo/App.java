@@ -32,7 +32,7 @@ public class App
             //ChunksManager.createChunks(-24, 24, -24, 24);  // 2304 chunks 
             //ChunksManager.createChunks(-16, 16, -16, 16); // 1024 chunks
             //ChunksManager.createChunks(-10, 10, -10, 10); // 400 chunks
-            ChunksManager.createChunks(-2, 2, -2, 2); // 16 chunks
+            ChunksManager.createChunks(-1, 1, -1, 1); // 16 chunks
             ChunksManager.generateChunks(tlGenerator);
             ChunksManager.finalizeChunks();
         }); 
