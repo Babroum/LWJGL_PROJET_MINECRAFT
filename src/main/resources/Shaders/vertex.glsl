@@ -12,6 +12,8 @@ flat out int dir;
 flat out int isBorder;
 out vec2 uv;
 out float AO;
+out float skyLight;
+out float blockLight;
 
 uniform mat4 projection;
 uniform mat4 view;
@@ -29,9 +31,11 @@ void main()
     dir        = (packedData >> 12) & 0x7;
     texId      =  packedData        & 0xFFF; // F = 1111, F = 1111 F = 1111 ça fait 12bits
 
-    int w  = (packedUV >> 27) & 0x1F;
-    int h  = (packedUV >> 22) & 0x1F;
-    int ao = (packedUV >> 20) & 0x3;
+    int w     = (packedUV >> 27) & 0x1F;
+    int h     = (packedUV >> 22) & 0x1F;
+    int ao    = (packedUV >> 20) & 0x3;
+    int sky   = (packedUV >> 16) & 0xF;
+    int block = (packedUV >> 12) & 0xF;
 
     isBorder = (texId == 0 && u_bit == 0 && v_bit == 0) ? 1 : 0; // détecte bordure
 
@@ -41,4 +45,6 @@ void main()
     uv = vec2(u_bit == 0 ? 0.0 : float(w),
               v_bit == 0 ? 0.0 : float(h));
     AO = float(ao);
+    skyLight = float(sky);
+    blockLight = float(block);
 }
