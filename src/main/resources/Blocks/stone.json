@@ -1,0 +1,9 @@
+{
+  "id": 2,
+  "name": "stone",
+  "opacity": 15,
+  "luminance": 0,
+  "textures": {
+    "all": "stone"
+  }
+}

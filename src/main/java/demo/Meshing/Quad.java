@@ -1,7 +1,7 @@
 package demo.Meshing;
 
-import demo.Enum.BlocksType;
-import demo.Enum.Directions;
+import demo.BlockDefinition;
+import demo.Blocks;
 
 /**
  * Définit un carré depuis le greedyMeshing
@@ -12,12 +12,12 @@ public class Quad {
     public int z;       
     public int width; // largeur sur X
     public int height; // hauteur sur Y
-    public Directions direction;
-    public BlocksType type = BlocksType.GRASS;
+    public String direction;
+    public BlockDefinition type = Blocks.GRASS;
     public int ao0, ao1, ao2, ao3; // coins A, B, C, D
     public int light;
 
-    public Quad(int x, int y, int z, int width, int height, Directions direction,
+    public Quad(int x, int y, int z, int width, int height, String direction,
                 int ao0, int ao1, int ao2, int ao3,
                 int light){
         this.x = x;

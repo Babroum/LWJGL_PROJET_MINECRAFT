@@ -1,0 +1,9 @@
+{
+  "id": 5,
+  "name": "glowstone",
+  "opacity": 15,
+  "luminance": 15,
+  "textures": {
+    "all": "glowstone"
+  }
+}

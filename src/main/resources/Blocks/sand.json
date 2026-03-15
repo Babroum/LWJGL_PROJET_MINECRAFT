@@ -1,0 +1,9 @@
+{
+  "id": 4,
+  "name": "sand",
+  "opacity": 15,
+  "luminance": 0,
+  "textures": {
+    "all": "sand"
+  }
+}

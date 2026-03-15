@@ -1,6 +1,5 @@
 package demo.Rendering;
 
-import java.io.IOException;
 import java.nio.FloatBuffer;
 import java.util.concurrent.ArrayBlockingQueue;
 
@@ -16,9 +15,10 @@ import demo.Geometry.Chunk;
 import demo.Geometry.SubChunk;
 import demo.Managers.AudioManager;
 import demo.Managers.BenchmarkManager;
+import demo.Managers.BlocksManager;
 import demo.Managers.BuffersManager;
 import demo.Managers.ShadersManager;
-import demo.Managers.TexturesManager;
+import demo.Managers.TextureManager;
 import demo.Others.FileLoader;
 import demo.Types.Color4f;
 import demo.Managers.PlayersManager;
@@ -52,15 +52,17 @@ public class Render {
     public static void setupBeforeRendering(){
         BlockBorderRenderer.init();
         // initialise en mémoire les textures des caractères
-        TexturesManager.loadTextures();
         try{
+            TextureManager.init();
+            BlocksManager.init();
+
             AudioManager.loadSound("bird", "/Audios/bird.ogg");
             AudioManager.loadSound("samsung", "/Audios/samsung.ogg");
             AudioManager.loadSound("fanta", "/Audios/fanta.ogg");
             // initialise en mémoire l'image des caractères
             Render.textRender = new TextRender(FileLoader.loadFileFromClasspathBB("/Textures/font.png"), 20, 20, 19,
                                         " !\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~");          
-        }catch(IOException e){
+        }catch(Exception e){
             System.out.println(e);
         }   
     }

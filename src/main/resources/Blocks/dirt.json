@@ -1,0 +1,9 @@
+{
+  "id": 3,
+  "name": "dirt",
+  "opacity": 15,
+  "luminance": 0,
+  "textures": {
+    "all": "dirt"
+  }
+}

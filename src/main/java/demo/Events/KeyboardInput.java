@@ -3,7 +3,7 @@ package demo.Events;
 import org.lwjgl.glfw.GLFW;
 
 import demo.Annotations.OpenGLThread;
-import demo.Enum.BlocksType;
+import demo.Blocks;
 import demo.Geometry.Chunk;
 import demo.Geometry.SubChunk;
 import demo.Managers.AudioManager;
@@ -93,11 +93,11 @@ public class KeyboardInput {
                     break;
 
                 case GLFW.GLFW_KEY_1:
-                    PlayersManager.player.blockInHand = BlocksType.COBBLESTONE;
+                    PlayersManager.player.blockInHand = Blocks.COBBLESTONE;
                     break;
 
                 case GLFW.GLFW_KEY_2:
-                    PlayersManager.player.blockInHand = BlocksType.GLOWSTONE;
+                    PlayersManager.player.blockInHand = Blocks.GLOWSTONE;
                     break;
 
                 default:

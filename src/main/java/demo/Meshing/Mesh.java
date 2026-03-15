@@ -1,6 +1,5 @@
 package demo.Meshing;
 
-import demo.Enum.Directions;
 import demo.Exceptions.ArrayFull;
 
 /**
@@ -29,7 +28,7 @@ public class Mesh {
         this.faceCount++;
     }
 
-    public int[] getFaceVertex(Directions direction){
+    public int[] getFaceVertex(String direction){
         for(int i = 0; i < faceCount; i++){
             if (this.faces[i].direction == direction){
                 return this.faces[i].vertexs;

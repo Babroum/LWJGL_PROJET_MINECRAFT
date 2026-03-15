@@ -10,15 +10,15 @@ import java.util.ArrayDeque;
 
 import org.joml.Matrix4f;
 
+import demo.BlockDefinition;
+import demo.Blocks;
 import demo.Annotations.ChunkThread;
 import demo.Annotations.OpenGLThread;
-import demo.Enum.BlocksType;
-import demo.Enum.Directions;
 import demo.Events.KeyboardInput;
 import demo.Exceptions.IncorrectCoordinates;
+import demo.Managers.BlocksManager;
 import demo.Managers.ChunksManager;
 import demo.Managers.ShadersManager;
-import demo.Managers.TexturesManager;
 import demo.Meshing.SubChunkMesh;
 import demo.Meshing.Quad;
 import demo.Rendering.Render;
@@ -241,7 +241,7 @@ public class SubChunk extends Node3D{
                     for (int sy = 0; sy < CHUNKSIZEY; sy++) {
                         int idx = sx + sy * CHUNKSIZEX + sz * CHUNKSIZEX * CHUNKSIZEY;
                         if (s.lightMap[idx] < ChunksManager.SKY_LIGHT
-                                && s.blocks[idx] == (byte) BlocksType.AIR.getId()
+                                && s.blocks[idx] == (byte) Blocks.AIR.id
                                 && s.isColumnOpenToSky(sx, sy, sz)) {
                             s.lightMap[idx] = ChunksManager.SKY_LIGHT;
                             dirty.addAll(s.propagateLightFrom(sx, sy, sz, ChunksManager.SKY_LIGHT));
@@ -290,16 +290,22 @@ public class SubChunk extends Node3D{
      * @return Retourne true si aucun bloc solide ne bloque la colonne jusqu'au ciel
      */
     private boolean isColumnOpenToSky(int x, int y, int z) {
-        int chunkX = (int) Math.floor((float)this.x / CHUNKSIZEX);
-        int chunkZ = (int) Math.floor((float)this.z / CHUNKSIZEZ);
-        try {
-            Chunk chunk = ChunksManager.getChunk(chunkX, chunkZ);
-            int globalY = this.y + y; // this.y = base monde du subchunk, y = local 0-15
-            // globalY > heightMap = au-dessus du premier solide = ciel ouvert
-            return globalY > chunk.heightMap[x + z * CHUNKSIZEX];
-        } catch (IncorrectCoordinates e) {
-            return false;
+        // regarde les blocks au dessus dans le même subChunk
+        for (int cy = y + 1; cy < CHUNKSIZEY; cy++) {
+            if (blocks[x + cy * CHUNKSIZEX + z * CHUNKSIZEX * CHUNKSIZEY] != (byte) Blocks.AIR.id)
+                return false;
         }
+        // regarde les blocks au dessus dans le subChunk Up
+        SubChunk above = upNeighbor;
+        while (above != null) {
+            for (int cy = 0; cy < CHUNKSIZEY; cy++) {
+                if (above.blocks[x + cy * CHUNKSIZEX + z * CHUNKSIZEX * CHUNKSIZEY] != (byte) Blocks.AIR.id)
+                    // si il y a un block alors false
+                    return false;
+            }
+            above = above.upNeighbor;
+        }
+        return true;
     }
 
     /**
@@ -498,25 +504,6 @@ public class SubChunk extends Node3D{
         return dirty;
     }
 
-    /**
-     * Lance le BFS depuis tous les blocs déjà éclairés de ce subChunk. <br>
-     * Utilisé après le remplissage vertical du skylight pour propager latéralement.
-     */
-    @ChunkThread
-    public void propagateExistingLight() {
-        ArrayDeque<Long> queue = new ArrayDeque<>();
-        Set<SubChunk> dummy = new HashSet<>(); // ignoré pendant la génération initiale
-        for (int i = 0; i < MAXBLOCK; i++) {
-            if (lightMap[i] > 0) {
-                int lx = i % CHUNKSIZEX;
-                int ly = (i / CHUNKSIZEX) % CHUNKSIZEY;
-                int lz = i / (CHUNKSIZEX * CHUNKSIZEY);
-                queue.add(encodeLightEntry(lx, ly, lz, lightMap[i] & 0xFF));
-            }
-        }
-        bfsPropagate(queue, dummy);
-    }
-
     // ---------------------------- FIN Lumière ----------------------------
 
     /**
@@ -552,7 +539,7 @@ public class SubChunk extends Node3D{
         // le Set n'accepte pas les doublons donc si j'ai 500 GRASS dans le set il n'y aura que 1 GRASS
         Set<Byte> types = new HashSet<>();
         for(byte b : this.blocks){
-            if(b != (byte)BlocksType.AIR.getId()) types.add(b);
+            if(b != (byte)Blocks.AIR.id) types.add(b);
         }     
 
         // calcule le greedy meshing pour chaque type de block
@@ -575,13 +562,13 @@ public class SubChunk extends Node3D{
      * @param z int
      * @return BlockType
      */
-    public BlocksType getBlock(int x, int y, int z){
+    public BlockDefinition getBlock(int x, int y, int z){
         if (x < 0 || x >= SubChunk.CHUNKSIZEX ||
             y < 0 || y >= SubChunk.CHUNKSIZEY ||
             z < 0 || z >= SubChunk.CHUNKSIZEZ
         ){throw new IncorrectCoordinates("Coordonées dans le subChunk invalide");}
         int index = x + y * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
-        return BlocksType.fromId(this.blocks[index]);
+        return BlocksManager.get(this.blocks[index]);
     }
 
     /**
@@ -629,21 +616,14 @@ public class SubChunk extends Node3D{
      * @throws IncorrectCoordinates
      */
     @ChunkThread
-    public void addBlockToSubChunk(BlocksType type, int x, int y, int z, boolean rebuild) throws IncorrectCoordinates{
+    public void addBlockToSubChunk(BlockDefinition type, int x, int y, int z, boolean rebuild) throws IncorrectCoordinates{
         if (x < 0 || x >= SubChunk.CHUNKSIZEX ||
             y < 0 || y >= SubChunk.CHUNKSIZEY ||
             z < 0 || z >= SubChunk.CHUNKSIZEZ
         ){throw new IncorrectCoordinates("Coordonées dans le subChunk invalide");}
         int index = x + y * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
-        this.blocks[index] = (byte) type.getId();
+        this.blocks[index] = (byte) type.id;
         this.lightMap[index] = 0;
-
-        // met à jour le heightMap du chunk parent
-        int chunkX = (int) Math.floor((float)this.x / CHUNKSIZEX);
-        int chunkZ = (int) Math.floor((float)this.z / CHUNKSIZEZ);
-        try {
-            ChunksManager.getChunk(chunkX, chunkZ).updateHeightMapAt(x, z);
-        } catch (IncorrectCoordinates e) {}
 
         // Ne rebuild pas pendant la génération initiale
         if (!this.isGenerating && rebuild){
@@ -666,14 +646,7 @@ public class SubChunk extends Node3D{
             z < 0 || z >= SubChunk.CHUNKSIZEZ
         ){throw new IncorrectCoordinates("Coordonées dans le subChunk invalide");}
         int index = x + y * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
-        this.blocks[index] = (byte) BlocksType.AIR.getId();
-
-        // met à jour le heightMap avant isColumnOpenToSky qui le consulte
-        int chunkX = (int) Math.floor((float)this.x / CHUNKSIZEX);
-        int chunkZ = (int) Math.floor((float)this.z / CHUNKSIZEZ);
-        try {
-            ChunksManager.getChunk(chunkX, chunkZ).updateHeightMapAt(x, z);
-        } catch (IncorrectCoordinates e) {}
+        this.blocks[index] = (byte) Blocks.AIR.id;
 
         this.fillSubChunkBitSet();
 
@@ -723,9 +696,9 @@ public class SubChunk extends Node3D{
     private void uploadSubChunkMesh(byte blockType){
 
         for(Quad quad : this.quads){
-            BlocksType type = BlocksType.fromId(blockType);
-            if(type == BlocksType.NULL) continue;
-            int textureId = TexturesManager.getIndex(type.getTexture(quad.direction));
+            BlockDefinition type = BlocksManager.get(blockType);
+            if(type == Blocks.NULL) continue;
+            int textureId =  type.getTextureLayer(quad.direction);
             this.mesh.addQuadVertexToArray(quad, textureId);
         }        
     }
@@ -952,16 +925,16 @@ public class SubChunk extends Node3D{
             }
         }
 
-        this.greedyMeshingPerFace(faceData.westMask, faceData.westAoMask, faceData.westLightMask, Directions.WEST);
-        this.greedyMeshingPerFace(faceData.eastMask, faceData.eastAoMask, faceData.eastLightMask, Directions.EAST);
-        this.greedyMeshingPerFace(faceData.northMask, faceData.northAoMask, faceData.northLightMask, Directions.NORTH);
-        this.greedyMeshingPerFace(faceData.southMask, faceData.southAoMask, faceData.southLightMask, Directions.SOUTH);
-        this.greedyMeshingPerFace(faceData.upMask, faceData.upAoMask, faceData.upLightMask, Directions.UP);
-        this.greedyMeshingPerFace(faceData.downMask, faceData.downAoMask, faceData.downLightMask, Directions.DOWN);
+        this.greedyMeshingPerFace(faceData.westMask, faceData.westAoMask, faceData.westLightMask, "west");
+        this.greedyMeshingPerFace(faceData.eastMask, faceData.eastAoMask, faceData.eastLightMask, "east");
+        this.greedyMeshingPerFace(faceData.northMask, faceData.northAoMask, faceData.northLightMask, "north");
+        this.greedyMeshingPerFace(faceData.southMask, faceData.southAoMask, faceData.southLightMask, "south");
+        this.greedyMeshingPerFace(faceData.upMask, faceData.upAoMask, faceData.upLightMask, "up");
+        this.greedyMeshingPerFace(faceData.downMask, faceData.downAoMask, faceData.downLightMask, "down");
     }
 
     // fait le greedy pour chaque face
-    private void greedyMeshingPerFace(int[] faceMask, int[] faceAoMask, int[] faceLightMask, Directions dir){
+    private void greedyMeshingPerFace(int[] faceMask, int[] faceAoMask, int[] faceLightMask, String dir){
         for(int ligne = 0; ligne < faceMask.length; ligne++){
             int i = 0; // indice en largeur byte car dépasse pas 15
             while(i < SubChunk.CHUNKSIZEX){              
@@ -1017,19 +990,19 @@ public class SubChunk extends Node3D{
                 if (coord[0] < coord[1]){
                     int qx, qy, qz;
                     switch(dir){
-                        case NORTH: case SOUTH:
+                        case "north": case "south":
                             // masque index = y + z * CHUNKSIZEZ, bit = X
                             qx = coord[0];
                             qy = ligne % SubChunk.CHUNKSIZEY;
                             qz = ligne / SubChunk.CHUNKSIZEZ;
                             break;
-                        case WEST: case EAST:
+                        case "west": case "east":
                             // masque index = y + x * CHUNKSIZEX, bit = Z
                             qx = ligne / SubChunk.CHUNKSIZEY;
                             qy = ligne % SubChunk.CHUNKSIZEY;
                             qz = coord[0];
                             break;
-                        case UP: case DOWN:
+                        case "up": case "down":
                             // masque index = y + z * CHUNKSIZEY, bit = X
                             qx = coord[0];
                             qy = ligne / SubChunk.CHUNKSIZEZ;  
@@ -1074,7 +1047,7 @@ public class SubChunk extends Node3D{
         // dans le subchunk courant
         if (x >= 0 && x < CHUNKSIZEX && y >= 0 && y < CHUNKSIZEY && z >= 0 && z < CHUNKSIZEZ){
             int index = x + y * CHUNKSIZEX + z * CHUNKSIZEX * CHUNKSIZEY;
-            return this.blocks[index] != (byte)BlocksType.AIR.getId();
+            return this.blocks[index] != (byte)Blocks.AIR.id;
         }
         // en dehors délègue aux voisins, blocks en bordure
         if (y >= CHUNKSIZEY && this.upNeighbor != null){
@@ -1132,7 +1105,7 @@ public class SubChunk extends Node3D{
     public void fillSubChunkBitSet(){
         this.bitSet.clear();
         for(int i = 0; i < SubChunk.MAXBLOCK; i++){
-            if (this.blocks[i] != (byte)BlocksType.AIR.getId()){
+            if (this.blocks[i] != (byte)Blocks.AIR.id){
                 this.bitSet.set(i); // met a 1 l'indice i
             }
         }

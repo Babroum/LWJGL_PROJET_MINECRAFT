@@ -8,10 +8,11 @@ import java.util.concurrent.*;
 
 import org.joml.Math;
 
+import demo.BlockDefinition;
 import demo.WorldGenerator;
 import demo.Annotations.ChunkThread;
 import demo.Annotations.OpenGLThread;
-import demo.Enum.BlocksType;
+import demo.Blocks;   
 import demo.Exceptions.IncorrectCoordinates;
 import demo.Geometry.Chunk;
 import demo.Geometry.SubChunk;
@@ -106,21 +107,28 @@ public class ChunksManager {
         for (Future<?> f : futures) try { f.get(); } catch (Exception e) {}
         futures.clear(); 
 
-        // Passe 2 heightMap + skylight vertical
-        for (Chunk chunk : chunks.values()) {
+        // Passe 2 : propagation lumière sky — colonne par colonne sur tout le chunk
+        for (Chunk chunk : chunks.values()){
             futures.add(pool.submit(() -> {
-                chunk.buildHeightMap();
-                int totalY = SubChunk.CHUNKSIZEY * Chunk.SUBCHUNKCOUNT;
-                for (int x = 0; x < SubChunk.CHUNKSIZEX; x++) {
-                    for (int z = 0; z < SubChunk.CHUNKSIZEZ; z++) {
-                        int h = chunk.heightMap[x + z * SubChunk.CHUNKSIZEX];
-                        // tous les blocs d'air au-dessus du premier solide = ciel ouvert -> SKY_LIGHT
-                        for (int globalY = totalY - 1; globalY > h; globalY--) {
-                            SubChunk sub = chunk.getSubChunk(globalY / SubChunk.CHUNKSIZEY);
-                            int localY = globalY % SubChunk.CHUNKSIZEY;
-                            int idx = x + localY * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
-                            if (sub.blocks[idx] == (byte) BlocksType.AIR.getId()) {
-                                sub.lightMap[idx] = SKY_LIGHT;
+                // parcours chaque chunk en x, z
+                for (int x = 0; x < SubChunk.CHUNKSIZEX; x++){
+                    for (int z = 0; z < SubChunk.CHUNKSIZEZ; z++){
+                        // true car on suppose que le sommet de la colenne est à ciel ouvert
+                        // elle ne repasse jamais a true des qu'un block solide est trouvé passe à false
+                        boolean open = true; // commence à ciel ouvert depuis le sommet
+
+                        // descend de haut en bas à travers tous les subchunks
+                        for (int i = Chunk.SUBCHUNKCOUNT - 1; i >= 0; i--){
+                            SubChunk sub = chunk.getSubChunk(i);
+                            // descend de haut en bas à travers le subchunk
+                            for (int y = SubChunk.CHUNKSIZEY - 1; y >= 0; y--){
+                                int idx = x + y * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
+
+                                if (sub.blocks[idx] != (byte)Blocks.AIR.id){
+                                    open = false; // bloc solide on stoppe la lumière pour la suite
+                                } else if (open){
+                                    sub.lightMap[idx] = SKY_LIGHT; // bloc air et ciel ouvert alors pleine lumière
+                                }
                             }
                         }
                     }
@@ -130,19 +138,14 @@ public class ChunksManager {
         for (Future<?> f : futures) try { f.get(); } catch (Exception e) {}
         futures.clear();
 
-        // Passe 3 : BFS latéral depuis tous les blocs éclairés
-        // séquentiel pour éviter les race conditions inter-chunks (chaque BFS peut déborder chez le voisin)
-        for (Chunk chunk : chunks.values()) {
-            for (SubChunk sub : chunk.subChunks) {
-                sub.propagateExistingLight();
-            }
-        }
 
-        // Passe 4 : meshing (ancienne passe 3, inchangée)
-        for (Chunk chunk : chunks.values()) {
+        for (Chunk chunk : chunks.values()){
             futures.add(pool.submit(() -> finalizeChunk(chunk)));
         }
-        for (Future<?> f : futures) try { f.get(); } catch (Exception e) {}
+            
+        for (Future<?> f : futures) {
+            try { f.get(); } catch (Exception e) {}
+        }
     }
     
     /**
@@ -246,7 +249,7 @@ public class ChunksManager {
      * @return Object3D
      * @throws IncorrectCoordinates
      */
-    public static BlocksType getBlock(int x, int y, int z) throws IncorrectCoordinates{
+    public static BlockDefinition getBlock(int x, int y, int z) throws IncorrectCoordinates{
         if (y < 0 || y >= SubChunk.CHUNKSIZEY * Chunk.SUBCHUNKCOUNT){throw new IncorrectCoordinates("Valeur en Y incorrect");}
 
         int chunkX = (int) Math.floor((float) x / SubChunk.CHUNKSIZEX);

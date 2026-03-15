@@ -1,0 +1,9 @@
+{
+  "id": 255, 
+  "name": "Null",
+  "opacity": 15,
+  "luminance": 0,
+  "textures": {
+    "all": "null"
+  }
+}

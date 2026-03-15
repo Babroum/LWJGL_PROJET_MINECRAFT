@@ -3,7 +3,6 @@ package demo;
 import demo.Geometry.Chunk;
 import demo.Geometry.SubChunk;
 import demo.Others.FastNoiseLite;
-import demo.Enum.BlocksType;
 
 /**
  * Génère procéduralement le terrain du monde voxel.
@@ -228,7 +227,6 @@ public class WorldGenerator {
      * @param chunkZ index Z du chunk en unités de chunk
      */
     public void generateChunk(Chunk chunk, int chunkX, int chunkZ) {
-
         // PASSE 1 : grille basse résolution       
 
         // Tableau 3D de densités pré-calculées aux nœuds de la grille
@@ -253,7 +251,6 @@ public class WorldGenerator {
                 }
             }
         }
-
         // PASSE 2 : interpolation trilinéaire bloc par bloc
 
         for (int bx = 0; bx < WorldGenerator.CHUNK_SIZE; bx++) {
@@ -285,14 +282,15 @@ public class WorldGenerator {
                         currentSubIndex = subChunkIndex;
                         currentSub = chunk.getSubChunk(subChunkIndex);
                     }
+
                     int localY = by % WorldGenerator.CHUNK_SIZE;
                     // Calcul de l'index linéaire dans le tableau du sous-chunk
                     // Layout : X + localY * SIZE + Z * CHUNK_HEIGHT
                     int idx = bx + localY * WorldGenerator.CHUNK_SIZE + bz * WorldGenerator.CHUNK_HEIGHT;
                     // Affectation : positif -> pierre, négatif/nul -> air
                     currentSub.blocks[idx] = (density > 0)
-                        ? (byte) BlocksType.STONE.getId()
-                        : (byte) BlocksType.AIR.getId();
+                        ? (byte) Blocks.STONE.id
+                        : (byte) Blocks.AIR.id;
                 }
             }
         }
@@ -337,6 +335,7 @@ public class WorldGenerator {
      * @param chunk le chunk à modifier
      */
     private void applySurfaceLayers(Chunk chunk) {
+        
 
         for (int bx = 0; bx < WorldGenerator.CHUNK_SIZE; bx++) {
             for (int bz = 0; bz < WorldGenerator.CHUNK_SIZE; bz++) {
@@ -363,12 +362,12 @@ public class WorldGenerator {
 
                     // Y=0 -> bedrock : toujours présent, fin de colonne
                     if (by == 0) {
-                        currentSub.blocks[idx] = (byte) BlocksType.BEDROCK.getId();
+                        currentSub.blocks[idx] = (byte) Blocks.BEDROCK.id;
                         continue;
                     }
 
                     // Bloc air avant la surface -> on continue vers le bas
-                    if (currentSub.blocks[idx] == (byte) BlocksType.AIR.getId() && !surfacePlaced) {
+                    if (currentSub.blocks[idx] == (byte) Blocks.AIR.id && !surfacePlaced) {
                         dirtDepth = -1;
                         continue;
                     }
@@ -379,12 +378,12 @@ public class WorldGenerator {
                         dirtDepth = 3; // 3 blocs de dirt sous la surface
 
                         if (by >= WorldGenerator.SEA_LEVEL)
-                            currentSub.blocks[idx] = (byte) BlocksType.GRASS.getId();
+                            currentSub.blocks[idx] = (byte) Blocks.GRASS.id;
                         else
-                            currentSub.blocks[idx] = (byte) BlocksType.SAND.getId();
+                            currentSub.blocks[idx] = (byte) Blocks.SAND.id;
 
                     } else if (dirtDepth > 0) {
-                        currentSub.blocks[idx] = (byte) BlocksType.DIRT.getId();
+                        currentSub.blocks[idx] = (byte) Blocks.DIRT.id;
                         dirtDepth--;
                     }
                     // dirtDepth == 0 -> le reste reste en pierre

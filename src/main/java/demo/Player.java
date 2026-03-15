@@ -11,7 +11,6 @@ import demo.Managers.ChunksManager;
 import demo.Managers.PlayersManager;
 import demo.Rendering.BlockBorderRenderer;
 import demo.Rendering.Camera;
-import demo.Enum.BlocksType;
 import demo.Events.KeyboardInput;
 import demo.Events.MouseInput;
 import demo.Geometry.SubChunk;
@@ -47,7 +46,7 @@ public class Player {
     private float placeCooldown = 0f;
     private float breakPlaceDelay = 200f; // temps en millisecondes pour casser/poser un bloc
 
-    public BlocksType blockInHand = BlocksType.COBBLESTONE; // pour test
+    public BlockDefinition blockInHand = Blocks.COBBLESTONE; // pour test
 
     public Player(){
         this.position = this.camera.getPosition();
@@ -102,9 +101,9 @@ public class Player {
         int bz = newZ < 0 ? (int) Math.floor(newZ) : (int) newZ;
         int by = (int)(this.position.y - this.playerHeight);
         try {
-            BlocksType blockFeet = ChunksManager.getBlock(bx, by, bz);
-            BlocksType blockHead = ChunksManager.getBlock(bx, by + 1, bz);
-            return blockFeet == BlocksType.AIR && blockHead == BlocksType.AIR;
+            BlockDefinition blockFeet = ChunksManager.getBlock(bx, by, bz);
+            BlockDefinition blockHead = ChunksManager.getBlock(bx, by + 1, bz);
+            return blockFeet == Blocks.AIR && blockHead == Blocks.AIR;
         } catch (Exception e) {
             return false;
         }
@@ -188,7 +187,7 @@ public class Player {
             int bx = (int) Math.floor(x);
             int by = (int) Math.floor(y);
             int bz = (int) Math.floor(z);
-            return ChunksManager.getBlock(bx, by, bz) != BlocksType.AIR;
+            return ChunksManager.getBlock(bx, by, bz) != Blocks.AIR;
         } catch (Exception e) {
             return false;
         }
@@ -204,7 +203,7 @@ public class Player {
 
         // récupère les coordonées de ce que regarde le joueur (raycast)
         Vector3f[] look = PlayersManager.player.getCamera().getLookAt(5);
-        BlocksType block = BlocksType.AIR;
+        BlockDefinition block = Blocks.AIR;
         SubChunk sub = null;
 
         // si on regarde quelque chose
@@ -225,7 +224,7 @@ public class Player {
                 // si on clique gauche et que la souris n'est pas débloqué, on casse le block si il existe
                 if (MouseInput.isLeftButtonPressed() && KeyboardInput.isMouseLock) {
                     // Si on a un bloc et que le cooldown est prêt et que ce n'est pas de la bedrock
-                    if (block != BlocksType.AIR && this.breakCooldown <= 0f && block != BlocksType.BEDROCK) {
+                    if (block != Blocks.AIR && this.breakCooldown <= 0f && block != Blocks.BEDROCK) {
                         // le thread ne prend que des constantes, donc on copie 
                         final SubChunk subToModify = sub;
                         final int fbx = bx, fby = by, fbz = bz;
@@ -237,7 +236,7 @@ public class Player {
                             subToModify.removeBlockFromSubChunk(localX, localY, localZ);                            
                         });
                         this.breakCooldown = this.breakPlaceDelay;
-                        block = BlocksType.AIR;
+                        block = Blocks.AIR;
                     }
                 } else {
                     this.breakCooldown = 0;
@@ -249,7 +248,7 @@ public class Player {
                     int py = (int) Math.floor(place.y);
                     int pz = (int) Math.floor(place.z);
                     // on vérifie pour etre sur qu'il n'y ait pas de bloc
-                    if (ChunksManager.getBlock(px, py, pz) == BlocksType.AIR && this.placeCooldown <= 0f && !this.isInsidePlayer(px, py, pz)){
+                    if (ChunksManager.getBlock(px, py, pz) == Blocks.AIR && this.placeCooldown <= 0f && !this.isInsidePlayer(px, py, pz)){
                         try {
                             final SubChunk sub2 = ChunksManager.getSubChunk(px, py, pz);                            
                             chunkModifyThread.submit(() -> {  
@@ -261,7 +260,7 @@ public class Player {
                                 byte oldLight = sub2.getLightAt(localX, localY, localZ);
                                 sub2.addBlockToSubChunk(blockInHand, localX, localY, localZ, false);  
 
-                                if (BlocksType.GLOWSTONE.getId() == blockInHand.getId()){                                    
+                                if (Blocks.GLOWSTONE == blockInHand){                                    
                                     // propage la lumière
                                     Set<SubChunk> dirty = sub2.propagateLightFrom(localX, localY, localZ, (byte)15);
                                     for (SubChunk s : dirty) { s.rebuildSubChunk(); }
@@ -281,7 +280,7 @@ public class Player {
                 }     
 
                 // si le block regarder n'est pas le même que le précédent on créer les buffers
-                if (block != BlocksType.AIR){
+                if (block != Blocks.AIR){
                     this.hasBlockBorder = true;
                     this.oldBlockBorder.set(bx, by, bz);
                 } else {

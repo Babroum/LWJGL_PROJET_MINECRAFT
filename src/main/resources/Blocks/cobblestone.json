@@ -1,0 +1,9 @@
+{
+  "id": 7,
+  "name": "cobblestone",
+  "opacity": 15,
+  "luminance": 0,
+  "textures": {
+    "all": "cobblestone"
+  }
+}

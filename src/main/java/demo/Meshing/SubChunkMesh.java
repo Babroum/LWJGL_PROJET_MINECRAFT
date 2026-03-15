@@ -12,8 +12,8 @@ import demo.Events.KeyboardInput;
 import demo.Exceptions.ArrayEmpty;
 import demo.Exceptions.Empty;
 import demo.Managers.BuffersManager;
-import demo.Managers.TexturesManager;
 import demo.Rendering.Render;
+import demo.Managers.TextureManager;
 
 /**
  * Une Maille décrivant l'ensemble des ..
@@ -118,14 +118,15 @@ public class SubChunkMesh {
         int z = quad.z;
         int w = quad.width;
         int h = quad.height;
-        int d = quad.direction.ordinal();
+        int d = 0;
 
         // Les 4 coins : A=origine, B=+width, C=+height, D=+width+height
         // 2 triangles sans EBO : A-B-D, A-D-C
         int[][] verts = this.vertsBuffer; // 6 sommets * {x, y, z, u, v, dir, texId, ao, light
 
         switch(quad.direction){
-            case NORTH:
+            case "north":
+                d = 0;
                 verts[0] = new int[]{x+w, y,   z+1, 1, 1, d, textureId, quad.ao1, quad.light};
                 verts[1] = new int[]{x,   y,   z+1, 0, 1, d, textureId, quad.ao0, quad.light};
                 verts[2] = new int[]{x,   y+h, z+1, 0, 0, d, textureId, quad.ao2, quad.light};
@@ -133,23 +134,26 @@ public class SubChunkMesh {
                 verts[4] = new int[]{x+w, y+h, z+1, 1, 0, d, textureId, quad.ao3, quad.light};
                 verts[5] = new int[]{x+w, y,   z+1, 1, 1, d, textureId, quad.ao1, quad.light};
                 break;
-            case SOUTH:
+            case "south":
+                d = 1;
                 verts[0] = new int[]{x,   y,   z,   1, 1, d, textureId, quad.ao0, quad.light};
                 verts[1] = new int[]{x+w, y,   z,   0, 1, d, textureId, quad.ao1, quad.light};
                 verts[2] = new int[]{x+w, y+h, z,   0, 0, d, textureId, quad.ao3, quad.light};
                 verts[3] = new int[]{x+w, y+h, z,   0, 0, d, textureId, quad.ao3, quad.light};
                 verts[4] = new int[]{x,   y+h, z,   1, 0, d, textureId, quad.ao2, quad.light};
                 verts[5] = new int[]{x,   y,   z,   1, 1, d, textureId, quad.ao0, quad.light};
-                break;
-            case WEST:
+                break;           
+            case "west":                
+                d = 2;
                 verts[0] = new int[]{x+1, y,   z,   1, 1, d, textureId, quad.ao0, quad.light};
                 verts[1] = new int[]{x+1, y,   z+w, 0, 1, d, textureId, quad.ao1, quad.light};
                 verts[2] = new int[]{x+1, y+h, z+w, 0, 0, d, textureId, quad.ao3, quad.light};
                 verts[3] = new int[]{x+1, y+h, z+w, 0, 0, d, textureId, quad.ao3, quad.light};
                 verts[4] = new int[]{x+1, y+h, z,   1, 0, d, textureId, quad.ao2, quad.light};
                 verts[5] = new int[]{x+1, y,   z,   1, 1, d, textureId, quad.ao0, quad.light};
-                break;
-            case EAST:
+                break;            
+            case "east":
+                d = 3;
                 verts[0] = new int[]{x,   y,   z+w, 1, 1, d, textureId, quad.ao1, quad.light};
                 verts[1] = new int[]{x,   y,   z,   0, 1, d, textureId, quad.ao0, quad.light};
                 verts[2] = new int[]{x,   y+h, z,   0, 0, d, textureId, quad.ao2, quad.light};
@@ -157,7 +161,8 @@ public class SubChunkMesh {
                 verts[4] = new int[]{x,   y+h, z+w, 1, 0, d, textureId, quad.ao3, quad.light};
                 verts[5] = new int[]{x,   y,   z+w, 1, 1, d, textureId, quad.ao1, quad.light};
                 break;
-            case UP:
+            case "up":
+                d = 4;
                 verts[0] = new int[]{x,   y+1, z,   0, 0, d, textureId, quad.ao0, quad.light};
                 verts[1] = new int[]{x+w, y+1, z,   1, 0, d, textureId, quad.ao1, quad.light};
                 verts[2] = new int[]{x+w, y+1, z+h, 1, 1, d, textureId, quad.ao3, quad.light};
@@ -165,7 +170,8 @@ public class SubChunkMesh {
                 verts[4] = new int[]{x,   y+1, z+h, 0, 1, d, textureId, quad.ao2, quad.light};
                 verts[5] = new int[]{x,   y+1, z,   0, 0, d, textureId, quad.ao0, quad.light};
                 break;
-            case DOWN:
+            case "down":
+                d = 5;
                 verts[0] = new int[]{x,   y,   z+h, 0, 0, d, textureId, quad.ao2, quad.light};
                 verts[1] = new int[]{x+w, y,   z+h, 1, 0, d, textureId, quad.ao3, quad.light};
                 verts[2] = new int[]{x+w, y,   z,   1, 1, d, textureId, quad.ao1, quad.light};
@@ -360,7 +366,7 @@ public class SubChunkMesh {
     public void drawSubChunkMesh() throws Empty{   
         if (this.ids == null) return; // un subchunk sans ids est juste vide, pas une erreur
         if (this.ids[1] == 0) return; // sub-chunk vide, rien à dessiner
-        TexturesManager.getTextureRender().draw();
+        TextureManager.bind();
 
         // Vérifie que le border VAO existe avant de le dessiner
         if(KeyboardInput.isChunkBorderShow && this.ids[3] != 0){
