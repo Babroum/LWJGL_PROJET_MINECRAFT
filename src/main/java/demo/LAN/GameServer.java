@@ -38,7 +38,7 @@ public class GameServer {
                 for (String message : log){
                     client.send(message);
                     try{
-                    Thread.sleep(10);
+                    Thread.sleep(100);
                 }
                 catch (InterruptedException ie){}
                 }
