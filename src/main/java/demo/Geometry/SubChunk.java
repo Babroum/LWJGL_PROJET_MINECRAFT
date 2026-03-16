@@ -770,7 +770,7 @@ public class SubChunk extends Node3D{
      * @param z
      * @return
      */
-    private boolean isBlockSolid(int x, int y, int z){
+    public boolean isBlockSolid(int x, int y, int z){
         // dans le subchunk courant
         if (x >= 0 && x < CHUNKSIZEX && y >= 0 && y < CHUNKSIZEY && z >= 0 && z < CHUNKSIZEZ){
             int index = x + y * CHUNKSIZEX + z * CHUNKSIZEX * CHUNKSIZEY;

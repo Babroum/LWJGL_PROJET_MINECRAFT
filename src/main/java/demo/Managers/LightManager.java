@@ -7,11 +7,12 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import demo.Annotations.OpenGLThread;
 import demo.Geometry.Chunk;
 import demo.Geometry.SubChunk;
+import demo.Types.LightInfo;
 
 public class LightManager {
 
-    private static Deque<Long> lightQueue = new ConcurrentLinkedDeque<>();
-    private static Deque<Long> removalQueue = new ConcurrentLinkedDeque<>();
+    private static Deque<LightInfo> lightQueue = new ConcurrentLinkedDeque<>();
+    private static Deque<LightInfo> removalQueue = new ConcurrentLinkedDeque<>();
     private static HashSet<SubChunk> dirtySubChunks = new HashSet<>();
 
     private static final int[][] LIGHT_NEIGHBORS = {
@@ -19,34 +20,32 @@ public class LightManager {
     };
 
     /**
-     * Encode (x,y,z,light) en un Long pour les files BFS. <br>
-     * Offset +32 sur chaque coord pour absorber les valeurs négatives de bordure.
+     * Encode (x,y,z,light) pour les files BFS. <br>
      * @param x Coordonnées en x
      * @param y Coordonnées en y
      * @param z Coordonnées en z
      * @param light Intensité de lumière
      * @param type Type de lumière, ciel(0) ou block(1)
-     * @return Retourne les 4 paramètres encodés dans un long
+     * @return Retourne les 5 paramètres encodés
      */
-    private static long encodeLightEntry(int x, int y, int z, int light, int type) {
-        // 6bits, 6bits, 6bits, 4bits, 1bits
-        return ((long)(x+32) << 58) | ((long)(y+32) << 52) | ((long)(z+32) << 46) | ((long)light << 42) | ((long)type << 41);
+    private static LightInfo encodeLightEntry(int x, int y, int z, byte light, byte type) {
+        return new LightInfo(x, y, z, (byte)0, (byte)0);
     }
 
-    public static void addBlockToQueue(int x, int y, int z, int light, int type){
+    public static void addBlockToQueue(int x, int y, int z, byte light, byte type){
         LightManager.lightQueue.push(LightManager.encodeLightEntry(x, y, z, light, type));
 
         Chunk chunk = ChunksManager.getChunkAt(x, z);
         LightManager.dirtySubChunks.add(chunk.getSubChunkAt(y));
     }
 
-    private static void bfsPropagate(long block){
-        int posX   = (int)((block >>> 58) & 0x3F) - 32;
-        int posY   = (int)((block >>> 52) & 0x3F) - 32; 
-        int posZ   = (int)((block >>> 46) & 0x3F) - 32; 
-        int light =  (int)((block >>> 42) & 0xF); 
-        int type   = (int)((block >>> 41) & 0x1); 
-        System.out.println("posX : " + posX + ", posY : " + posY + ", posZ : " + posZ);
+    private static void bfsPropagate(LightInfo block){
+        int posX   = block.x;
+        int posY   = block.y; 
+        int posZ   = block.z; 
+        byte light  = block.light; 
+        byte type   = block.type; 
+        System.out.println("Apres encodage posX : " + posX + ", posY : " + posY + ", posZ : " + posZ);
 
         if (light <= 1) return;
 
@@ -63,14 +62,14 @@ public class LightManager {
             Chunk chunk = ChunksManager.getChunkAt(nx, nz);
             SubChunk sub = chunk.getSubChunkAt(ny);
 
-            //if (sub.isBlockSolid(nx, ny, nz)) continue;
+            if (sub.isBlockSolid(nx, ny, nz)) continue; // chunkmanager floor mod
 
-            int oldLight = type == 0 ? sub.getBlockSkyLight(localX, localY, localZ) : sub.getBlockLight(localX, localY, localZ);
+            byte oldLight = type == 0 ? sub.getBlockSkyLight(localX, localY, localZ) : sub.getBlockLight(localX, localY, localZ);
 
             if (oldLight < light){
                 byte newLight = (byte)(light - 1);
                 if (type == 0) sub.setBlockSkyLight(localX, localY, localZ, newLight); else sub.setBlockLight(localX, localY, localZ, newLight);
-                LightManager.lightQueue.push(LightManager.encodeLightEntry(nx, ny, nz, newLight, type));
+                LightManager.lightQueue.push(LightManager.encodeLightEntry(nx, ny, nz, newLight, (byte)type));
             }
         }
     }
@@ -79,12 +78,12 @@ public class LightManager {
     public static void updateLight(){
         synchronized(LightManager.lightQueue) {
             while (!LightManager.lightQueue.isEmpty()) {
-                long block = LightManager.lightQueue.poll();
+                LightInfo block = LightManager.lightQueue.poll();
                 LightManager.bfsPropagate(block);
             }
         }
         while (!LightManager.removalQueue.isEmpty()) {
-            long block = LightManager.removalQueue.poll();
+            LightInfo block = LightManager.removalQueue.poll();
             // bfs remove
         }
         for (SubChunk s : LightManager.dirtySubChunks) { s.rebuildSubChunk(); }
