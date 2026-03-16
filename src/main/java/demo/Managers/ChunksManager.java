@@ -12,7 +12,6 @@ import demo.BlockDefinition;
 import demo.WorldGenerator;
 import demo.Annotations.ChunkThread;
 import demo.Annotations.OpenGLThread;
-import demo.Exceptions.IncorrectCoordinates;
 import demo.Geometry.Chunk;
 import demo.Geometry.SubChunk;
 import demo.Rendering.Render;
@@ -161,16 +160,19 @@ public class ChunksManager {
     }
 
     /**
-     * Retourne le chunk à la position donné
-     * @param x int
-     * @param z int
-     * @return Chunk
+     * Retourne le chunk à la position donné (x, z)
+     * @param x Coordonées en x (global)
+     * @param z Coordonées en z (global)
+     * @return Le chunk retourné
      */
     @ChunkThread
-    public static Chunk getChunk(int x, int z){
-        long coord = chunkKey(x, z);
+    public static Chunk getChunkAt(int x, int z){
+        int localX = x / SubChunk.CHUNKSIZEX;
+        int localZ = z / SubChunk.CHUNKSIZEZ;
+
+        long coord = chunkKey(localX, localZ);
         if (!ChunksManager.chunks.containsKey(coord)){
-            throw new RuntimeException("Le chunk x: " + x + " z: "+ z + " n'existe pas");
+            throw new RuntimeException("Le chunk x: " + localX + " z: "+ localZ + " n'existe pas");
         }
         return ChunksManager.chunks.get(coord);
     }
@@ -184,15 +186,18 @@ public class ChunksManager {
     }
 
     /**
-     * Supprime le chunk à la position donné
-     * @param x int
-     * @param z int
+     * Supprime le chunk à la position donné (x, z)
+     * @param x Coordonées en x (global)
+     * @param z Coordonées en x (global)
      */
     @OpenGLThread
     public static void removeChunk(int x, int z){
-        long coord = chunkKey(x, z);
+        int localX = x / SubChunk.CHUNKSIZEX;
+        int localZ = z / SubChunk.CHUNKSIZEZ;
+
+        long coord = chunkKey(localX, localZ);
         if (!ChunksManager.chunks.containsKey(coord)){
-            throw new RuntimeException("Le chunk x: " + x + " z: "+ z + " n'existe pas");
+            throw new RuntimeException("Le chunk x: " + localX + " z: "+ localZ + " n'existe pas");
         }    
         // Récupère le chunk
         Chunk chunk = ChunksManager.chunks.get(coord);
@@ -225,10 +230,8 @@ public class ChunksManager {
     public static BlockDefinition getBlock(int x, int y, int z){
         if (y < 0 || y >= SubChunk.CHUNKSIZEY * Chunk.SUBCHUNKCOUNT){throw new RuntimeException("Valeur en Y incorrect");}
 
-        int chunkX = (int) Math.floor((float) x / SubChunk.CHUNKSIZEX);
-        int chunkZ = (int) Math.floor((float) z / SubChunk.CHUNKSIZEZ);
-
-        Chunk chunk = ChunksManager.getChunk(chunkX, chunkZ);
+        Chunk chunk = ChunksManager.getChunkAt((int)Math.floor((float) x),
+                                               (int)Math.floor((float) z));
 
         int localX = ChunksManager.floorMod(x, SubChunk.CHUNKSIZEX);
         int localZ = ChunksManager.floorMod(z, SubChunk.CHUNKSIZEZ);

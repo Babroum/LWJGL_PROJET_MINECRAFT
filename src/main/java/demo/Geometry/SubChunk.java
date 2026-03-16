@@ -269,11 +269,11 @@ public class SubChunk extends Node3D{
     }
 
     /**
-     * Retourne le block à la position
-     * @param x int
-     * @param y int
-     * @param z int
-     * @return BlockType
+     * Retourne le block à la position.
+     * @param x Coordonnée en x (locale)
+     * @param y Coordonnée en x (locale)
+     * @param z Coordonnée en x (locale)
+     * @return Retourne le block
      */
     public BlockDefinition getBlock(int x, int y, int z){
         if (x < 0 || x >= SubChunk.CHUNKSIZEX ||
@@ -845,55 +845,49 @@ public class SubChunk extends Node3D{
     public void linkNeighbors(){
         // ouest
         try{
-            int chunkX = (int) Math.floor((float)this.x / SubChunk.CHUNKSIZEX);
-            int chunkZ = (int) Math.floor((float)this.z / SubChunk.CHUNKSIZEZ);
-            Chunk chunk = ChunksManager.getChunk(chunkX + 1, chunkZ);
-            this.westNeighbor = chunk.getSubChunk(this.y / SubChunk.CHUNKSIZEY);
+            Chunk chunk = ChunksManager.getChunkAt((int)Math.floor((float)this.x) + SubChunk.CHUNKSIZEX,
+                                                   (int)Math.floor((float)this.z));
+            this.westNeighbor = chunk.getSubChunkAt(this.y);
         }catch(IncorrectCoordinates e){
             this.westNeighbor = null;
         }  
         // est
         try{
-            int chunkX = (int) Math.floor((float)this.x / SubChunk.CHUNKSIZEX);
-            int chunkZ = (int) Math.floor((float)this.z / SubChunk.CHUNKSIZEZ);
-            Chunk chunk = ChunksManager.getChunk(chunkX - 1, chunkZ);
-            this.eastNeighbor = chunk.getSubChunk(this.y / SubChunk.CHUNKSIZEY);
+            Chunk chunk = ChunksManager.getChunkAt((int)Math.floor((float)this.x) - SubChunk.CHUNKSIZEX,
+                                                   (int)Math.floor((float)this.z));
+            this.eastNeighbor = chunk.getSubChunkAt(this.y);
         }catch(IncorrectCoordinates e){
             this.eastNeighbor = null;
         }   
         // nord
         try{
-            int chunkX = (int) Math.floor((float)this.x / SubChunk.CHUNKSIZEX);
-            int chunkZ = (int) Math.floor((float)this.z / SubChunk.CHUNKSIZEZ);
-            Chunk chunk = ChunksManager.getChunk(chunkX, chunkZ + 1);
-            this.northNeighbor = chunk.getSubChunk(this.y / SubChunk.CHUNKSIZEY);
+            Chunk chunk = ChunksManager.getChunkAt((int)Math.floor((float)this.x),
+                                                   (int)Math.floor((float)this.z) + SubChunk.CHUNKSIZEZ);
+            this.northNeighbor = chunk.getSubChunkAt(this.y);
         }catch(IncorrectCoordinates e){
             this.northNeighbor = null;
         }   
         // sud
         try{
-            int chunkX = (int) Math.floor((float)this.x / SubChunk.CHUNKSIZEX);
-            int chunkZ = (int) Math.floor((float)this.z / SubChunk.CHUNKSIZEZ);
-            Chunk chunk = ChunksManager.getChunk(chunkX, chunkZ - 1);
-            this.southNeighbor = chunk.getSubChunk(this.y / SubChunk.CHUNKSIZEY);
+            Chunk chunk = ChunksManager.getChunkAt((int)Math.floor((float)this.x),
+                                                   (int)Math.floor((float)this.z) - SubChunk.CHUNKSIZEZ);
+            this.southNeighbor = chunk.getSubChunkAt(this.y);
         }catch(IncorrectCoordinates e){
             this.southNeighbor = null;
         } 
         // haut
         try{
-            int chunkX = (int) Math.floor((float)this.x / SubChunk.CHUNKSIZEX);
-            int chunkZ = (int) Math.floor((float)this.z / SubChunk.CHUNKSIZEZ);
-            Chunk chunk = ChunksManager.getChunk(chunkX, chunkZ);
-            this.upNeighbor = chunk.getSubChunk((this.y / SubChunk.CHUNKSIZEY) + 1);
+            Chunk chunk = ChunksManager.getChunkAt((int)Math.floor((float)this.x),
+                                                   (int)Math.floor((float)this.z));
+            this.upNeighbor = chunk.getSubChunkAt(this.y + SubChunk.CHUNKSIZEY);
         }catch(IncorrectCoordinates e){
             this.upNeighbor = null;
         }  
         // bas
         try{
-            int chunkX = (int) Math.floor((float)this.x / SubChunk.CHUNKSIZEX);
-            int chunkZ = (int) Math.floor((float)this.z / SubChunk.CHUNKSIZEZ);
-            Chunk chunk = ChunksManager.getChunk(chunkX, chunkZ);
-            this.downNeighbor = chunk.getSubChunk((this.y / SubChunk.CHUNKSIZEY) - 1);
+            Chunk chunk = ChunksManager.getChunkAt((int)Math.floor((float)this.x),
+                                                   (int)Math.floor((float)this.z));
+            this.downNeighbor = chunk.getSubChunkAt(this.y - SubChunk.CHUNKSIZEY);
         }catch(IncorrectCoordinates e){
             this.downNeighbor = null;
         }  

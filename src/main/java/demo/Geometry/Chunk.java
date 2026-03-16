@@ -69,7 +69,7 @@ public class Chunk extends Node3D{
                 int y = Chunk.SUBCHUNKCOUNT * SubChunk.CHUNKSIZEY - 1;
                 while (y >= 0) {
                     // On donne 15 à l'air ET au premier bloc solide
-                    this.getSubChunk(y / SubChunk.CHUNKSIZEY).setBlockSkyLight(x, y % SubChunk.CHUNKSIZEY, z, (byte)15);
+                    this.getSubChunkAt(y).setBlockSkyLight(x, y % SubChunk.CHUNKSIZEY, z, (byte)15);
                     LightManager.addBlockToQueue(x + this.x, y, z + this.z, 15, 0);
                     
                     
@@ -96,7 +96,7 @@ public class Chunk extends Node3D{
         int y = Chunk.SUBCHUNKCOUNT * SubChunk.CHUNKSIZEY - 1;
         while (y >= 0) {
             // On donne 15 à l'air ET au premier bloc solide
-            this.getSubChunk(y / SubChunk.CHUNKSIZEY).setBlockSkyLight(x, y % SubChunk.CHUNKSIZEY, z, (byte)15);
+            this.getSubChunkAt(y).setBlockSkyLight(x, y % SubChunk.CHUNKSIZEY, z, (byte)15);
             LightManager.addBlockToQueue(x + this.x, y, z + this.z, 15, 0);
             
             if (this.getBlock(x, y, z) != Blocks.AIR) {
@@ -109,7 +109,7 @@ public class Chunk extends Node3D{
         this.heightMap[z + x * SubChunk.CHUNKSIZEZ] = y;
 
         while (y >= 0) {
-            this.getSubChunk(y / SubChunk.CHUNKSIZEY).setBlockSkyLight(x, y % SubChunk.CHUNKSIZEY, z, (byte)0);
+            this.getSubChunkAt(y).setBlockSkyLight(x, y % SubChunk.CHUNKSIZEY, z, (byte)0);
             if (y == 0) break;
             y--;
         }
@@ -118,13 +118,13 @@ public class Chunk extends Node3D{
     /**
      * Retourne un block dans le chunk.
      * @param x Coordonnées en x (local)
-     * @param y Coordonnées en y (local)
+     * @param y Coordonnées en y (global)
      * @param z Coordonnées en z (local)
      * @return Retourne le block trouvé
      */
     public BlockDefinition getBlock(int x, int y, int z){
         if (y < 0 || y >= SubChunk.CHUNKSIZEY * Chunk.SUBCHUNKCOUNT){throw new RuntimeException("Valeur en Y incorrect");}
-        SubChunk sub = this.getSubChunk(y / SubChunk.CHUNKSIZEY);
+        SubChunk sub = this.getSubChunkAt(y);
 
         return sub.getBlock(x, y % SubChunk.CHUNKSIZEY, z);
     }
@@ -179,14 +179,13 @@ public class Chunk extends Node3D{
     }
 
     /**
-     * Permet d'obtenir le subChunk d'un chunk
-     * @param y int 
-     * @throws IncorrectCoordinates
-     * @return SubChunk
+     * Retourne le subChunk à la position donné (y).
+     * @param y Coordonnée en y (global)
+     * @return Le subChunk retourné
      */
-    public SubChunk getSubChunk(int y) throws IncorrectCoordinates{ 
-        if (y < 0 || y >= Chunk.SUBCHUNKCOUNT) throw new IncorrectCoordinates("Les coordonées sont incorrects (0 pour le subChunk n°0, 1 ... n°1, etc...");
-        return this.subChunks[y];
+    public SubChunk getSubChunkAt(int y){ 
+        if (y < 0 || y >= Chunk.SUBCHUNKCOUNT) throw new RuntimeException("Les coordonées sont incorrects (0-15 pour le subChunk n°0, 16-31 ... n°1, etc...");
+        return this.subChunks[y / SubChunk.CHUNKSIZEY];
     }
 
     /**

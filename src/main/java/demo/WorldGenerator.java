@@ -255,7 +255,7 @@ public class WorldGenerator {
 
         for (int bx = 0; bx < WorldGenerator.CHUNK_SIZE; bx++) {
             for (int bz = 0; bz < WorldGenerator.CHUNK_SIZE; bz++) {
-                SubChunk currentSub = chunk.getSubChunk(0);
+                SubChunk currentSub = chunk.getSubChunkAt(0);
                 int currentSubIndex = 0;
                 for (int by = 0; by < WorldGenerator.CHUNK_HEIGHT; by++) {
 
@@ -280,7 +280,7 @@ public class WorldGenerator {
                     int subChunkIndex = by / WorldGenerator.CHUNK_SIZE;
                     if (subChunkIndex != currentSubIndex) {
                         currentSubIndex = subChunkIndex;
-                        currentSub = chunk.getSubChunk(subChunkIndex);
+                        currentSub = chunk.getSubChunkAt(by);
                     }
 
                     int localY = by % WorldGenerator.CHUNK_SIZE;
@@ -345,7 +345,7 @@ public class WorldGenerator {
                 // >0 = nombre de blocs de terre restant à placer en dessous
                 int dirtDepth = -1;
 
-                SubChunk currentSub = chunk.getSubChunk(Chunk.SUBCHUNKCOUNT - 1);
+                SubChunk currentSub = chunk.getSubChunkAt(Chunk.SUBCHUNKCOUNT * SubChunk.CHUNKSIZEY - SubChunk.CHUNKSIZEY);
                 int currentSubIndex = Chunk.SUBCHUNKCOUNT - 1;
                 
                 // Parcours de haut en bas pour trouver la surface
@@ -355,7 +355,7 @@ public class WorldGenerator {
                     int subChunkIndex = by / WorldGenerator.CHUNK_SIZE;
                     if (subChunkIndex != currentSubIndex) {
                         currentSubIndex = subChunkIndex;
-                        currentSub = chunk.getSubChunk(subChunkIndex);
+                        currentSub = chunk.getSubChunkAt(by);
                     }
                     int localY        = by % WorldGenerator.CHUNK_SIZE;
                     int idx = bx + localY * WorldGenerator.CHUNK_SIZE + bz * WorldGenerator.CHUNK_HEIGHT;

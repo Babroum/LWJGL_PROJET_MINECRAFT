@@ -1,6 +1,5 @@
 package demo.Managers;
 
-import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -37,8 +36,8 @@ public class LightManager {
     public static void addBlockToQueue(int x, int y, int z, int light, int type){
         LightManager.lightQueue.push(LightManager.encodeLightEntry(x, y, z, light, type));
 
-        Chunk chunk = ChunksManager.getChunk(x / SubChunk.CHUNKSIZEX, z / SubChunk.CHUNKSIZEZ);
-        LightManager.dirtySubChunks.add(chunk.getSubChunk(y / SubChunk.CHUNKSIZEY));
+        Chunk chunk = ChunksManager.getChunkAt(x, z);
+        LightManager.dirtySubChunks.add(chunk.getSubChunkAt(y));
     }
 
     private static void bfsPropagate(long block){
@@ -61,8 +60,8 @@ public class LightManager {
 
             if (ny < 0) continue;
 
-            Chunk chunk = ChunksManager.getChunk(nx / SubChunk.CHUNKSIZEX, nz / SubChunk.CHUNKSIZEZ);
-            SubChunk sub = chunk.getSubChunk(ny / SubChunk.CHUNKSIZEY);
+            Chunk chunk = ChunksManager.getChunkAt(nx, nz);
+            SubChunk sub = chunk.getSubChunkAt(ny);
 
             //if (sub.isBlockSolid(nx, ny, nz)) continue;
 
