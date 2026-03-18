@@ -844,51 +844,57 @@ public class SubChunk extends Node3D{
     @ChunkThread
     public void linkNeighbors(){
         // ouest
-        try{
-            Chunk chunk = ChunksManager.getChunkAt((int)Math.floor((float)this.x) + SubChunk.CHUNKSIZEX,
-                                                   (int)Math.floor((float)this.z));
+        try{            
+            Chunk chunk = ChunksManager.getChunkAt(
+                this.x + SubChunk.CHUNKSIZEX,
+                this.y);
             this.westNeighbor = chunk.getSubChunkAt(this.y);
-        }catch(IncorrectCoordinates e){
+        }catch(Exception e){
             this.westNeighbor = null;
         }  
         // est
         try{
-            Chunk chunk = ChunksManager.getChunkAt((int)Math.floor((float)this.x) - SubChunk.CHUNKSIZEX,
-                                                   (int)Math.floor((float)this.z));
+            Chunk chunk = ChunksManager.getChunkAt(
+                this.x - SubChunk.CHUNKSIZEX,
+                this.z);
             this.eastNeighbor = chunk.getSubChunkAt(this.y);
-        }catch(IncorrectCoordinates e){
+        }catch(Exception e){
             this.eastNeighbor = null;
         }   
         // nord
         try{
-            Chunk chunk = ChunksManager.getChunkAt((int)Math.floor((float)this.x),
-                                                   (int)Math.floor((float)this.z) + SubChunk.CHUNKSIZEZ);
+            Chunk chunk = ChunksManager.getChunkAt(
+                this.x,
+                this.z + SubChunk.CHUNKSIZEZ);
             this.northNeighbor = chunk.getSubChunkAt(this.y);
-        }catch(IncorrectCoordinates e){
+        }catch(Exception e){
             this.northNeighbor = null;
         }   
         // sud
         try{
-            Chunk chunk = ChunksManager.getChunkAt((int)Math.floor((float)this.x),
-                                                   (int)Math.floor((float)this.z) - SubChunk.CHUNKSIZEZ);
+            Chunk chunk = ChunksManager.getChunkAt(
+                this.x,
+                this.z - SubChunk.CHUNKSIZEZ);
             this.southNeighbor = chunk.getSubChunkAt(this.y);
-        }catch(IncorrectCoordinates e){
+        }catch(Exception e){
             this.southNeighbor = null;
         } 
         // haut
         try{
-            Chunk chunk = ChunksManager.getChunkAt((int)Math.floor((float)this.x),
-                                                   (int)Math.floor((float)this.z));
+            Chunk chunk = ChunksManager.getChunkAt(
+                this.x,
+                this.z);
             this.upNeighbor = chunk.getSubChunkAt(this.y + SubChunk.CHUNKSIZEY);
-        }catch(IncorrectCoordinates e){
+        }catch(Exception e){
             this.upNeighbor = null;
         }  
         // bas
         try{
-            Chunk chunk = ChunksManager.getChunkAt((int)Math.floor((float)this.x),
-                                                   (int)Math.floor((float)this.z));
+            Chunk chunk = ChunksManager.getChunkAt(
+                this.x,
+                this.z);
             this.downNeighbor = chunk.getSubChunkAt(this.y - SubChunk.CHUNKSIZEY);
-        }catch(IncorrectCoordinates e){
+        }catch(Exception e){
             this.downNeighbor = null;
         }  
     }

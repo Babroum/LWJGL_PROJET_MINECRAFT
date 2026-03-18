@@ -70,7 +70,7 @@ public class Chunk extends Node3D{
                 while (y >= 0) {
                     // On donne 15 à l'air ET au premier bloc solide
                     this.getSubChunkAt(y).setBlockSkyLight(x, y % SubChunk.CHUNKSIZEY, z, (byte)15);
-                    LightManager.addBlockToQueue(x + this.x, y, z + this.z, (byte)15, (byte)0);
+                    //LightManager.addBlockToQueue(x + this.x, y, z + this.z, (byte)15, (byte)0);
                     
                     
                     if (this.getBlock(x, y, z) != Blocks.AIR) {
@@ -184,7 +184,9 @@ public class Chunk extends Node3D{
      * @return Le subChunk retourné
      */
     public SubChunk getSubChunkAt(int y){ 
-        if (y < 0 || y >= Chunk.SUBCHUNKCOUNT * SubChunk.CHUNKSIZEY) throw new RuntimeException("Les coordonées sont incorrects (0-15 pour le subChunk n°0, 16-31 ... n°1, etc...");
+        if (y < 0 || y >= Chunk.SUBCHUNKCOUNT * SubChunk.CHUNKSIZEY) {
+            throw new RuntimeException("Les coordonées sont incorrects (0-15 pour le subChunk n°0, 16-31 ... n°1, etc...");
+        }
         return this.subChunks[y / SubChunk.CHUNKSIZEY];
     }
 

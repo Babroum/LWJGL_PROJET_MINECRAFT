@@ -64,6 +64,7 @@ public class ChunksManager {
      */
     @ChunkThread
     public static Chunk createChunk(int x, int z){
+        System.out.println("creer chunk x : " + x + ", z : " + z);
         long coord = chunkKey(x, z);
         if (ChunksManager.chunks.containsKey(coord)) 
             {throw new RuntimeException("Le chunk x: " + x + " z: "+ z + " existe déjà");}
@@ -171,9 +172,7 @@ public class ChunksManager {
         int localZ = z / SubChunk.CHUNKSIZEZ;
 
         long coord = chunkKey(localX, localZ);
-        if (!ChunksManager.chunks.containsKey(coord)){
-            throw new RuntimeException("Le chunk x: " + localX + " z: "+ localZ + " n'existe pas");
-        }
+        if (!ChunksManager.chunks.containsKey(coord)) return null;
         return ChunksManager.chunks.get(coord);
     }
 
@@ -230,8 +229,7 @@ public class ChunksManager {
     public static BlockDefinition getBlock(int x, int y, int z){
         if (y < 0 || y >= SubChunk.CHUNKSIZEY * Chunk.SUBCHUNKCOUNT){throw new RuntimeException("Valeur en Y incorrect");}
 
-        Chunk chunk = ChunksManager.getChunkAt((int)Math.floor((float) x),
-                                               (int)Math.floor((float) z));
+        Chunk chunk = ChunksManager.getChunkAt(x, z);
 
         int localX = ChunksManager.floorMod(x, SubChunk.CHUNKSIZEX);
         int localZ = ChunksManager.floorMod(z, SubChunk.CHUNKSIZEZ);

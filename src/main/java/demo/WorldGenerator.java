@@ -280,7 +280,7 @@ public class WorldGenerator {
                     int subChunkIndex = by / WorldGenerator.CHUNK_SIZE;
                     if (subChunkIndex != currentSubIndex) {
                         currentSubIndex = subChunkIndex;
-                        currentSub = chunk.getSubChunkAt(by);
+                        currentSub = chunk.getSubChunkAt(subChunkIndex * WorldGenerator.CHUNK_SIZE);
                     }
 
                     int localY = by % WorldGenerator.CHUNK_SIZE;
@@ -355,7 +355,7 @@ public class WorldGenerator {
                     int subChunkIndex = by / WorldGenerator.CHUNK_SIZE;
                     if (subChunkIndex != currentSubIndex) {
                         currentSubIndex = subChunkIndex;
-                        currentSub = chunk.getSubChunkAt(by);
+                        currentSub = chunk.getSubChunkAt(subChunkIndex * WorldGenerator.CHUNK_SIZE);
                     }
                     int localY        = by % WorldGenerator.CHUNK_SIZE;
                     int idx = bx + localY * WorldGenerator.CHUNK_SIZE + bz * WorldGenerator.CHUNK_HEIGHT;

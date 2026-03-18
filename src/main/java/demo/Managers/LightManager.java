@@ -45,9 +45,6 @@ public class LightManager {
         int posZ   = block.z; 
         byte light  = block.light; 
         byte type   = block.type; 
-        System.out.println("Apres encodage posX : " + posX + ", posY : " + posY + ", posZ : " + posZ);
-
-        if (light <= 1) return;
 
         for (int[] n : LightManager.LIGHT_NEIGHBORS){
             int nx = posX + n[0];
@@ -56,15 +53,19 @@ public class LightManager {
             int localX = ChunksManager.floorMod(nx, SubChunk.CHUNKSIZEX);
             int localZ = ChunksManager.floorMod(nz, SubChunk.CHUNKSIZEZ);
             int localY = ny % SubChunk.CHUNKSIZEY;
-
-            if (ny < 0) continue;
-
             Chunk chunk = ChunksManager.getChunkAt(nx, nz);
+
+            if (ny < 0 || ny >= SubChunk.CHUNKSIZEY * Chunk.SUBCHUNKCOUNT) continue;
+
+            if (chunk == null) continue;
+
             SubChunk sub = chunk.getSubChunkAt(ny);
 
-            if (sub.isBlockSolid(nx, ny, nz)) continue; // chunkmanager floor mod
-
             byte oldLight = type == 0 ? sub.getBlockSkyLight(localX, localY, localZ) : sub.getBlockLight(localX, localY, localZ);
+
+            if (sub.isBlockSolid(localX, localY, localZ)) continue;
+
+            if (oldLight <= 1) continue;
 
             if (oldLight < light){
                 byte newLight = (byte)(light - 1);
