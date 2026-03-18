@@ -14,7 +14,6 @@ import demo.Blocks;
 import demo.Annotations.ChunkThread;
 import demo.Annotations.OpenGLThread;
 import demo.Events.KeyboardInput;
-import demo.Exceptions.IncorrectCoordinates;
 import demo.Managers.BlocksManager;
 import demo.Managers.ChunksManager;
 import demo.Managers.ShadersManager;
@@ -847,7 +846,7 @@ public class SubChunk extends Node3D{
         try{            
             Chunk chunk = ChunksManager.getChunkAt(
                 this.x + SubChunk.CHUNKSIZEX,
-                this.y);
+                this.z);
             this.westNeighbor = chunk.getSubChunkAt(this.y);
         }catch(Exception e){
             this.westNeighbor = null;

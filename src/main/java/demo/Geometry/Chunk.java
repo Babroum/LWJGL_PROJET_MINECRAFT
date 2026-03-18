@@ -7,9 +7,9 @@ import demo.Blocks;
 import demo.Annotations.ChunkThread;
 import demo.Annotations.OpenGLThread;
 import demo.Exceptions.IncorrectCoordinates;
-import demo.Managers.LightManager;
 import demo.Rendering.FrustumCulling;
 import demo.Rendering.Render;
+import demo.Managers.LightManager;
 
 /**
  * Un chunk, contient des SubChunks
@@ -70,7 +70,7 @@ public class Chunk extends Node3D{
                 while (y >= 0) {
                     // On donne 15 à l'air ET au premier bloc solide
                     this.getSubChunkAt(y).setBlockSkyLight(x, y % SubChunk.CHUNKSIZEY, z, (byte)15);
-                    //LightManager.addBlockToQueue(x + this.x, y, z + this.z, (byte)15, (byte)0);
+                    LightManager.addSkyLight(this, x, y, z, (byte)15);
                     
                     
                     if (this.getBlock(x, y, z) != Blocks.AIR) {
@@ -97,7 +97,7 @@ public class Chunk extends Node3D{
         while (y >= 0) {
             // On donne 15 à l'air ET au premier bloc solide
             this.getSubChunkAt(y).setBlockSkyLight(x, y % SubChunk.CHUNKSIZEY, z, (byte)15);
-            LightManager.addBlockToQueue(x + this.x, y, z + this.z, (byte)15, (byte)0);
+            LightManager.addSkyLight(this, x, y, z, (byte)15);
             
             if (this.getBlock(x, y, z) != Blocks.AIR) {
                 // On a touché le sol, on enregistre la hauteur
@@ -153,11 +153,11 @@ public class Chunk extends Node3D{
      * @throws IncorrectCoordinates
      */
     @ChunkThread
-    public void addBlockToChunk(BlockDefinition type, int x, int y, int z) throws IncorrectCoordinates{
+    public void addBlockToChunk(BlockDefinition type, int x, int y, int z){
         if (x < 0 || x >= SubChunk.CHUNKSIZEX ||
             y < 0 || y >= SubChunk.CHUNKSIZEY * Chunk.SUBCHUNKCOUNT ||
             z < 0 || z >= SubChunk.CHUNKSIZEZ
-        ){throw new IncorrectCoordinates("Coordonées dans le chunk invalide");}
+        ){throw new RuntimeException("Coordonées dans le chunk invalide");}
         this.subChunks[y / SubChunk.CHUNKSIZEY].addBlockToSubChunk(type, x, y % SubChunk.CHUNKSIZEY, z, true);
     }
 
@@ -170,11 +170,11 @@ public class Chunk extends Node3D{
      * @throws IncorrectCoordinates
      */
     @ChunkThread
-    public void removeBlockFromChunk(int x, int y, int z) throws IncorrectCoordinates{
+    public void removeBlockFromChunk(int x, int y, int z){
         if (x < 0 || x >= SubChunk.CHUNKSIZEX ||
             y < 0 || y >= SubChunk.CHUNKSIZEY * Chunk.SUBCHUNKCOUNT ||
             z < 0 || z >= SubChunk.CHUNKSIZEZ
-        ){throw new IncorrectCoordinates("Coordonées dans le chunk invalide");}
+        ){throw new RuntimeException("Coordonées dans le chunk invalide");}
         this.subChunks[y / SubChunk.CHUNKSIZEY].removeBlockFromSubChunk(x, y % SubChunk.CHUNKSIZEY, z);
     }
 

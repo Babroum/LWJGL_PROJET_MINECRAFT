@@ -64,7 +64,6 @@ public class ChunksManager {
      */
     @ChunkThread
     public static Chunk createChunk(int x, int z){
-        System.out.println("creer chunk x : " + x + ", z : " + z);
         long coord = chunkKey(x, z);
         if (ChunksManager.chunks.containsKey(coord)) 
             {throw new RuntimeException("Le chunk x: " + x + " z: "+ z + " existe déjà");}
@@ -89,8 +88,8 @@ public class ChunksManager {
             // submit permet au pool de mettre en file d'attente la tâche puis thread worker la prend dès qu'il est libre
             // passe la commande au resto d'un plat
             futures.add(pool.submit(() -> { // pool.submit() retourne un Future
-                int cx = chunk.x / SubChunk.CHUNKSIZEX;
-                int cz = chunk.z / SubChunk.CHUNKSIZEZ;
+                int cx = ChunksManager.floorDiv(chunk.x, SubChunk.CHUNKSIZEX);
+                int cz = ChunksManager.floorDiv(chunk.z, SubChunk.CHUNKSIZEZ);
                 generator.get().generateChunk(chunk, cx, cz); // ThreadLocal → thread-safe
                 BenchmarkManager.getInstance().recordChunkGenerated();
             }));
@@ -168,8 +167,8 @@ public class ChunksManager {
      */
     @ChunkThread
     public static Chunk getChunkAt(int x, int z){
-        int localX = x / SubChunk.CHUNKSIZEX;
-        int localZ = z / SubChunk.CHUNKSIZEZ;
+        int localX = ChunksManager.floorDiv(x, SubChunk.CHUNKSIZEX);
+        int localZ = ChunksManager.floorDiv(z, SubChunk.CHUNKSIZEZ);
 
         long coord = chunkKey(localX, localZ);
         if (!ChunksManager.chunks.containsKey(coord)) return null;
@@ -191,8 +190,8 @@ public class ChunksManager {
      */
     @OpenGLThread
     public static void removeChunk(int x, int z){
-        int localX = x / SubChunk.CHUNKSIZEX;
-        int localZ = z / SubChunk.CHUNKSIZEZ;
+        int localX = ChunksManager.floorDiv(x, SubChunk.CHUNKSIZEX);
+        int localZ = ChunksManager.floorDiv(z, SubChunk.CHUNKSIZEZ);
 
         long coord = chunkKey(localX, localZ);
         if (!ChunksManager.chunks.containsKey(coord)){
@@ -245,5 +244,24 @@ public class ChunksManager {
      */
     public static int floorMod(int x, int mod) {
         return ((x % mod) + mod) % mod;
+    }
+
+    /**
+     * Division entière qui fait toujours FLOOR (même pour les négatifs)
+     * Exemple : floorDiv(-5, 16) = -1
+     * @param a
+     * @param b
+     * @return
+     */
+    public static int floorDiv(int a, int b) {
+        int q = a / b;
+        int r = a % b;
+        // si on a un reste et que a et b ont des signes différents
+        // on doit descendre d'un cran pour faire un vrai floor
+        // ^ est un XOR
+        if (r != 0 && ((a < 0) ^ (b < 0))) {
+            q--;
+        }
+        return q;
     }
 }

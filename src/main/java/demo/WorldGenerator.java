@@ -240,9 +240,9 @@ public class WorldGenerator {
                 for (int iz = 0; iz < WorldGenerator.GRID_Z; iz++) {
 
                     // Convertit les indices de grille en coordonnées monde absolues
-                    int worldX = chunkX * 16 + ix * WorldGenerator.STEP_XZ;
-                    int worldY =              iy * WorldGenerator.STEP_Y;   // Y commence à 0
-                    int worldZ = chunkZ * 16 + iz * WorldGenerator.STEP_XZ;
+                    int worldX = chunkX * WorldGenerator.CHUNK_SIZE + ix * WorldGenerator.STEP_XZ;
+                    int worldY =                                      iy * WorldGenerator.STEP_Y;   // Y commence à 0
+                    int worldZ = chunkZ * WorldGenerator.CHUNK_SIZE + iz * WorldGenerator.STEP_XZ;
 
                     // Stocke la densité au nœud courant
                     grid[ix * WorldGenerator.GRID_Y * WorldGenerator.GRID_Z + iy * WorldGenerator.GRID_Z + iz] = computeDensity(worldX, worldY, worldZ);
@@ -276,11 +276,10 @@ public class WorldGenerator {
                     if (by < SEA_LEVEL - 5 && Math.abs(cave1Interp) < 0.06f && Math.abs(cave2Interp) < 0.06f){
                         density = -1.0f;
                     }
-                    // Écriture dans le sous-chunk   
-                    int subChunkIndex = by / WorldGenerator.CHUNK_SIZE;
-                    if (subChunkIndex != currentSubIndex) {
-                        currentSubIndex = subChunkIndex;
-                        currentSub = chunk.getSubChunkAt(subChunkIndex * WorldGenerator.CHUNK_SIZE);
+                    // Écriture dans le sous-chunk                       
+                    if (by != currentSubIndex) {
+                        currentSubIndex = by;
+                        currentSub = chunk.getSubChunkAt(by);
                     }
 
                     int localY = by % WorldGenerator.CHUNK_SIZE;
@@ -345,17 +344,16 @@ public class WorldGenerator {
                 // >0 = nombre de blocs de terre restant à placer en dessous
                 int dirtDepth = -1;
 
-                SubChunk currentSub = chunk.getSubChunkAt(Chunk.SUBCHUNKCOUNT * SubChunk.CHUNKSIZEY - SubChunk.CHUNKSIZEY);
-                int currentSubIndex = Chunk.SUBCHUNKCOUNT - 1;
+                int currentSubIndex = Chunk.SUBCHUNKCOUNT * SubChunk.CHUNKSIZEY - SubChunk.CHUNKSIZEY;
+                SubChunk currentSub = chunk.getSubChunkAt(currentSubIndex);                
                 
                 // Parcours de haut en bas pour trouver la surface
-                for (int by = 255; by >= 0; by--) {
+                for (int by = WorldGenerator.CHUNK_HEIGHT - 1; by >= 0; by--) {
 
-                    // Calcul du sous-chunk et de la position locale
-                    int subChunkIndex = by / WorldGenerator.CHUNK_SIZE;
-                    if (subChunkIndex != currentSubIndex) {
-                        currentSubIndex = subChunkIndex;
-                        currentSub = chunk.getSubChunkAt(subChunkIndex * WorldGenerator.CHUNK_SIZE);
+                    // Calcul du sous-chunk
+                    if (by != currentSubIndex) {
+                        currentSubIndex = by;
+                        currentSub = chunk.getSubChunkAt(by);
                     }
                     int localY        = by % WorldGenerator.CHUNK_SIZE;
                     int idx = bx + localY * WorldGenerator.CHUNK_SIZE + bz * WorldGenerator.CHUNK_HEIGHT;
