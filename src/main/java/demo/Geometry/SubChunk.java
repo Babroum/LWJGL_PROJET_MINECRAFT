@@ -217,6 +217,12 @@ public class SubChunk extends Node3D{
             { this.southNeighbor.setBlockLight(x, y, z + CHUNKSIZEZ, newLight); return; }
     }
 
+    public void clearSubChunkLight(){
+        for (int i = 0; i < this.lightMap.length; i++){
+            this.lightMap[i] = 0;
+        }
+    }
+
 
     /**
      * Place le subChunk avec des coordonnées par rapport au autres subChunk

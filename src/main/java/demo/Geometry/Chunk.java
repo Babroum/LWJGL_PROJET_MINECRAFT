@@ -93,26 +93,10 @@ public class Chunk extends Node3D{
      */
     @ChunkThread
     public void updateHeighMapAt(int x, int z){
-        int y = Chunk.SUBCHUNKCOUNT * SubChunk.CHUNKSIZEY - 1;
-        while (y >= 0) {
-            // On donne 15 à l'air ET au premier bloc solide
-            this.getSubChunkAt(y).setBlockSkyLight(x, y % SubChunk.CHUNKSIZEY, z, (byte)15);
-            LightManager.addSkyLight(this, x, y, z, (byte)15);
-            
-            if (this.getBlock(x, y, z) != Blocks.AIR) {
-                // On a touché le sol, on enregistre la hauteur
-                this.heightMap[z + x * SubChunk.CHUNKSIZEZ] = y;
-                break; 
-            }
-            y--;
+        for (SubChunk sub : this.subChunks){
+            sub.clearSubChunkLight();
         }
-        this.heightMap[z + x * SubChunk.CHUNKSIZEZ] = y;
-
-        while (y >= 0) {
-            this.getSubChunkAt(y).setBlockSkyLight(x, y % SubChunk.CHUNKSIZEY, z, (byte)0);
-            if (y == 0) break;
-            y--;
-        }
+        this.initHeightMap();
     }
 
     /**
