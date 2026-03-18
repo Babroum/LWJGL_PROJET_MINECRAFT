@@ -29,19 +29,8 @@ public class GameServer {
                         connectedClients += connectedClient.getId() + ":";
                 }
                 // envoyer le log du serveur (à changer)
+                this.sendLog(client);
                 client.send(connectedClients);
-                try{
-                    Thread.sleep(5000);
-                }
-                catch (InterruptedException ie){}
-                
-                for (String message : log){
-                    client.send(message);
-                    try{
-                    Thread.sleep(100);
-                }
-                catch (InterruptedException ie){}
-                }
                 clients.add(client);
                 this.broadcast("JOIN:" + client.getId(), client);
                 Thread t = new Thread(client);
@@ -83,5 +72,11 @@ public class GameServer {
 
     public void log(String message){
         this.log.add(message);
+    }
+
+    public void sendLog(ClientHandler client){
+        for (String message : log){
+            client.send(message);
+        }
     }
 }

@@ -1,5 +1,6 @@
 package demo;
 
+import demo.LAN.GameClient;
 import demo.Managers.AudioManager;
 import demo.Managers.InputManager;
 import demo.Managers.PlayersManager;
@@ -9,6 +10,8 @@ import demo.Rendering.Render;
  * Gère tout les évènements du jeu, hors rendu
  */
 public class GameLoop {
+
+    public static boolean isReady;
     
     /**
      * Executer avant la boucle de rendu

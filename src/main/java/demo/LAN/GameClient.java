@@ -5,6 +5,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.*;
+import java.util.List;
+import java.util.ArrayList;
+import demo.GameLoop;
 
 import org.joml.Vector3f;
 
@@ -16,6 +19,7 @@ public class GameClient{
     private static PrintWriter out;
     private static BufferedReader in;
     public static int myId;
+    public static List<String> pendingMessages = new ArrayList<>();
 
     public static void connect(String ip, int port) throws IOException{
         GameClient.socket = new Socket(ip, port);
@@ -38,7 +42,11 @@ public class GameClient{
         }
     }
 
-    private static void handleMessage(String message){
+    public static void handleMessage(String message){
+        if (!GameLoop.isReady){
+            pendingMessages.add(message);
+            return;
+        }
         String[] parts = message.split(":");
         switch (parts[0]) {
             case "MYID":
@@ -64,6 +72,7 @@ public class GameClient{
                 int py = Integer.parseInt(parts[3]);
                 int pz = Integer.parseInt(parts[4]);
                 PlayersManager.player.placeBlock(BlocksType.fromId(type),px, py, pz);
+                break;
 
             case "BREAK":                
                 System.out.println(message);

@@ -299,7 +299,8 @@ public class Player {
                 subToModify.removeBlockFromSubChunk(localX, localY, localZ);
             });
         }catch(Exception e){
-            // jsp comment atterir ici !
+            // jsp comment atterrir ici
+            System.out.println("breakBlock failed: " + e.getMessage() + " at " + bx + " " + by + " " + bz);
         }        
     }
     
@@ -316,6 +317,7 @@ public class Player {
             
         } catch (Exception e) {
             // hors du monde
+            System.out.println("placeBlock failed: " + e.getMessage() + " at " + px + " " + py + " " + pz);
         }        
     }
 

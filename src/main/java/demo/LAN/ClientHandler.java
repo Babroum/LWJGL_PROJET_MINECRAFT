@@ -52,7 +52,7 @@ public class ClientHandler implements Runnable{
         String message;
         try{
             while ((message = in.readLine()) != null){
-                server.broadcast(message, this);
+                this.server.broadcast(message, this);
             }
         }
         catch (IOException e){

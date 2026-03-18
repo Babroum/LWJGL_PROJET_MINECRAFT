@@ -51,10 +51,16 @@ public class App
             ChunksManager.createChunks(-2, 2, -2, 2); // 16 chunks
             ChunksManager.generateChunks(generator);
             ChunksManager.finalizeChunks();
+
+            GameLoop.isReady = true;
+            for (String msg : GameClient.pendingMessages){
+                GameClient.handleMessage(msg);
+            }
+            GameClient.pendingMessages.clear();
         }); 
         
         // daemon pour que le thread se ferme à la fermeture de la jvm
         generationThread.setDaemon(true);
         generationThread.start();
-    }  
+    }
 }
