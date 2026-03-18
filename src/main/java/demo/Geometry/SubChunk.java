@@ -43,6 +43,9 @@ public class SubChunk extends Node3D{
 
     private boolean isGenerating = false;
 
+    // volatile car modif par plusieurs thread, car volatile ne met pas en cache la valeur donc assure que tous les threads voient la valeur
+    public volatile boolean isDirty = false;
+
     // contient des 1 et 0 (block plein, block vide(air))
     public BitSet bitSet = new BitSet(SubChunk.MAXBLOCK); 
 
@@ -257,7 +260,10 @@ public class SubChunk extends Node3D{
             this.linkNeighbors();
         }
         // met le thread en pause si l'array est plein, le thread se relance automatiquement au moment ou OpenGLThread poll un chunk
-        try { Render.dirtySubChunks.put(this); } catch(InterruptedException e) { Thread.currentThread().interrupt(); }
+        if (!this.isDirty){
+            this.isDirty = true;
+            try { Render.dirtySubChunks.put(this); } catch(InterruptedException e) { Thread.currentThread().interrupt(); }
+        }        
     }
 
     /**

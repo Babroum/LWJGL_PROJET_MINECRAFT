@@ -113,6 +113,7 @@ public class Render {
             // subChunks modifiés update le VBO existant
             SubChunk dirty;
             while ((dirty = dirtySubChunks.poll()) != null) {
+                dirty.isDirty = false;
                 dirty.setupSubChunkVBOVAO();
             }
 
