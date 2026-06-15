@@ -3,6 +3,7 @@
   "name": "stone",
   "opacity": 15,
   "luminance": 0,
+  "transparent": false,
   "textures": {
     "all": "stone"
   }

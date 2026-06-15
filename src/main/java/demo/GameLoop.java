@@ -14,12 +14,12 @@ public class GameLoop {
      * Executer avant la boucle de rendu
      */
     public static void init(){
-        AudioManager.playLoop("bird");
-        AudioManager.setVolume("bird", 10f);
+        //AudioManager.playLoop("bird");
+        //AudioManager.setVolume("bird", 10f);
         // Créer les Listeners clavier/souris
         InputManager.create();
         // positionne la camera
-        PlayersManager.player.setPosition(0, 100, 0);
+        PlayersManager.player.setPosition(5, 80, 5);
     }
 
     /**

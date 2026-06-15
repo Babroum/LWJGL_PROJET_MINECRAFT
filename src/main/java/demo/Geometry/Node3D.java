@@ -6,8 +6,6 @@ import org.joml.Matrix4f;
 import org.lwjgl.system.MemoryUtil;
 
 import demo.Annotations.OpenGLThread;
-import demo.Exceptions.ArrayFull;
-import demo.Exceptions.Empty;
 import demo.Managers.ShadersManager;
 
 /**
@@ -54,13 +52,13 @@ public class Node3D {
      * @param node nœud à ajouté au nœud actuel
      * @throws ArrayFull
      */
-    public void addChild(Node3D node) throws ArrayFull{
+    public void addChild(Node3D node){
         // Alloue le tableau seulement au premier addChild()
         if (this.children == null){
         this.children = new Node3D[50_000];
         }
         if (this.nbChildren == this.children.length){
-            throw new ArrayFull();
+            throw new RuntimeException("Array Full");
         }
 
         this.children[this.nbChildren] = node;     
@@ -110,7 +108,7 @@ public class Node3D {
      * Ne fait rien par défaut
      */
     @OpenGLThread
-    public void drawSpecific() throws Empty{
+    public void drawSpecific(){
     }
 
     public void cleanup(){

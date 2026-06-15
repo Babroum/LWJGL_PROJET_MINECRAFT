@@ -14,20 +14,15 @@ public class TextureManager {
     private static int textureArrayId;
     private static final Map<String, Integer> nameToIndex = new HashMap<>();
 
-    // On définit la liste ici puisque le JAR ne peut pas "deviner" les fichiers
-    private static final String[] TEXTURE_FILES = {
-        "null", "grass_block_top", "grass_block_side", "dirt", "stone", "cobblestone", "glowstone", "bedrock", "sand"
-    };
-
-    public static void init() throws Exception {
+    public static void init(String[] files) throws Exception {
         textureArrayId = GL11.glGenTextures();
         GL11.glBindTexture(GL30.GL_TEXTURE_2D_ARRAY, textureArrayId);
 
         // Allocation de l'Array (Profondeur = nombre de fichiers dans notre liste)
-        GL30.glTexImage3D(GL30.GL_TEXTURE_2D_ARRAY, 0, GL11.GL_RGBA, 16, 16, TEXTURE_FILES.length, 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, (ByteBuffer)null);
+        GL30.glTexImage3D(GL30.GL_TEXTURE_2D_ARRAY, 0, GL11.GL_RGBA, 16, 16, files.length, 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, (ByteBuffer)null);
 
-        for (int i = 0; i < TEXTURE_FILES.length; i++) {
-            String name = TEXTURE_FILES[i];
+        for (int i = 0; i < files.length; i++) {
+            String name = files[i];
             loadToGL("/Textures/Blocks/" + name + ".png", i);
             nameToIndex.put(name, i);
         }

@@ -9,8 +9,6 @@ import org.lwjgl.opengl.GL30;
 import demo.Annotations.ChunkThread;
 import demo.Annotations.OpenGLThread;
 import demo.Events.KeyboardInput;
-import demo.Exceptions.ArrayEmpty;
-import demo.Exceptions.Empty;
 import demo.Managers.BuffersManager;
 import demo.Rendering.Render;
 import demo.Managers.TextureManager;
@@ -156,7 +154,7 @@ public class SubChunkMesh {
         }
         try {
             this.addObjectFaceVertexToArray(array, w, h);
-        } catch(ArrayEmpty e){ e.printStackTrace(); }
+        } catch(Exception e){ e.printStackTrace(); }
     }
 
         /**
@@ -171,9 +169,9 @@ public class SubChunkMesh {
     //    x       y       z     u   v   dir     textureId
     // 4096 textures max
     @ChunkThread
-    public void addObjectFaceVertexToArray(int[] array, int w, int h) throws ArrayEmpty{
+    public void addObjectFaceVertexToArray(int[] array, int w, int h){
         if (array.length < 10){
-            throw new ArrayEmpty();
+            throw new RuntimeException("Array Empty");
         }
         // on garde la face
         for(int i = 0; i < array.length; i += 10){
@@ -369,7 +367,7 @@ public class SubChunkMesh {
      * @throws Empty
      */
     @OpenGLThread
-    public void drawSubChunkMesh() throws Empty{   
+    public void drawSubChunkMesh(){   
         if (this.ids == null) return; // un subchunk sans ids est juste vide, pas une erreur
         if (this.ids[1] == 0) return; // sub-chunk vide, rien à dessiner
         TextureManager.bind();

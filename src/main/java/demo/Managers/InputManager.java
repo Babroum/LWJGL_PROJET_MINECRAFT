@@ -61,7 +61,7 @@ public class InputManager {
         // Si le joueur veut se téléporter
         if (KeyboardInput.isTeleportActive){
             KeyboardInput.isTeleportActive = false;
-            PlayersManager.player.setPosition(0, 100, 0);
+            PlayersManager.player.setPosition(5, 100, 5);
         }
 
         // Déplace la caméra avec la souris et la bloque au milieu, desactive si pas sélectionné ou la souris débloqué

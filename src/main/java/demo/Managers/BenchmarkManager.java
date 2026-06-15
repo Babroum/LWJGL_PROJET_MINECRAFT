@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import demo.Events.KeyboardInput;
+
 /**
  * Collecte en temps réel les performances du moteur voxel sur trois axes :
  * <ul>
@@ -153,7 +155,9 @@ public class BenchmarkManager {
             chunksData.add(chunks);
 
             // Log console en temps réel
-            System.out.printf("[BENCH] t=%3ds | FPS: %4d | RAM: %4d Mo | Chunks/s: %3d%n", elapsed, fps, ramMB, chunks);
+            if (KeyboardInput.isBenchMarkShow){
+                System.out.printf("[BENCH] t=%3ds | FPS: %4d | RAM: %4d Mo | Chunks/s: %3d%n", elapsed, fps, ramMB, chunks);
+            }
         }
     }
 

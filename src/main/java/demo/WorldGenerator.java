@@ -2,6 +2,7 @@ package demo;
 
 import demo.Geometry.Chunk;
 import demo.Geometry.SubChunk;
+import demo.Others.Blocks;
 import demo.Others.FastNoiseLite;
 
 /**
@@ -63,10 +64,10 @@ public class WorldGenerator {
     private static final int SEA_LEVEL = 64;
 
     /** Taille horizontale d'un chunk en blocs. */
-    private static final int CHUNK_SIZE   = SubChunk.CHUNKSIZEX;
+    private static final int CHUNK_SIZE   = SubChunk.CHUNKSIZEXZ;
 
     /** Hauteur totale d'un chunk en blocs (sous-chunks × hauteur par sous-chunk). */
-    private static final int CHUNK_HEIGHT = SubChunk.CHUNKSIZEY * Chunk.SUBCHUNKCOUNT;
+    private static final int CHUNK_HEIGHT = SubChunk.CHUNKSIZEHEIGHT;
 
     //  Grille basse résolution
 
@@ -344,7 +345,7 @@ public class WorldGenerator {
                 // >0 = nombre de blocs de terre restant à placer en dessous
                 int dirtDepth = -1;
 
-                int currentSubIndex = Chunk.SUBCHUNKCOUNT * SubChunk.CHUNKSIZEY - SubChunk.CHUNKSIZEY;
+                int currentSubIndex = SubChunk.CHUNKSIZEHEIGHT - SubChunk.CHUNKSIZEXZ;
                 SubChunk currentSub = chunk.getSubChunkAt(currentSubIndex);                
                 
                 // Parcours de haut en bas pour trouver la surface

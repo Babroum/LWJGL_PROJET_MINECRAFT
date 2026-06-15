@@ -17,7 +17,6 @@ import demo.Managers.AudioManager;
 import demo.Managers.BenchmarkManager;
 import demo.Managers.BlocksManager;
 import demo.Managers.BuffersManager;
-import demo.Managers.LightManager;
 import demo.Managers.ShadersManager;
 import demo.Managers.TextureManager;
 import demo.Others.FileLoader;
@@ -46,20 +45,22 @@ public class Render {
     private static FloatBuffer projBuffer = BufferUtils.createFloatBuffer(16);
     private static final Matrix4f projection = new Matrix4f();
 
+    private static final String[] TEXTURE_FILES  = {"null", "grass_block_top", "grass_block_side", "dirt", "stone", "cobblestone", "glowstone", "bedrock", "sand", "glass"};
+    private static final String[] BLOCKS_TO_LOAD = {"null", "air", "grass",                        "dirt", "stone", "cobblestone", "glowstone", "bedrock", "sand", "glass"};
+
     /**
      * Est appelé avant le début du draw scene 
      */
     @OpenGLThread
     public static void setupBeforeRendering(){
+        
         BlockBorderRenderer.init();
         // initialise en mémoire les textures des caractères
-        try{
-            TextureManager.init();
-            BlocksManager.init();
+        try{           
+            TextureManager.init(TEXTURE_FILES);
+            BlocksManager.init(BLOCKS_TO_LOAD);
 
             AudioManager.loadSound("bird", "/Audios/bird.ogg");
-            AudioManager.loadSound("samsung", "/Audios/samsung.ogg");
-            AudioManager.loadSound("fanta", "/Audios/fanta.ogg");
             // initialise en mémoire l'image des caractères
             Render.textRender = new TextRender(FileLoader.loadFileFromClasspathBB("/Textures/font.png"), 20, 20, 19,
                                         " !\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~");          
@@ -79,6 +80,7 @@ public class Render {
         // Prépare la 3D
         Render.initialize3D(Window.width, Window.height);
 
+        sceneGraph.setBackGroundColor(Color4f.SKY);
 
         GameLoop.init();
 
@@ -94,20 +96,9 @@ public class Render {
             if (delta > 0.1) delta = 0.1; // 10FPS
 
             // nettoie le frame buffer
-			GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
-
-            LightManager.updateLight();
+			GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);         
 
             GameLoop.run((float)delta * 1000.0f);
-
-            // utilise le shader 
-            ShadersManager.useShader();
-            
-            // donne les matrices de camera et perspective au shader
-            ShadersManager.runProjection(Render.calculateProjection(45.0f, (float) Window.width / Window.height, 0.1f, 5000.f)); // donne la perspective de l'ecran
-            ShadersManager.runView(PlayersManager.player.getCamera().getViewMatrixBuffer()); // donne la vue de la camera
-
-            FrustumCulling.recalculateMatrix();
 
             // poll les chunks prêts et upload sur GPU
             Chunk chunk;
@@ -119,7 +110,14 @@ public class Render {
             SubChunk dirty;
             while ((dirty = dirtySubChunks.poll()) != null) {
                 dirty.setupSubChunkVBOVAO();
+                dirty.dirty = false;
             }
+
+            ShadersManager.useShader();            
+            // donne les matrices de camera et perspective au shader
+            ShadersManager.runProjection(Render.calculateProjection(45.0f, (float) Window.width / Window.height, 0.1f, 5000.f)); // donne la perspective de l'ecran
+            ShadersManager.runView(PlayersManager.player.getCamera().getViewMatrixBuffer()); // donne la vue de la camera
+            FrustumCulling.recalculateMatrix();
 
             // enregistre le temps de rendu
             monitor.startTimer("render");
@@ -139,14 +137,14 @@ public class Render {
             // Affiche la pos du joueur
             Vector3f pos = PlayersManager.player.getPosition();
             Render.getTextRender().drawText(String.format("Position: (%.2f, %.2f, %.2f)%n", pos.x, pos.y - 1.5f, pos.z), Window.width / 2,20, 15, Color4f.RED); 
-
-            // Affiche les lignes retourner par le PerformanceManager
+            Render.getTextRender().drawText(String.format("Light Block: %d %n", Render.monitor.getBlockLightRayCast()), Window.width / 2,40, 15, Color4f.RED); 
+     
             String[] lines = monitor.getDisplayLines();
             for(int i = 0; i < lines.length; i++){
                 if(lines[i] != null){
                     Render.getTextRender().drawText(lines[i], 0, 20 + i * 20, 15, Color4f.PURPLE);
                 }
-            }
+            }    
 
             // TESTE A UTILISE POUR VOIR SI IL Y A ACCUMULATION DE RAM (FUITE DE MEMOIRE)
             /*
@@ -156,7 +154,6 @@ public class Render {
             }*/
 
             AudioManager.cleanupTempSources();
-            
 
             // Rends la fenêtre en buffer dessinée visible à l’écran
             GLFW.glfwSwapBuffers(Window.window);		

@@ -3,6 +3,7 @@
   "name": "grass",
   "opacity": 15,
   "luminance": 0,
+  "transparent": false,
   "textures": {
     "up": "grass_block_top",
     "down": "dirt",

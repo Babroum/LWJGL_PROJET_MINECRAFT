@@ -1,7 +1,6 @@
 package demo.Types;
 
 import demo.Annotations.OpenGLThread;
-import demo.Exceptions.IncorrectColorValue;
 
 /**
  * Définis une couleur RGBA
@@ -15,11 +14,12 @@ public class Color4f {
     public static final Color4f RED = new Color4f(255,0,0);
     public static final Color4f GREEN = new Color4f(0,255,0);
     public static final Color4f BLUE = new Color4f(0,0,255);
-
     
     public static final Color4f CYAN = new Color4f(0,255,255);
     public static final Color4f PURPLE = new Color4f(255,0,255);
     public static final Color4f YELLOW = new Color4f(255,255,0);
+
+    public static final Color4f SKY = new Color4f(207,236,247);
 
     /**
      * Intensité de rouge (0 à 255)
@@ -46,12 +46,12 @@ public class Color4f {
      * @param a alpha
      * @throws IncorrectColorValue
      */
-    public Color4f(float r, float g, float b, float a) throws IncorrectColorValue{
+    public Color4f(float r, float g, float b, float a) throws RuntimeException{
         if ((r < 0 || r > 255) ||
             (g < 0 || g > 255) ||
             (b < 0 || b > 255) ||
             (a < 0 || a > 100)){
-            throw new IncorrectColorValue("RGB doit être entre 0 et 255, A doit être entre 0 et 100");
+            throw new RuntimeException("RGB doit être entre 0 et 255, A doit être entre 0 et 100");
         }
         this.red = r / 255;
         this.green = g / 255;
@@ -65,7 +65,7 @@ public class Color4f {
      * @param b float
      * @throws IncorrectColorValue
      */
-    public Color4f(float r, float g, float b) throws IncorrectColorValue{
+    public Color4f(float r, float g, float b) throws RuntimeException{
         this(r, g, b, 100);
     }
     /**
@@ -74,7 +74,7 @@ public class Color4f {
      * @param a float
      * @throws IncorrectColorValue
      */
-    public Color4f(float gray, float a) throws IncorrectColorValue{
+    public Color4f(float gray, float a) throws RuntimeException{
         this(gray, gray, gray, a);
     }
     /**
@@ -82,7 +82,7 @@ public class Color4f {
      * @param gray float
      * @throws IncorrectColorValue
      */
-    public Color4f(float gray) throws IncorrectColorValue{
+    public Color4f(float gray) throws RuntimeException{
         this(gray, gray, gray,100);
     }
     /**

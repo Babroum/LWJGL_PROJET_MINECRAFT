@@ -3,12 +3,12 @@ package demo.Events;
 import org.lwjgl.glfw.GLFW;
 
 import demo.Annotations.OpenGLThread;
-import demo.Blocks;
 import demo.Geometry.Chunk;
 import demo.Geometry.SubChunk;
 import demo.Managers.AudioManager;
 import demo.Managers.ChunksManager;
 import demo.Managers.PlayersManager;
+import demo.Others.Blocks;
 import demo.Rendering.Camera;
 import demo.Rendering.Window;
 import demo.Player;
@@ -28,6 +28,7 @@ public class KeyboardInput {
     public static volatile boolean isTeleportActive;
     public static volatile boolean isChunkBorderShow;
     public static volatile boolean isJumping;
+    public static volatile boolean isBenchMarkShow;
 
     @OpenGLThread
     public KeyboardInput(){
@@ -41,7 +42,7 @@ public class KeyboardInput {
     private static void keyPressedToggle(long window, int key, int scancode, int action, int mods) {   
         if(action == GLFW.GLFW_PRESS){
             switch (key) {
-                case GLFW.GLFW_KEY_E:
+                case GLFW.GLFW_KEY_F1:
                     KeyboardInput.isWireFrameMode = !KeyboardInput.isWireFrameMode;
                     break;
                 
@@ -49,11 +50,11 @@ public class KeyboardInput {
                     KeyboardInput.isCloseWindow = true;
                     break;
                 
-                case GLFW.GLFW_KEY_P:
+                case GLFW.GLFW_KEY_F2:
                     KeyboardInput.isMouseLock = !KeyboardInput.isMouseLock;
                     break;
 
-                case GLFW.GLFW_KEY_B:
+                case GLFW.GLFW_KEY_F3:
                     KeyboardInput.isChunkBorderShow = !KeyboardInput.isChunkBorderShow;
                     if (KeyboardInput.isChunkBorderShow){
                         for (Chunk chunk : ChunksManager.getAllChunks()){
@@ -72,8 +73,12 @@ public class KeyboardInput {
                     }
                     break;
 
-                case GLFW.GLFW_KEY_T:
+                case GLFW.GLFW_KEY_F4:
                     KeyboardInput.isTeleportActive = true;
+                    break;
+
+                case GLFW.GLFW_KEY_F5:
+                    KeyboardInput.isBenchMarkShow = !KeyboardInput.isBenchMarkShow;
                     break;
 
                 case GLFW.GLFW_KEY_KP_ADD:
@@ -82,10 +87,6 @@ public class KeyboardInput {
 
                 case GLFW.GLFW_KEY_KP_SUBTRACT:
                     AudioManager.setMasterVolume(AudioManager.getMasterVolume() - 1);
-                    break;
-
-                case GLFW.GLFW_KEY_SEMICOLON:
-                    AudioManager.playOnce("fanta");
                     break;
 
                 case GLFW.GLFW_KEY_SPACE:
@@ -98,6 +99,10 @@ public class KeyboardInput {
 
                 case GLFW.GLFW_KEY_2:
                     PlayersManager.player.blockInHand = Blocks.GLOWSTONE;
+                    break;
+                
+                case GLFW.GLFW_KEY_3:
+                    PlayersManager.player.blockInHand = Blocks.GLASS;
                     break;
 
                 default:

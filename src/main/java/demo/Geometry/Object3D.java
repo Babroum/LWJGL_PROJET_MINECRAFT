@@ -6,12 +6,12 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
 
-import demo.BlockDefinition;
 import demo.Annotations.OpenGLThread;
 import demo.Managers.BuffersManager;
 import demo.Managers.PlayersManager;
 import demo.Managers.ShadersManager;
 import demo.Meshing.Mesh;
+import demo.Others.BlockDefinition;
 import demo.Rendering.Render;
 import demo.Rendering.Window;
 

@@ -1,9 +1,10 @@
 package demo.Geometry;
 
-import demo.BlockDefinition;
-import demo.Blocks;
 import demo.Meshing.Face;
+import demo.Others.BlockDefinition;
+import demo.Others.Blocks;
 
+@Deprecated
 public class Cube extends Object3D{
 
     public Cube(){

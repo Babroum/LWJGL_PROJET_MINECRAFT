@@ -27,6 +27,9 @@ public class PerformanceMonitor {
     private int chunkCount     = 0;
     private int chunkVisible   = 0;
 
+
+    private int blockLight     = 0;
+
     // --- Mémoire ---
     // Heap Java (gérée par la JVM, comptée dans -Xmx)
     private long heapUsedMB    = 0; // heap actuellement utilisée
@@ -99,24 +102,26 @@ public class PerformanceMonitor {
     //  COMPTEURS
     // =====================
 
-    public void incrementDrawCalls()        { drawCalls++; }
-    public void addTriangles(int count)     { triangleCount += count; }
-    public void setActiveVAOs(int count)    { activeVAOs = count; }
-    public void addChunkCount()             { chunkCount++; }
-    public void resetChunkVisibleCount()    { chunkVisible = 0; }
-    public void addChunkVisibleCount()      { chunkVisible++; }
+    public void incrementDrawCalls()            { drawCalls++; }
+    public void addTriangles(int count)         { triangleCount += count; }
+    public void setActiveVAOs(int count)        { activeVAOs = count; }
+    public void addChunkCount()                 { chunkCount++; }
+    public void resetChunkVisibleCount()        { chunkVisible = 0; }
+    public void addChunkVisibleCount()          { chunkVisible++; }
+    public void setBlockLightRayCast(int light) { blockLight = light; }
 
     // =====================
     //  GETTERS
     // =====================
 
-    public double getFrameTimeMs()   { return frameTimeMs; }
-    public int    getDrawCalls()     { return drawCalls; }
-    public int    getTriangleCount() { return triangleCount; }
-    public int    getActiveVAOs()    { return activeVAOs; }
-    public long   getHeapUsedMB()    { return heapUsedMB; }
-    public long   getHeapMaxMB()     { return heapMaxMB; }
-    public long   getOffHeapUsedMB() { return offHeapUsedMB; }
+    public double getFrameTimeMs()       { return frameTimeMs; }
+    public int    getDrawCalls()         { return drawCalls; }
+    public int    getTriangleCount()     { return triangleCount; }
+    public int    getActiveVAOs()        { return activeVAOs; }
+    public long   getHeapUsedMB()        { return heapUsedMB; }
+    public long   getHeapMaxMB()         { return heapMaxMB; }
+    public long   getOffHeapUsedMB()     { return offHeapUsedMB; }
+    public int    getBlockLightRayCast() { return blockLight; }
 
     // =====================
     //  AFFICHAGE

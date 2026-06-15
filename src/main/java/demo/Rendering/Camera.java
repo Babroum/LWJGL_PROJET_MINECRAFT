@@ -6,9 +6,9 @@ import java.lang.Math;
 import org.joml.*;
 import org.lwjgl.BufferUtils;
 
-import demo.BlockDefinition;
-import demo.Blocks;
 import demo.Managers.ChunksManager;
+import demo.Others.BlockDefinition;
+import demo.Others.Blocks;
 
 /**
  * Une camera

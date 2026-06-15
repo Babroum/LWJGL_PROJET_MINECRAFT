@@ -20,24 +20,14 @@ void main()
     if(isBorder == 1){
         FragColor = vec4(1.0, 0.0, 0.0, 1.0); // bordure rouge pour les subchunks
         return;
-    }
-    
-    // lumière simple de base
-    
-    float dirFactor;
-         if (dir == 0) dirFactor = 0.8;
-    else if (dir == 1) dirFactor = 0.8;
-    else if (dir == 2) dirFactor = 0.8;
-    else if (dir == 3) dirFactor = 0.8;
-    else if (dir == 4) dirFactor = 1.0;
-    else               dirFactor = 0.5;
+    }     
 
-    float aoFactor = 1.0 - (AO / 3.0) * 0.35;  // fixe, géométrique
+    float aoFactor = 1.0 - (AO / 3.0) * 0.5;  // fixe, géométrique 0.35
 
     float normalizedSkyLight   = skyLight   / 15.0;
     float normalizedBlockLight = blockLight / 15.0;
 
     // calcule la taille texture par rapport au coordonnées uv et la texture
     vec4 texColor = texture(tex, vec3(fract(uv), float(texId))); 
-    FragColor = vec4(texColor.rgb * max(normalizedBlockLight, normalizedSkyLight) * dirFactor * aoFactor, texColor.a);
+    FragColor = vec4(texColor.rgb * max(normalizedBlockLight, normalizedSkyLight) * aoFactor, texColor.a);
 }

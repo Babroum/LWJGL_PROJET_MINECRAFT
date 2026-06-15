@@ -1,8 +1,9 @@
 package demo.Managers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import demo.BlockDefinition;
-import demo.Blocks;
+
+import demo.Others.BlockDefinition;
+import demo.Others.Blocks;
 import demo.Rendering.Render;
 import java.io.InputStream;
 
@@ -10,11 +11,8 @@ public class BlocksManager {
     private static final BlockDefinition[] REGISTRY = new BlockDefinition[256];
     private static final ObjectMapper mapper = new ObjectMapper();
 
-    // Même logique : on liste les noms des JSON à charger
-    private static final String[] BLOCKS_TO_LOAD = { "air", "grass", "stone", "glowstone" , "bedrock", "cobblestone", "dirt", "null", "sand"};
-
-    public static void init() {
-        for (String blockName : BLOCKS_TO_LOAD) {
+    public static void init(String[] files) {
+        for (String blockName : files) {
             try {
                 // On récupère l'InputStream comme dans ton FileLoader
                 InputStream is = Render.class.getResourceAsStream("/Blocks/" + blockName + ".json");
@@ -38,15 +36,16 @@ public class BlocksManager {
         }
 
         // Une fois chargé, on crée les liens
-        Blocks.NULL      = get(-1);
-        Blocks.AIR       = get(0);
-        Blocks.GRASS     = get(1); // L'ID défini dans le JSON
-        Blocks.STONE     = get(2);
-        Blocks.DIRT      = get(3);
-        Blocks.SAND      = get(4);        
-        Blocks.GLOWSTONE = get(5); 
-        Blocks.BEDROCK   = get(6);
-        Blocks.COBBLESTONE = get(7);       
+        Blocks.NULL        = get(255);
+        Blocks.AIR         = get(0);
+        Blocks.GRASS       = get(1); // L'ID défini dans le JSON
+        Blocks.STONE       = get(2);
+        Blocks.DIRT        = get(3);
+        Blocks.SAND        = get(4);        
+        Blocks.GLOWSTONE   = get(5); 
+        Blocks.BEDROCK     = get(6);
+        Blocks.COBBLESTONE = get(7);  
+        Blocks.GLASS       = get(8);     
         
         for (BlockDefinition block : REGISTRY) {
             if (block != null) {

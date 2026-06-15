@@ -1,7 +1,5 @@
 package demo.Meshing;
 
-import demo.Exceptions.ArrayFull;
-
 /**
  * Une face décrivant un ensemble de 4 Sommets d'une maille.
  */
@@ -33,7 +31,7 @@ public class Face {
      * @param Z float
      * @throws ArrayFull
      */
-    public void addVertex(int X, int Y, int Z) throws ArrayFull{
+    public void addVertex(int X, int Y, int Z){
         int d = 0;
         switch (this.direction) {
             case "north":
@@ -59,7 +57,7 @@ public class Face {
                 break;
         }
         if (this.nbCoords == this.vertexs.length){
-            throw new ArrayFull();
+            throw new RuntimeException("Array Full");
         }
         int vertexIndex = this.nbCoords / 7;
         this.vertexs[this.nbCoords]     = X;

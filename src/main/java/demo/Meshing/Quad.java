@@ -1,7 +1,7 @@
 package demo.Meshing;
 
-import demo.BlockDefinition;
-import demo.Blocks;
+import demo.Others.BlockDefinition;
+import demo.Others.Blocks;
 
 /**
  * Définit un carré depuis le greedyMeshing

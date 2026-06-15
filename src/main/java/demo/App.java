@@ -17,7 +17,7 @@ public class App
     }
 
     public static void draw(SceneGraph scene){
-        BenchmarkManager.getInstance().start(); // ← démarre ici
+        BenchmarkManager.getInstance().start();
 
         // chaque thread worker aura sa propre instance isolée
         // FastNoiseLite n'est pas thread-safe
@@ -32,7 +32,8 @@ public class App
             //ChunksManager.createChunks(-24, 24, -24, 24);  // 2304 chunks 
             //ChunksManager.createChunks(-16, 16, -16, 16); // 1024 chunks
             //ChunksManager.createChunks(-10, 10, -10, 10); // 400 chunks
-            ChunksManager.createChunks(-1, 1, -1, 1); // 16 chunks
+            //ChunksManager.createChunks(-1, 1, -1, 1); // 16 chunks
+            ChunksManager.createChunks(0, 2, 0, 2); // 4 chunks
             ChunksManager.generateChunks(tlGenerator);
             ChunksManager.finalizeChunks();
         }); 

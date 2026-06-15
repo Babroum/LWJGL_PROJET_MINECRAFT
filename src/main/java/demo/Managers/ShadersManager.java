@@ -7,7 +7,6 @@ import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL20;
 
 import demo.Annotations.OpenGLThread;
-import demo.Exceptions.ShaderManagerError;
 import demo.Others.FileLoader;
 
 /**
@@ -31,7 +30,7 @@ public abstract class ShadersManager {
      * Initialise les shaders pour le texte
      */
     @OpenGLThread
-    public static void createTextShader() throws ShaderManagerError{
+    public static void createTextShader(){
         String vertexTextShader;
         String fragmentTextShader;
         try{
@@ -55,7 +54,7 @@ public abstract class ShadersManager {
         GL20.glLinkProgram(ShadersManager.programTextId);
         int success = GL20.glGetProgrami(ShadersManager.programTextId, GL20.GL_LINK_STATUS);
         if (success == GL20.GL_FALSE){
-            throw new ShaderManagerError(GL20.glGetProgramInfoLog(ShadersManager.programTextId));
+            throw new RuntimeException("ShaderManagerError : "+GL20.glGetProgramInfoLog(ShadersManager.programTextId));
         }
 
         // une fois les vertex liés on détache et supprime les shaders
@@ -71,7 +70,7 @@ public abstract class ShadersManager {
      * @throws ShaderManagerError
      */
     @OpenGLThread
-    public static void createShader() throws ShaderManagerError{
+    public static void createShader(){
         String vertexShader;
         String fragmentShader;
         try{
@@ -95,7 +94,7 @@ public abstract class ShadersManager {
         GL20.glLinkProgram(ShadersManager.programId);
         int success = GL20.glGetProgrami(ShadersManager.programId, GL20.GL_LINK_STATUS);
         if (success == GL20.GL_FALSE){
-            throw new ShaderManagerError(GL20.glGetProgramInfoLog(ShadersManager.programId));
+            throw new RuntimeException("ShaderManagerError : "+GL20.glGetProgramInfoLog(ShadersManager.programId));
         }
 
         // une fois les vertex liés on détache et supprime les shaders
@@ -111,7 +110,7 @@ public abstract class ShadersManager {
      * @throws ShaderManagerError
      */
     @OpenGLThread
-    public static void createBlockBorderShader() throws ShaderManagerError{
+    public static void createBlockBorderShader(){
         String vertexShader;
         String fragmentShader;
         try{
@@ -135,7 +134,7 @@ public abstract class ShadersManager {
         GL20.glLinkProgram(ShadersManager.programBlockBorderId);
         int success = GL20.glGetProgrami(ShadersManager.programBlockBorderId, GL20.GL_LINK_STATUS);
         if (success == GL20.GL_FALSE){
-            throw new ShaderManagerError(GL20.glGetProgramInfoLog(ShadersManager.programBlockBorderId));
+            throw new RuntimeException("ShaderManagerError : "+GL20.glGetProgramInfoLog(ShadersManager.programBlockBorderId));
         }
 
         // une fois les vertex liés on détache et supprime les shaders
@@ -162,7 +161,7 @@ public abstract class ShadersManager {
         GL20.glCompileShader(vsId);
         int success = GL20.glGetShaderi(vsId, GL20.GL_COMPILE_STATUS);
         if (success == GL20.GL_FALSE){
-            throw new ShaderManagerError(GL20.glGetShaderInfoLog(vsId));
+            throw new RuntimeException("ShaderManagerError : "+GL20.glGetShaderInfoLog(vsId));
         }
 
         int fgId = GL20.glCreateShader(GL20.GL_FRAGMENT_SHADER);
@@ -170,7 +169,7 @@ public abstract class ShadersManager {
         GL20.glCompileShader(fgId);
         success = GL20.glGetShaderi(fgId, GL20.GL_COMPILE_STATUS);
         if (success == GL20.GL_FALSE){
-            throw new ShaderManagerError(GL20.glGetShaderInfoLog(fgId));
+            throw new RuntimeException("ShaderManagerError : "+GL20.glGetShaderInfoLog(fgId));
         }
 
         return new int[]{vsId, fgId};

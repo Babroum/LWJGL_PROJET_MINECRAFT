@@ -1,7 +1,5 @@
 package demo.Meshing;
 
-import demo.Exceptions.ArrayFull;
-
 /**
  * Une Maille décrivant un ensemble de face composées de sommet.
  */
@@ -17,9 +15,9 @@ public class Mesh {
      * @param face
      * @throws ArrayFull
      */
-    public void addFaces(Face face) throws ArrayFull{
+    public void addFaces(Face face){
         if (this.faceCount == this.faces.length){
-            throw new ArrayFull();
+            throw new RuntimeException("Array Full");
         }
         synchronized (this.faces)
         {

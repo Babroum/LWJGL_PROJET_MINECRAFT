@@ -8,12 +8,12 @@ import java.util.concurrent.*;
 
 import org.joml.Math;
 
-import demo.BlockDefinition;
 import demo.WorldGenerator;
 import demo.Annotations.ChunkThread;
 import demo.Annotations.OpenGLThread;
 import demo.Geometry.Chunk;
 import demo.Geometry.SubChunk;
+import demo.Others.BlockDefinition;
 import demo.Rendering.Render;
 
 public class ChunksManager {
@@ -88,8 +88,8 @@ public class ChunksManager {
             // submit permet au pool de mettre en file d'attente la tâche puis thread worker la prend dès qu'il est libre
             // passe la commande au resto d'un plat
             futures.add(pool.submit(() -> { // pool.submit() retourne un Future
-                int cx = ChunksManager.floorDiv(chunk.x, SubChunk.CHUNKSIZEX);
-                int cz = ChunksManager.floorDiv(chunk.z, SubChunk.CHUNKSIZEZ);
+                int cx = ChunksManager.floorDiv(chunk.x, SubChunk.CHUNKSIZEXZ);
+                int cz = ChunksManager.floorDiv(chunk.z, SubChunk.CHUNKSIZEXZ);
                 generator.get().generateChunk(chunk, cx, cz); // ThreadLocal → thread-safe
                 BenchmarkManager.getInstance().recordChunkGenerated();
             }));
@@ -167,8 +167,8 @@ public class ChunksManager {
      */
     @ChunkThread
     public static Chunk getChunkAt(int x, int z){
-        int localX = ChunksManager.floorDiv(x, SubChunk.CHUNKSIZEX);
-        int localZ = ChunksManager.floorDiv(z, SubChunk.CHUNKSIZEZ);
+        int localX = ChunksManager.floorDiv(x, SubChunk.CHUNKSIZEXZ);
+        int localZ = ChunksManager.floorDiv(z, SubChunk.CHUNKSIZEXZ);
 
         long coord = chunkKey(localX, localZ);
         if (!ChunksManager.chunks.containsKey(coord)) return null;
@@ -190,8 +190,8 @@ public class ChunksManager {
      */
     @OpenGLThread
     public static void removeChunk(int x, int z){
-        int localX = ChunksManager.floorDiv(x, SubChunk.CHUNKSIZEX);
-        int localZ = ChunksManager.floorDiv(z, SubChunk.CHUNKSIZEZ);
+        int localX = ChunksManager.floorDiv(x, SubChunk.CHUNKSIZEXZ);
+        int localZ = ChunksManager.floorDiv(z, SubChunk.CHUNKSIZEXZ);
 
         long coord = chunkKey(localX, localZ);
         if (!ChunksManager.chunks.containsKey(coord)){
@@ -226,12 +226,12 @@ public class ChunksManager {
      * @return Object3D
      */
     public static BlockDefinition getBlock(int x, int y, int z){
-        if (y < 0 || y >= SubChunk.CHUNKSIZEY * Chunk.SUBCHUNKCOUNT){throw new RuntimeException("Valeur en Y incorrect");}
+        if (y < 0 || y >= SubChunk.CHUNKSIZEHEIGHT){throw new RuntimeException("Valeur en Y incorrect");}
 
         Chunk chunk = ChunksManager.getChunkAt(x, z);
 
-        int localX = ChunksManager.floorMod(x, SubChunk.CHUNKSIZEX);
-        int localZ = ChunksManager.floorMod(z, SubChunk.CHUNKSIZEZ);
+        int localX = ChunksManager.floorMod(x, SubChunk.CHUNKSIZEXZ);
+        int localZ = ChunksManager.floorMod(z, SubChunk.CHUNKSIZEXZ);
 
         return chunk.getBlock(localX, y, localZ);
     }

@@ -8,8 +8,13 @@ import org.lwjgl.opengl.GL11;
 
 import demo.Managers.ChunksManager;
 import demo.Managers.PlayersManager;
+import demo.Others.BlockDefinition;
+import demo.Others.Blocks;
 import demo.Rendering.BlockBorderRenderer;
 import demo.Rendering.Camera;
+import demo.Rendering.Render;
+import demo.Rendering.Window;
+import demo.Types.Color4f;
 import demo.Events.KeyboardInput;
 import demo.Events.MouseInput;
 import demo.Geometry.Chunk;
@@ -222,6 +227,13 @@ public class Player {
                 Chunk chunk = ChunksManager.getChunkAt(bx, bz);
                 sub = chunk.getSubChunkAt(by);
 
+                int lx = ChunksManager.floorMod(bx, SubChunk.CHUNKSIZEXZ);
+                int ly = by % SubChunk.CHUNKSIZEXZ;
+                int lz = ChunksManager.floorMod(bz, SubChunk.CHUNKSIZEXZ);
+                int light = Math.max(sub.getBlockSkyLight(lx, ly + 1, lz), sub.getBlockSkyLight(lx, ly + 1, lz));
+                
+                Render.monitor.setBlockLightRayCast(light);                
+
                 // si on clique gauche et que la souris n'est pas débloqué, on casse le block si il existe
                 if (MouseInput.isLeftButtonPressed() && KeyboardInput.isMouseLock) {
                     // Si on a un bloc et que le cooldown est prêt et que ce n'est pas de la bedrock
@@ -230,14 +242,13 @@ public class Player {
                         final SubChunk subToModify = sub;
                         final int fbx = bx, fby = by, fbz = bz;
                         chunkModifyThread.submit(() -> {
-                            int localX = ChunksManager.floorMod(fbx, SubChunk.CHUNKSIZEX);
-                            int localY = ChunksManager.floorMod(fby, SubChunk.CHUNKSIZEY);
-                            int localZ = ChunksManager.floorMod(fbz, SubChunk.CHUNKSIZEZ);
+                            int localX = ChunksManager.floorMod(fbx, SubChunk.CHUNKSIZEXZ);
+                            int localY = ChunksManager.floorMod(fby, SubChunk.CHUNKSIZEXZ);
+                            int localZ = ChunksManager.floorMod(fbz, SubChunk.CHUNKSIZEXZ);
 
                             subToModify.removeBlockFromSubChunk(localX, localY, localZ);                            
                         });
                         this.breakCooldown = this.breakPlaceDelay;
-                        block = Blocks.AIR;
                     }
                 } else {
                     this.breakCooldown = 0;
@@ -255,11 +266,11 @@ public class Player {
                             final SubChunk sub2 = chunk2.getSubChunkAt(py);                            
                             chunkModifyThread.submit(() -> {  
                                 // convertir en coordonnées locales du subchunk
-                                int localX = ChunksManager.floorMod(px, SubChunk.CHUNKSIZEX);
-                                int localY = ChunksManager.floorMod(py, SubChunk.CHUNKSIZEY);
-                                int localZ = ChunksManager.floorMod(pz, SubChunk.CHUNKSIZEZ);     
+                                int localX = ChunksManager.floorMod(px, SubChunk.CHUNKSIZEXZ);
+                                int localY = ChunksManager.floorMod(py, SubChunk.CHUNKSIZEXZ);
+                                int localZ = ChunksManager.floorMod(pz, SubChunk.CHUNKSIZEXZ);     
                                 
-                                sub2.addBlockToSubChunk(blockInHand, localX, localY, localZ, true);                            
+                                sub2.addBlockToSubChunk(blockInHand, localX, localY, localZ);                            
                             });
                             this.placeCooldown = this.breakPlaceDelay;
                         } catch (Exception e) {

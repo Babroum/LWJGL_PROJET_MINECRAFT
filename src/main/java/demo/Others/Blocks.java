@@ -1,4 +1,4 @@
-package demo;
+package demo.Others;
 
 /**
  * Cette classe contient des raccourcis vers les blocs principaux.
@@ -14,4 +14,5 @@ public class Blocks {
     public static BlockDefinition SAND;
     public static BlockDefinition COBBLESTONE;
     public static BlockDefinition BEDROCK;
+    public static BlockDefinition GLASS;
 }

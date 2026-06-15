@@ -9,8 +9,6 @@ import java.util.HashSet;
 
 import org.joml.Matrix4f;
 
-import demo.BlockDefinition;
-import demo.Blocks;
 import demo.Annotations.ChunkThread;
 import demo.Annotations.OpenGLThread;
 import demo.Events.KeyboardInput;
@@ -18,14 +16,15 @@ import demo.Managers.BlocksManager;
 import demo.Managers.ChunksManager;
 import demo.Managers.ShadersManager;
 import demo.Meshing.SubChunkMesh;
+import demo.Others.BlockDefinition;
+import demo.Others.Blocks;
 import demo.Meshing.Quad;
 import demo.Rendering.Render;
 
 public class SubChunk extends Node3D{
 
-    public static final int CHUNKSIZEX = 16;
-    public static final int CHUNKSIZEY = 16;
-    public static final int CHUNKSIZEZ = 16;
+    public static final int CHUNKSIZEXZ = 16;
+    public static final int CHUNKSIZEHEIGHT = 256;
     public static final int MAXBLOCK = 4096;    
 
     private final Matrix4f model = new Matrix4f();
@@ -44,48 +43,48 @@ public class SubChunk extends Node3D{
 
     private List<Quad> quads;
 
-    private boolean isGenerating = false;
+    public boolean dirty = false;
 
-    private Chunk parent;
+    public Chunk parent;
 
     // contient des 1 et 0 (block plein, block vide(air))
     public BitSet bitSet = new BitSet(SubChunk.MAXBLOCK); 
 
     private static class FaceData {
-        int[] northAxis = new int[SubChunk.CHUNKSIZEY * SubChunk.CHUNKSIZEZ];
-        int[] southAxis = new int[SubChunk.CHUNKSIZEY * SubChunk.CHUNKSIZEZ];
-        int[] westAxis  = new int[SubChunk.CHUNKSIZEY * SubChunk.CHUNKSIZEX];
-        int[] eastAxis  = new int[SubChunk.CHUNKSIZEY * SubChunk.CHUNKSIZEX];
-        int[] upAxis    = new int[SubChunk.CHUNKSIZEZ * SubChunk.CHUNKSIZEX];
-        int[] downAxis  = new int[SubChunk.CHUNKSIZEZ * SubChunk.CHUNKSIZEX];
+        int[] northAxis = new int[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ];
+        int[] southAxis = new int[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ];
+        int[] westAxis  = new int[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ];
+        int[] eastAxis  = new int[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ];
+        int[] upAxis    = new int[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ];
+        int[] downAxis  = new int[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ];
 
-        int[] northMask = new int[SubChunk.CHUNKSIZEY * SubChunk.CHUNKSIZEZ];
-        int[] southMask = new int[SubChunk.CHUNKSIZEY * SubChunk.CHUNKSIZEZ];
-        int[] westMask  = new int[SubChunk.CHUNKSIZEY * SubChunk.CHUNKSIZEX];
-        int[] eastMask  = new int[SubChunk.CHUNKSIZEY * SubChunk.CHUNKSIZEX];
-        int[] upMask    = new int[SubChunk.CHUNKSIZEZ * SubChunk.CHUNKSIZEX];
-        int[] downMask  = new int[SubChunk.CHUNKSIZEZ * SubChunk.CHUNKSIZEX];
+        int[] northMask = new int[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ];
+        int[] southMask = new int[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ];
+        int[] westMask  = new int[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ];
+        int[] eastMask  = new int[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ];
+        int[] upMask    = new int[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ];
+        int[] downMask  = new int[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ];
 
-        byte[] northAoMask = new byte[SubChunk.CHUNKSIZEY * SubChunk.CHUNKSIZEZ * SubChunk.CHUNKSIZEX];
-        byte[] southAoMask = new byte[SubChunk.CHUNKSIZEY * SubChunk.CHUNKSIZEZ * SubChunk.CHUNKSIZEX];
-        byte[] westAoMask  = new byte[SubChunk.CHUNKSIZEY * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEX];
-        byte[] eastAoMask  = new byte[SubChunk.CHUNKSIZEY * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEX];
-        byte[] upAoMask    = new byte[SubChunk.CHUNKSIZEZ * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEX];
-        byte[] downAoMask  = new byte[SubChunk.CHUNKSIZEZ * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEX];
+        byte[] northAoMask = new byte[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEHEIGHT];
+        byte[] southAoMask = new byte[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEHEIGHT];
+        byte[] westAoMask  = new byte[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEHEIGHT];
+        byte[] eastAoMask  = new byte[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEHEIGHT];
+        byte[] upAoMask    = new byte[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEHEIGHT];
+        byte[] downAoMask  = new byte[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEHEIGHT];
 
-        byte[] northSkyLightMask = new byte[SubChunk.CHUNKSIZEY * SubChunk.CHUNKSIZEZ * SubChunk.CHUNKSIZEX];
-        byte[] southSkyLightMask = new byte[SubChunk.CHUNKSIZEY * SubChunk.CHUNKSIZEZ * SubChunk.CHUNKSIZEX];
-        byte[] westSkyLightMask  = new byte[SubChunk.CHUNKSIZEY * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEX];
-        byte[] eastSkyLightMask  = new byte[SubChunk.CHUNKSIZEY * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEX];
-        byte[] upSkyLightMask    = new byte[SubChunk.CHUNKSIZEZ * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEX];
-        byte[] downSkyLightMask  = new byte[SubChunk.CHUNKSIZEZ * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEX];
+        byte[] northSkyLightMask = new byte[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEHEIGHT];
+        byte[] southSkyLightMask = new byte[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEHEIGHT];
+        byte[] westSkyLightMask  = new byte[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEHEIGHT];
+        byte[] eastSkyLightMask  = new byte[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEHEIGHT];
+        byte[] upSkyLightMask    = new byte[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEHEIGHT];
+        byte[] downSkyLightMask  = new byte[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEHEIGHT];
 
-        byte[] northBlockLightMask = new byte[SubChunk.CHUNKSIZEY * SubChunk.CHUNKSIZEZ * SubChunk.CHUNKSIZEX];
-        byte[] southBlockLightMask = new byte[SubChunk.CHUNKSIZEY * SubChunk.CHUNKSIZEZ * SubChunk.CHUNKSIZEX];
-        byte[] westBlockLightMask  = new byte[SubChunk.CHUNKSIZEY * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEX];
-        byte[] eastBlockLightMask  = new byte[SubChunk.CHUNKSIZEY * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEX];
-        byte[] upBlockLightMask    = new byte[SubChunk.CHUNKSIZEZ * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEX];
-        byte[] downBlockLightMask  = new byte[SubChunk.CHUNKSIZEZ * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEX];
+        byte[] northBlockLightMask = new byte[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEHEIGHT];
+        byte[] southBlockLightMask = new byte[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEHEIGHT];
+        byte[] westBlockLightMask  = new byte[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEHEIGHT];
+        byte[] eastBlockLightMask  = new byte[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEHEIGHT];
+        byte[] upBlockLightMask    = new byte[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEHEIGHT];
+        byte[] downBlockLightMask  = new byte[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEHEIGHT];
     }
 
     // obligé sinon les threads qui construisent les chunks pour modifié les infos
@@ -110,23 +109,23 @@ public class SubChunk extends Node3D{
      * @param z Coordonnées en z (locale).
      * @return la lumière (0 - 15)
      */
-    public byte getBlockSkyLight(int x, int y, int z){
-        int index = x + y * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
+    public int getBlockSkyLight(int x, int y, int z){         
+        int index = x + y * SubChunk.CHUNKSIZEXZ + z * SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ;
 
-        if (x >= 0 && x < CHUNKSIZEX && y >= 0 && y < CHUNKSIZEY && z >= 0 && z < CHUNKSIZEZ)
-            return (byte)(this.lightMap[index] & 0xF0);        
-        if (y >= CHUNKSIZEY && this.upNeighbor != null)
-            return this.upNeighbor.getBlockSkyLight(x, y - CHUNKSIZEY, z);
+        if (x >= 0 && x < CHUNKSIZEXZ && y >= 0 && y < CHUNKSIZEXZ && z >= 0 && z < CHUNKSIZEXZ)
+            { return (lightMap[index] & 0xF0) >>> 4; }
+        if (y >= CHUNKSIZEXZ && this.upNeighbor != null)
+            { return this.upNeighbor.getBlockSkyLight(x, y - CHUNKSIZEXZ, z); }
         if (y < 0 && this.downNeighbor != null)
-            return this.downNeighbor.getBlockSkyLight(x, y + CHUNKSIZEY, z);
-        if (x >= CHUNKSIZEX && this.westNeighbor != null)
-            return this.westNeighbor.getBlockSkyLight(x - CHUNKSIZEX, y, z);
+            { return this.downNeighbor.getBlockSkyLight(x, y + CHUNKSIZEXZ, z); }
+        if (x >= CHUNKSIZEXZ && this.westNeighbor != null)
+            { return this.westNeighbor.getBlockSkyLight(x - CHUNKSIZEXZ, y, z); }
         if (x < 0 && this.eastNeighbor != null)
-            return this.eastNeighbor.getBlockSkyLight(x + CHUNKSIZEX, y, z);
-        if (z >= CHUNKSIZEZ && this.northNeighbor != null)
-            return this.northNeighbor.getBlockSkyLight(x, y, z - CHUNKSIZEZ);
+            { return this.eastNeighbor.getBlockSkyLight(x + CHUNKSIZEXZ, y, z); }
+        if (z >= CHUNKSIZEXZ && this.northNeighbor != null)
+            { return this.northNeighbor.getBlockSkyLight(x, y, z - CHUNKSIZEXZ); }
         if (z < 0 && this.southNeighbor != null)
-            return this.southNeighbor.getBlockSkyLight(x, y, z + CHUNKSIZEZ);
+            { return this.southNeighbor.getBlockSkyLight(x, y, z + CHUNKSIZEXZ); }
         return 0;
     }
 
@@ -137,23 +136,23 @@ public class SubChunk extends Node3D{
      * @param z Coordonnées en z (locale)
      * @return la lumière (0 - 15)
      */
-    public byte getBlockLight(int x, int y, int z){
-        int index = x + y * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
+    public int getBlockLight(int x, int y, int z){
+        int index = x + y * SubChunk.CHUNKSIZEXZ + z * SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ;
 
-        if (x >= 0 && x < CHUNKSIZEX && y >= 0 && y < CHUNKSIZEY && z >= 0 && z < CHUNKSIZEZ)
-            return (byte)(this.lightMap[index] & 0x0F);        
-        if (y >= CHUNKSIZEY && this.upNeighbor != null)
-            return this.upNeighbor.getBlockLight(x, y - CHUNKSIZEY, z);
+        if (x >= 0 && x < CHUNKSIZEXZ && y >= 0 && y < CHUNKSIZEXZ && z >= 0 && z < CHUNKSIZEXZ)
+            { return this.lightMap[index] & 0x0F; }
+        if (y >= CHUNKSIZEXZ && this.upNeighbor != null)
+            { return this.upNeighbor.getBlockLight(x, y - CHUNKSIZEXZ, z); }
         if (y < 0 && this.downNeighbor != null)
-            return this.downNeighbor.getBlockLight(x, y + CHUNKSIZEY, z);
-        if (x >= CHUNKSIZEX && this.westNeighbor != null)
-            return this.westNeighbor.getBlockLight(x - CHUNKSIZEX, y, z);
+            { return this.downNeighbor.getBlockLight(x, y + CHUNKSIZEXZ, z); }
+        if (x >= CHUNKSIZEXZ && this.westNeighbor != null)
+            { return this.westNeighbor.getBlockLight(x - CHUNKSIZEXZ, y, z); }
         if (x < 0 && this.eastNeighbor != null)
-            return this.eastNeighbor.getBlockLight(x + CHUNKSIZEX, y, z);
-        if (z >= CHUNKSIZEZ && this.northNeighbor != null)
-            return this.northNeighbor.getBlockLight(x, y, z - CHUNKSIZEZ);
+            { return this.eastNeighbor.getBlockLight(x + CHUNKSIZEXZ, y, z); }
+        if (z >= CHUNKSIZEXZ && this.northNeighbor != null)
+            { return this.northNeighbor.getBlockLight(x, y, z - CHUNKSIZEXZ); }
         if (z < 0 && this.southNeighbor != null)
-            return this.southNeighbor.getBlockLight(x, y, z + CHUNKSIZEZ);
+            { return this.southNeighbor.getBlockLight(x, y, z + CHUNKSIZEXZ); }
         return 0;
     }
 
@@ -164,27 +163,28 @@ public class SubChunk extends Node3D{
      * @param z Coordonnées en z (locale)
      * @param newLight Nouvelle valeur de lumière
      */
-    public void setBlockSkyLight(int x, int y, int z, byte newLight){
+    public void setBlockSkyLight(int x, int y, int z, int newLight){
+        //System.out.println("WRITE " + newLight + " at " + x + "," + y + "," + z);
         if (newLight < 0 || newLight > 15) throw new RuntimeException("La lumière doit être comprise entre 0 et 15");
-        int index = x + y * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
+        int index = x + y * SubChunk.CHUNKSIZEXZ + z * SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ;
 
-        if (x >= 0 && x < CHUNKSIZEX && y >= 0 && y < CHUNKSIZEY && z >= 0 && z < CHUNKSIZEZ){
+        if (x >= 0 && x < CHUNKSIZEXZ && y >= 0 && y < CHUNKSIZEXZ && z >= 0 && z < CHUNKSIZEXZ){
             byte oldLight = this.lightMap[index];
-            this.lightMap[index] = (byte)((oldLight & 0x0F) | (newLight << 4));
+            this.lightMap[index] = (byte)((oldLight & 0x0F) | (((byte)newLight & 0x0F) << 4));
             return; 
         }
-        if (y >= CHUNKSIZEY && this.upNeighbor != null)
-            { this.upNeighbor.setBlockSkyLight(x, y - CHUNKSIZEY, z, newLight); return; }
+        if (y >= CHUNKSIZEXZ && this.upNeighbor != null)
+            { this.upNeighbor.setBlockSkyLight(x, y - CHUNKSIZEXZ, z, newLight); return; }
         if (y < 0 && this.downNeighbor != null)
-            { this.downNeighbor.setBlockSkyLight(x, y + CHUNKSIZEY, z, newLight); return; }
-        if (x >= CHUNKSIZEX && this.westNeighbor != null)
-            { this.westNeighbor.setBlockSkyLight(x - CHUNKSIZEX, y, z, newLight); return; }
+            { this.downNeighbor.setBlockSkyLight(x, y + CHUNKSIZEXZ, z, newLight); return; }
+        if (x >= CHUNKSIZEXZ && this.westNeighbor != null)
+            { this.westNeighbor.setBlockSkyLight(x - CHUNKSIZEXZ, y, z, newLight); return; }
         if (x < 0 && this.eastNeighbor != null)
-            { this.eastNeighbor.setBlockSkyLight(x + CHUNKSIZEX, y, z, newLight); return; }
-        if (z >= CHUNKSIZEZ && this.northNeighbor != null)
-            { this.northNeighbor.setBlockSkyLight(x, y, z - CHUNKSIZEZ, newLight); return; }
+            { this.eastNeighbor.setBlockSkyLight(x + CHUNKSIZEXZ, y, z, newLight); return; }
+        if (z >= CHUNKSIZEXZ && this.northNeighbor != null)
+            { this.northNeighbor.setBlockSkyLight(x, y, z - CHUNKSIZEXZ, newLight); return; }
         if (z < 0 && this.southNeighbor != null)
-            { this.southNeighbor.setBlockSkyLight(x, y, z + CHUNKSIZEZ, newLight); return; }
+            { this.southNeighbor.setBlockSkyLight(x, y, z + CHUNKSIZEXZ, newLight); return; }
     }
 
     /**
@@ -194,27 +194,27 @@ public class SubChunk extends Node3D{
      * @param z Coordonnées en z (locale)
      * @param newLight Nouvelle valeur de lumière
      */
-    public void setBlockLight(int x, int y, int z, byte newLight){
+    public void setBlockLight(int x, int y, int z, int newLight){
         if (newLight < 0 || newLight > 15) throw new RuntimeException("La lumière doit être comprise entre 0 et 15");
-        int index = x + y * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY; 
+        int index = x + y * SubChunk.CHUNKSIZEXZ + z * SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ; 
 
-        if (x >= 0 && x < CHUNKSIZEX && y >= 0 && y < CHUNKSIZEY && z >= 0 && z < CHUNKSIZEZ){
+        if (x >= 0 && x < CHUNKSIZEXZ && y >= 0 && y < CHUNKSIZEXZ && z >= 0 && z < CHUNKSIZEXZ){
             byte oldLight = this.lightMap[index];
-            this.lightMap[index] = (byte)((oldLight & 0x0F) | (newLight & 0xF0));
+            this.lightMap[index] = (byte)((oldLight & 0xF0) | ((byte)newLight & 0x0F));
             return; 
         } // garde les 4 bits à gauche et met les 4 bits à droite avec les nouvelles valeurs
-        if (y >= CHUNKSIZEY && this.upNeighbor != null)
-            { this.upNeighbor.setBlockLight(x, y - CHUNKSIZEY, z, newLight); return; }
+        if (y >= CHUNKSIZEXZ && this.upNeighbor != null)
+            { this.upNeighbor.setBlockLight(x, y - CHUNKSIZEXZ, z, newLight); return; }
         if (y < 0 && this.downNeighbor != null)
-            { this.downNeighbor.setBlockLight(x, y + CHUNKSIZEY, z, newLight); return; }
-        if (x >= CHUNKSIZEX && this.westNeighbor != null)
-            { this.westNeighbor.setBlockLight(x - CHUNKSIZEX, y, z, newLight); return; }
+            { this.downNeighbor.setBlockLight(x, y + CHUNKSIZEXZ, z, newLight); return; }
+        if (x >= CHUNKSIZEXZ && this.westNeighbor != null)
+            { this.westNeighbor.setBlockLight(x - CHUNKSIZEXZ, y, z, newLight); return; }
         if (x < 0 && this.eastNeighbor != null)
-            { this.eastNeighbor.setBlockLight(x + CHUNKSIZEX, y, z, newLight); return; }
-        if (z >= CHUNKSIZEZ && this.northNeighbor != null)
-            { this.northNeighbor.setBlockLight(x, y, z - CHUNKSIZEZ, newLight); return; }
+            { this.eastNeighbor.setBlockLight(x + CHUNKSIZEXZ, y, z, newLight); return; }
+        if (z >= CHUNKSIZEXZ && this.northNeighbor != null)
+            { this.northNeighbor.setBlockLight(x, y, z - CHUNKSIZEXZ, newLight); return; }
         if (z < 0 && this.southNeighbor != null)
-            { this.southNeighbor.setBlockLight(x, y, z + CHUNKSIZEZ, newLight); return; }
+            { this.southNeighbor.setBlockLight(x, y, z + CHUNKSIZEXZ, newLight); return; }
     }
 
     public void clearSubChunkLight(){
@@ -281,11 +281,11 @@ public class SubChunk extends Node3D{
      * @return Retourne le block
      */
     public BlockDefinition getBlock(int x, int y, int z){
-        if (x < 0 || x >= SubChunk.CHUNKSIZEX ||
-            y < 0 || y >= SubChunk.CHUNKSIZEY ||
-            z < 0 || z >= SubChunk.CHUNKSIZEZ
+        if (x < 0 || x >= SubChunk.CHUNKSIZEXZ ||
+            y < 0 || y >= SubChunk.CHUNKSIZEXZ ||
+            z < 0 || z >= SubChunk.CHUNKSIZEXZ
         ){throw new RuntimeException("Coordonées dans le subChunk invalide");}
-        int index = x + y * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
+        int index = x + y * SubChunk.CHUNKSIZEXZ + z * SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ;
         return BlocksManager.get(this.blocks[index]);
     }
 
@@ -315,7 +315,8 @@ public class SubChunk extends Node3D{
      * Supprime le subChunk
      */
     @OpenGLThread
-    public void removeSubChunk(){
+    public void removeSubChunk(){        
+        this.clearSubChunkLight();
         // Libère le buffer CPU off-heap s'il n'a pas encore été uploadé
         this.mesh.cleanup();
         // Libère les buffers GPU
@@ -330,25 +331,40 @@ public class SubChunk extends Node3D{
      * @param x int
      * @param y int
      * @param z int
-     * @param rebuild
      */
     @ChunkThread
-    public void addBlockToSubChunk(BlockDefinition type, int x, int y, int z, boolean rebuild){
-        if (x < 0 || x >= SubChunk.CHUNKSIZEX ||
-            y < 0 || y >= SubChunk.CHUNKSIZEY ||
-            z < 0 || z >= SubChunk.CHUNKSIZEZ
+    public void addBlockToSubChunk(BlockDefinition type, int x, int y, int z){
+        if (x < 0 || x >= SubChunk.CHUNKSIZEXZ ||
+            y < 0 || y >= SubChunk.CHUNKSIZEXZ ||
+            z < 0 || z >= SubChunk.CHUNKSIZEXZ
         ){throw new RuntimeException("Coordonées dans le subChunk invalide");}
-        int index = x + y * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
+        int index = x + y * SubChunk.CHUNKSIZEXZ + z * SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ;
         this.blocks[index] = (byte) type.id;
+        this.dirty = true;
 
-        this.parent.updateHeighMapAt(x, z);
+        this.parent.updateHeightMapZoneAt(x, z);   
+        this.rebuildSubChunk();
 
-        // Ne rebuild pas pendant la génération initiale
-        if (!this.isGenerating && rebuild){
-            this.rebuildSubChunk();
+        if (x == SubChunk.CHUNKSIZEXZ - 1 && this.getNeighborWest() != null) { 
+            this.getNeighborWest().rebuildSubChunk(); 
         }
+        if (x == 0 && this.getNeighborEast() != null) { 
+            this.getNeighborEast().rebuildSubChunk(); 
+        }
+        if (z == SubChunk.CHUNKSIZEXZ - 1 && this.getNeighborNorth() != null) { 
+            this.getNeighborNorth().rebuildSubChunk(); 
+        }
+        if (z == 0 && this.getNeighborSouth() != null) { 
+            this.getNeighborSouth().rebuildSubChunk(); 
+        }
+        if (y == 0 && this.getNeighborDown() != null) { 
+            this.getNeighborDown().rebuildSubChunk(); 
+        }
+        if (y == SubChunk.CHUNKSIZEXZ - 1 && this.getNeighborUp() != null) { 
+            this.getNeighborUp().rebuildSubChunk(); 
+        }        
     }
-
+    
     /**
      * Retire un block dans le subChunk <br>
      * (coordonnées locales du subChunk)
@@ -358,24 +374,24 @@ public class SubChunk extends Node3D{
      */
     @ChunkThread
     public void removeBlockFromSubChunk(int x, int y, int z){
-        if (x < 0 || x >= SubChunk.CHUNKSIZEX ||
-            y < 0 || y >= SubChunk.CHUNKSIZEY ||
-            z < 0 || z >= SubChunk.CHUNKSIZEZ
+        if (x < 0 || x >= SubChunk.CHUNKSIZEXZ ||
+            y < 0 || y >= SubChunk.CHUNKSIZEXZ ||
+            z < 0 || z >= SubChunk.CHUNKSIZEXZ
         ){throw new RuntimeException("Coordonées dans le subChunk invalide");}
-        int index = x + y * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
+        int index = x + y * SubChunk.CHUNKSIZEXZ + z * SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ;
         this.blocks[index] = (byte) Blocks.AIR.id;
+        this.dirty = true;
+        
+        this.parent.updateHeightMapZoneAt(x, z);
+        this.rebuildSubChunk();
 
-        this.fillSubChunkBitSet();
-
-        this.parent.updateHeighMapAt(x, z);
-
-        if (x == SubChunk.CHUNKSIZEX - 1 && this.getNeighborWest() != null) { 
+        if (x == SubChunk.CHUNKSIZEXZ - 1 && this.getNeighborWest() != null) { 
             this.getNeighborWest().rebuildSubChunk(); 
         }
         if (x == 0 && this.getNeighborEast() != null) { 
             this.getNeighborEast().rebuildSubChunk(); 
         }
-        if (z == SubChunk.CHUNKSIZEZ - 1 && this.getNeighborNorth() != null) { 
+        if (z == SubChunk.CHUNKSIZEXZ - 1 && this.getNeighborNorth() != null) { 
             this.getNeighborNorth().rebuildSubChunk(); 
         }
         if (z == 0 && this.getNeighborSouth() != null) { 
@@ -384,23 +400,23 @@ public class SubChunk extends Node3D{
         if (y == 0 && this.getNeighborDown() != null) { 
             this.getNeighborDown().rebuildSubChunk(); 
         }
-        if (y == SubChunk.CHUNKSIZEY - 1 && this.getNeighborUp() != null) { 
+        if (y == SubChunk.CHUNKSIZEXZ - 1 && this.getNeighborUp() != null) { 
             this.getNeighborUp().rebuildSubChunk(); 
-        }
-
-        this.rebuildSubChunk();
+        }        
     }
 
     @ChunkThread
     public void rebuildSubChunk(){
+        this.linkNeighbors();
         this.fillSubChunkBitSet();
-        synchronized(this.mesh){            
-            this.linkNeighbors();
-            this.mesh.setupSubChunkBuffers(this.bitSet.cardinality());
-            this.generateSubChunkMesh();
-        }
+        this.mesh.setupSubChunkBuffers(this.bitSet.cardinality());
+        this.generateSubChunkMesh();
+        
         // met le thread en pause si l'array est plein, le thread se relance automatiquement au moment ou OpenGLThread poll un chunk
-        try { Render.dirtySubChunks.put(this); } catch(InterruptedException e) { Thread.currentThread().interrupt(); }
+        //Render.dirtySubChunks.offer(this);
+        if (this.mesh.getVertexCount() > 0) {   // n'envoie pas les subchunks vides au GPU
+            try { Render.dirtySubChunks.put(this); } catch(InterruptedException e) { Thread.currentThread().interrupt(); }
+        }
     }
 
     /**
@@ -428,25 +444,25 @@ public class SubChunk extends Node3D{
         Arrays.fill(faceData.upAxis,    0); Arrays.fill(faceData.downAxis,  0);
 
         // Récup nord sud
-        for (int y = 0; y < SubChunk.CHUNKSIZEY; y++){
-            for (int x = 0; x < SubChunk.CHUNKSIZEX; x++){
-                int index = y + x * SubChunk.CHUNKSIZEY;
-                for (int z = 0; z < SubChunk.CHUNKSIZEZ; z++){
-                    int bitSetIndex = x + y * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
+        for (int y = 0; y < SubChunk.CHUNKSIZEXZ; y++){
+            for (int x = 0; x < SubChunk.CHUNKSIZEXZ; x++){
+                int index = y + x * SubChunk.CHUNKSIZEXZ;
+                for (int z = 0; z < SubChunk.CHUNKSIZEXZ; z++){
+                    int bitSetIndex = x + y * SubChunk.CHUNKSIZEXZ + z * SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ;
                     faceData.northAxis[index] |= (this.bitSet.get(bitSetIndex) ? 1 : 0) << (31 - z);
                 }
                 int ligne = faceData.northAxis[index];
 
                 int ligneNeighborSouth = 0;
                 if (this.getNeighborSouth() != null){
-                    int bitSetIndex = x + y * SubChunk.CHUNKSIZEX + 15 * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
+                    int bitSetIndex = x + y * SubChunk.CHUNKSIZEXZ + 15 * SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ;
                     ligneNeighborSouth = (this.getNeighborSouth().bitSet.get(bitSetIndex) ? 1 : 0);
                 }
                 ligneNeighborSouth = ligneNeighborSouth << 31;     
 
                 int ligneNeighborNorth = 0;
                 if (this.getNeighborNorth() != null){
-                    int bitSetIndex = x + y * SubChunk.CHUNKSIZEX + 0 * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
+                    int bitSetIndex = x + y * SubChunk.CHUNKSIZEXZ + 0 * SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ;
                     ligneNeighborNorth = (this.getNeighborNorth().bitSet.get(bitSetIndex) ? 1 : 0);
                 }
                 ligneNeighborNorth = ligneNeighborNorth << 16;  
@@ -456,11 +472,11 @@ public class SubChunk extends Node3D{
             }
         }
         // Récup ouest est, on remplit l'int qui correspond a la ligne avec le BitSet du subChunk
-        for (int y = 0; y < SubChunk.CHUNKSIZEY; y++){
-            for (int z = 0; z < SubChunk.CHUNKSIZEZ; z++){
-                int index = y + z * SubChunk.CHUNKSIZEY;      
-                for (int x = 0; x < SubChunk.CHUNKSIZEX; x++){
-                    int bitSetIndex = x + y * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;                    
+        for (int y = 0; y < SubChunk.CHUNKSIZEXZ; y++){
+            for (int z = 0; z < SubChunk.CHUNKSIZEXZ; z++){
+                int index = y + z * SubChunk.CHUNKSIZEXZ;      
+                for (int x = 0; x < SubChunk.CHUNKSIZEXZ; x++){
+                    int bitSetIndex = x + y * SubChunk.CHUNKSIZEXZ + z * SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ;                    
                     faceData.eastAxis[index] |= (this.bitSet.get(bitSetIndex) ? 1 : 0) << (31 - x);                    
                 }
                 int ligne = faceData.eastAxis[index];
@@ -469,7 +485,7 @@ public class SubChunk extends Node3D{
                 int ligneNeighborEast = 0;
                 // si il y a un voisin
                 if (this.getNeighborEast() != null){
-                    int bitSetIndex = 15 + y * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
+                    int bitSetIndex = 15 + y * SubChunk.CHUNKSIZEXZ + z * SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ;
                     // on récupère la valeur du bitSet à l'index
                     // met le dernier bit a 1
                     ligneNeighborEast = (this.getNeighborEast().bitSet.get(bitSetIndex) ? 1 : 0);
@@ -479,7 +495,7 @@ public class SubChunk extends Node3D{
 
                 int ligneNeighborWest = 0;
                 if (this.getNeighborWest() != null){
-                    int bitSetIndex = 0 + y * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
+                    int bitSetIndex = 0 + y * SubChunk.CHUNKSIZEXZ + z * SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ;
                     ligneNeighborWest = (this.getNeighborWest().bitSet.get(bitSetIndex) ? 1 : 0);
                 }   
                 // si on récup le bit le plus a droite du voisin il faut le mettre le plus a droite par rapport a la ligne donc au milieu de l'int pour le subChunk actuel
@@ -491,23 +507,23 @@ public class SubChunk extends Node3D{
             }
         }
         // Récup haut bas
-        for (int z = 0; z < SubChunk.CHUNKSIZEZ; z++){
-            for (int x = 0; x < SubChunk.CHUNKSIZEX; x++){
-                int index = z + x * SubChunk.CHUNKSIZEZ;
-                for (int y = 0; y < SubChunk.CHUNKSIZEY; y++){
-                    int bitSetIndex = x + y * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
+        for (int z = 0; z < SubChunk.CHUNKSIZEXZ; z++){
+            for (int x = 0; x < SubChunk.CHUNKSIZEXZ; x++){
+                int index = z + x * SubChunk.CHUNKSIZEXZ;
+                for (int y = 0; y < SubChunk.CHUNKSIZEXZ; y++){
+                    int bitSetIndex = x + y * SubChunk.CHUNKSIZEXZ + z * SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ;
                     faceData.upAxis[index] |= (this.bitSet.get(bitSetIndex) ? 1 : 0) << (31 - y);
                 }
                 int ligne = faceData.upAxis[index];
                 int ligneNeighborUp = 0;
                 if (this.getNeighborUp() != null){
-                    int bitSetIndex = x + 0 * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
+                    int bitSetIndex = x + 0 * SubChunk.CHUNKSIZEXZ + z * SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ;
                     ligneNeighborUp = (this.getNeighborUp().bitSet.get(bitSetIndex) ? 1 : 0);
                 }
                 ligneNeighborUp = ligneNeighborUp << 16;
                 int ligneNeighborDown = 0;
                 if (this.getNeighborDown() != null){
-                    int bitSetIndex = x + 15 * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
+                    int bitSetIndex = x + 15 * SubChunk.CHUNKSIZEXZ + z * SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ;
                     ligneNeighborDown = (this.getNeighborDown().bitSet.get(bitSetIndex) ? 1 : 0);
                 }
                 ligneNeighborDown = ligneNeighborDown << 31;
@@ -539,113 +555,113 @@ public class SubChunk extends Node3D{
         Arrays.fill(faceData.upBlockLightMask,    (byte)0); Arrays.fill(faceData.downBlockLightMask,  (byte)0);
         
         // rempli les masques avec les infos du face culling
-        for (int y = 0; y < SubChunk.CHUNKSIZEY; y++){
-            for (int x = 0; x < SubChunk.CHUNKSIZEX; x++){
-                for (int z = 0; z < SubChunk.CHUNKSIZEZ; z++){                    
-                    int ligne = y + z * SubChunk.CHUNKSIZEZ;
+        for (int y = 0; y < SubChunk.CHUNKSIZEXZ; y++){
+            for (int x = 0; x < SubChunk.CHUNKSIZEXZ; x++){
+                for (int z = 0; z < SubChunk.CHUNKSIZEXZ; z++){                    
+                    int ligne = y + z * SubChunk.CHUNKSIZEXZ;
 
-                    int blockIndex = x + y * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
+                    int blockIndex = x + y * SubChunk.CHUNKSIZEXZ + z * SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ;
                     if(this.blocks[blockIndex] != blockType) continue;
 
                     // En gros je récup tous les bits d'un int d'Axis, que je met en 1er position des int de mask a chaque boucle
-                    int northBit = (faceData.northAxis[y + x * SubChunk.CHUNKSIZEY] >>> (31 - z)) & 1; // décalle de 31 bits + z vers la droite puis récupère le 1er bit
+                    int northBit = (faceData.northAxis[y + x * SubChunk.CHUNKSIZEXZ] >>> (31 - z)) & 1; // décalle de 31 bits + z vers la droite puis récupère le 1er bit
                     faceData.northMask[ligne] |= (northBit << (31 - x));
+                    // si c'est un block solide alors on calcule/applique la lumière dessus
                     if(northBit == 1){
                         byte ao0 = computeAO(x-1, y, z+1,   x, y-1, z+1,   x-1, y-1, z+1);
                         byte ao1 = computeAO(x+1, y, z+1,   x, y-1, z+1,   x+1, y-1, z+1);
                         byte ao2 = computeAO(x-1, y, z+1,   x, y+1, z+1,   x-1, y+1, z+1);
                         byte ao3 = computeAO(x+1, y, z+1,   x, y+1, z+1,   x+1, y+1, z+1);
-                        faceData.northAoMask[ligne * SubChunk.CHUNKSIZEX + x] = (byte)(ao0|(ao1<<2)|(ao2<<4)|(ao3<<6));
-
-                        faceData.northSkyLightMask[ligne * SubChunk.CHUNKSIZEX + x] = this.getBlockSkyLight(x, y, z+1);
-                        faceData.northBlockLightMask[ligne * SubChunk.CHUNKSIZEX + x] = this.getBlockLight(x, y, z+1);
+                        faceData.northAoMask[ligne * SubChunk.CHUNKSIZEXZ + x] = (byte)(ao0|(ao1<<2)|(ao2<<4)|(ao3<<6));
+                        faceData.northSkyLightMask[ligne * SubChunk.CHUNKSIZEXZ + x] = (byte)this.getBlockSkyLight(x, y, z+1);
+                        faceData.northBlockLightMask[ligne * SubChunk.CHUNKSIZEXZ + x] = (byte)this.getBlockLight(x, y, z+1);                        
                     }
                     
-                    int southBit = (faceData.southAxis[y + x * SubChunk.CHUNKSIZEY] >> (31 - z)) & 1; // décalle de 31 bits - z vers la droite puis récupère le 1er bit*
+                    int southBit = (faceData.southAxis[y + x * SubChunk.CHUNKSIZEXZ] >> (31 - z)) & 1; // décalle de 31 bits - z vers la droite puis récupère le 1er bit*
                     faceData.southMask[ligne] |= (southBit << (31 - x));
                     if(southBit == 1){
                         byte ao0 = computeAO(x-1, y, z-1,   x, y-1, z-1,   x-1, y-1, z-1);
                         byte ao1 = computeAO(x+1, y, z-1,   x, y-1, z-1,   x+1, y-1, z-1);
                         byte ao2 = computeAO(x-1, y, z-1,   x, y+1, z-1,   x-1, y+1, z-1);
                         byte ao3 = computeAO(x+1, y, z-1,   x, y+1, z-1,   x+1, y+1, z-1);
-                        faceData.southAoMask[ligne * SubChunk.CHUNKSIZEX + x] = (byte)(ao0|(ao1<<2)|(ao2<<4)|(ao3<<6));
+                        faceData.southAoMask[ligne * SubChunk.CHUNKSIZEXZ + x] = (byte)(ao0|(ao1<<2)|(ao2<<4)|(ao3<<6));
 
-                        faceData.southSkyLightMask[ligne * SubChunk.CHUNKSIZEX + x] = this.getBlockSkyLight(x, y, z-1);
-                        faceData.southBlockLightMask[ligne * SubChunk.CHUNKSIZEX + x] = this.getBlockLight(x, y, z-1);
+                        faceData.southSkyLightMask[ligne * SubChunk.CHUNKSIZEXZ + x] = (byte)this.getBlockSkyLight(x, y, z-1);
+                        faceData.southBlockLightMask[ligne * SubChunk.CHUNKSIZEXZ + x] = (byte)this.getBlockLight(x, y, z-1);
                     }                    
                 }                
             }            
         }
-        for (int y = 0; y < SubChunk.CHUNKSIZEY; y++){
-            for (int z = 0; z < SubChunk.CHUNKSIZEZ; z++){                
-                for (int x = 0; x < SubChunk.CHUNKSIZEX; x++){                    
-                    int ligne = y + x * SubChunk.CHUNKSIZEX;
+        for (int y = 0; y < SubChunk.CHUNKSIZEXZ; y++){
+            for (int z = 0; z < SubChunk.CHUNKSIZEXZ; z++){                
+                for (int x = 0; x < SubChunk.CHUNKSIZEXZ; x++){                    
+                    int ligne = y + x * SubChunk.CHUNKSIZEXZ;
 
                     // filtre par type
-                    int blockIndex = x + y * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
+                    int blockIndex = x + y * SubChunk.CHUNKSIZEXZ + z * SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ;
                     if(this.blocks[blockIndex] != blockType) continue;
 
-                    int westBit = (faceData.westAxis[y + z * SubChunk.CHUNKSIZEY] >>> (31 - x)) & 1;
+                    int westBit = (faceData.westAxis[y + z * SubChunk.CHUNKSIZEXZ] >>> (31 - x)) & 1;
                     faceData.westMask[ligne] |= (westBit << (31 - z));  
                     if(westBit == 1){
                         byte ao0 = computeAO(x+1, y, z-1,   x+1, y-1, z,   x+1, y-1, z-1);
                         byte ao1 = computeAO(x+1, y, z+1,   x+1, y-1, z,   x+1, y-1, z+1);
                         byte ao2 = computeAO(x+1, y, z-1,   x+1, y+1, z,   x+1, y+1, z-1);
                         byte ao3 = computeAO(x+1, y, z+1,   x+1, y+1, z,   x+1, y+1, z+1);
-                        faceData.westAoMask[ligne * SubChunk.CHUNKSIZEX + z] = (byte)(ao0|(ao1<<2)|(ao2<<4)|(ao3<<6));
+                        faceData.westAoMask[ligne * SubChunk.CHUNKSIZEXZ + z] = (byte)(ao0|(ao1<<2)|(ao2<<4)|(ao3<<6));
 
-                        faceData.westSkyLightMask[ligne * SubChunk.CHUNKSIZEX + z] = this.getBlockSkyLight(x+1, y, z);
-                        faceData.westBlockLightMask[ligne * SubChunk.CHUNKSIZEX + z] = this.getBlockLight(x+1, y, z);
+                        faceData.westSkyLightMask[ligne * SubChunk.CHUNKSIZEXZ + z] = (byte)this.getBlockSkyLight(x+1, y, z);
+                        faceData.westBlockLightMask[ligne * SubChunk.CHUNKSIZEXZ + z] = (byte)this.getBlockLight(x+1, y, z);
                     }
 
-                    int eastBit = (faceData.eastAxis[y + z * SubChunk.CHUNKSIZEY] >> (31 - x)) & 1;
+                    int eastBit = (faceData.eastAxis[y + z * SubChunk.CHUNKSIZEXZ] >> (31 - x)) & 1;
                     faceData.eastMask[ligne] |= (eastBit << (31 - z));
                     if(eastBit == 1){
                         byte ao0 = computeAO(x-1, y, z-1,   x-1, y-1, z,   x-1, y-1, z-1);
                         byte ao1 = computeAO(x-1, y, z+1,   x-1, y-1, z,   x-1, y-1, z+1);
                         byte ao2 = computeAO(x-1, y, z-1,   x-1, y+1, z,   x-1, y+1, z-1);
                         byte ao3 = computeAO(x-1, y, z+1,   x-1, y+1, z,   x-1, y+1, z+1);                        
-                        faceData.eastAoMask[ligne * SubChunk.CHUNKSIZEX + z] = (byte)(ao0|(ao1<<2)|(ao2<<4)|(ao3<<6));
+                        faceData.eastAoMask[ligne * SubChunk.CHUNKSIZEXZ + z] = (byte)(ao0|(ao1<<2)|(ao2<<4)|(ao3<<6));
 
-                        faceData.eastSkyLightMask[ligne * SubChunk.CHUNKSIZEX + z] = this.getBlockSkyLight(x-1, y, z);
-                        faceData.eastBlockLightMask[ligne * SubChunk.CHUNKSIZEX + z] = this.getBlockLight(x-1, y, z);
+                        faceData.eastSkyLightMask[ligne * SubChunk.CHUNKSIZEXZ + z] = (byte)this.getBlockSkyLight(x-1, y, z);
+                        faceData.eastBlockLightMask[ligne * SubChunk.CHUNKSIZEXZ + z] = (byte)this.getBlockLight(x-1, y, z);
                     }
                 }
             }
         }    
                   
-        for (int y = 0; y < SubChunk.CHUNKSIZEY; y++){
-            for (int z = 0; z < SubChunk.CHUNKSIZEZ; z++){
-                for (int x = 0; x < SubChunk.CHUNKSIZEX; x++){
-                    int ligne = z + y * SubChunk.CHUNKSIZEZ;
+        for (int y = 0; y < SubChunk.CHUNKSIZEXZ; y++){
+            for (int z = 0; z < SubChunk.CHUNKSIZEXZ; z++){
+                for (int x = 0; x < SubChunk.CHUNKSIZEXZ; x++){
+                    int ligne = z + y * SubChunk.CHUNKSIZEXZ;
 
-                    int blockIndex = x + y * SubChunk.CHUNKSIZEX + z * SubChunk.CHUNKSIZEX * SubChunk.CHUNKSIZEY;
+                    int blockIndex = x + y * SubChunk.CHUNKSIZEXZ + z * SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ;
                     if(this.blocks[blockIndex] != blockType) continue;
 
-                    int upBit = (faceData.upAxis[z + x * SubChunk.CHUNKSIZEZ] >>> (31 - y)) & 1;
+                    int upBit = (faceData.upAxis[z + x * SubChunk.CHUNKSIZEXZ] >>> (31 - y)) & 1;
                     faceData.upMask[ligne] |= (upBit << (31 - x));
                     if(upBit == 1){
                         byte ao0 = computeAO(x-1, y+1, z,   x, y+1, z-1,   x-1, y+1, z-1);
                         byte ao1 = computeAO(x+1, y+1, z,   x, y+1, z-1,   x+1, y+1, z-1);
                         byte ao2 = computeAO(x-1, y+1, z,   x, y+1, z+1,   x-1, y+1, z+1);
                         byte ao3 = computeAO(x+1, y+1, z,   x, y+1, z+1,   x+1, y+1, z+1);
-                        faceData.upAoMask[ligne * SubChunk.CHUNKSIZEX + x] = (byte)(ao0|(ao1<<2)|(ao2<<4)|(ao3<<6));
+                        faceData.upAoMask[ligne * SubChunk.CHUNKSIZEXZ + x] = (byte)(ao0|(ao1<<2)|(ao2<<4)|(ao3<<6));
 
-                        faceData.upSkyLightMask[ligne * SubChunk.CHUNKSIZEX + x] = this.getBlockSkyLight(x, y+1, z);
-                        faceData.upBlockLightMask[ligne * SubChunk.CHUNKSIZEX + x] = this.getBlockLight(x, y+1, z);
+                        faceData.upSkyLightMask[ligne * SubChunk.CHUNKSIZEXZ + x] = (byte)this.getBlockSkyLight(x, y+1, z);
+                        faceData.upBlockLightMask[ligne * SubChunk.CHUNKSIZEXZ + x] = (byte)this.getBlockLight(x, y+1, z);
                     }
 
-                    int downBit = (faceData.downAxis[z + x * SubChunk.CHUNKSIZEZ] >>> (31 - y)) & 1;
+                    int downBit = (faceData.downAxis[z + x * SubChunk.CHUNKSIZEXZ] >>> (31 - y)) & 1;
                     faceData.downMask[ligne] |= (downBit << (31 - x));
                     if(downBit == 1){
                         byte ao0 = computeAO(x-1, y-1, z,   x, y-1, z-1,   x-1, y-1, z-1);
                         byte ao1 = computeAO(x+1, y-1, z,   x, y-1, z-1,   x+1, y-1, z-1);
                         byte ao2 = computeAO(x-1, y-1, z,   x, y-1, z+1,   x-1, y-1, z+1);
                         byte ao3 = computeAO(x+1, y-1, z,   x, y-1, z+1,   x+1, y-1, z+1);
-                        faceData.downAoMask[ligne * SubChunk.CHUNKSIZEX + x] = (byte)(ao0|(ao1<<2)|(ao2<<4)|(ao3<<6));
+                        faceData.downAoMask[ligne * SubChunk.CHUNKSIZEXZ + x] = (byte)(ao0|(ao1<<2)|(ao2<<4)|(ao3<<6));
 
-                        faceData.downSkyLightMask[ligne * SubChunk.CHUNKSIZEX + x] = this.getBlockSkyLight(x, y-1, z);
-                        faceData.downBlockLightMask[ligne * SubChunk.CHUNKSIZEX + x] = this.getBlockLight(x, y-1, z);
+                        faceData.downSkyLightMask[ligne * SubChunk.CHUNKSIZEXZ + x] = (byte)this.getBlockSkyLight(x, y-1, z);
+                        faceData.downBlockLightMask[ligne * SubChunk.CHUNKSIZEXZ + x] = (byte)this.getBlockLight(x, y-1, z);
                     }
                 }
             }        
@@ -660,24 +676,24 @@ public class SubChunk extends Node3D{
     }
 
     // fait le greedy pour chaque face
-    private void greedyMeshingPerFace(int[] faceMask, byte[] faceAoMask, byte[] faceSkyLightMask, byte[] faceBlockLightMask, String dir){
+    private void greedyMeshingPerFace(int[] faceMask, byte[] faceAoMask, byte[] faceSkyLightMask, byte[] faceBlockLightMask, String dir){        
         for(int ligne = 0; ligne < faceMask.length; ligne++){
             int i = 0; // indice en largeur byte car dépasse pas 15
-            while(i < SubChunk.CHUNKSIZEX){              
+            while(i < SubChunk.CHUNKSIZEXZ){              
                 if (faceMask[ligne] == 0) break; // si il n'y a pas de face           
                 int j = 1; // indice en longueur/hauteur
 
                 int[] coord = new int[3]; // point de départ, fin quad en x, fin quad en y
-                while((i < SubChunk.CHUNKSIZEX) && ((faceMask[ligne] >>> (31 - i)) & 1) != 1){ // tant que l'on a pas trouvé la 1er face pleine
+                while((i < SubChunk.CHUNKSIZEXZ) && ((faceMask[ligne] >>> (31 - i)) & 1) != 1){ // tant que l'on a pas trouvé la 1er face pleine
                     i++;
                 }
 
                 // condition de fusion en largeur
                 coord[0] = i;// x commence à i
-                while((i < SubChunk.CHUNKSIZEX) && ((faceMask[ligne] >>> (31 - i)) & 1) != 0
-                    && faceAoMask[ligne * SubChunk.CHUNKSIZEX + i]         == faceAoMask[ligne * SubChunk.CHUNKSIZEX + coord[0]]
-                    && faceSkyLightMask[ligne * SubChunk.CHUNKSIZEX + i]   == faceSkyLightMask[ligne * SubChunk.CHUNKSIZEX + coord[0]]
-                    && faceBlockLightMask[ligne * SubChunk.CHUNKSIZEX + i] == faceBlockLightMask[ligne * SubChunk.CHUNKSIZEX + coord[0]]){
+                while((i < SubChunk.CHUNKSIZEXZ) && ((faceMask[ligne] >>> (31 - i)) & 1) != 0
+                    && faceAoMask[ligne * SubChunk.CHUNKSIZEXZ + i]         == faceAoMask[ligne * SubChunk.CHUNKSIZEXZ + coord[0]]
+                    && faceSkyLightMask[ligne * SubChunk.CHUNKSIZEXZ + i]   == faceSkyLightMask[ligne * SubChunk.CHUNKSIZEXZ + coord[0]]
+                    && faceBlockLightMask[ligne * SubChunk.CHUNKSIZEXZ + i] == faceBlockLightMask[ligne * SubChunk.CHUNKSIZEXZ + coord[0]]){
                     i++;
                 }
 
@@ -696,17 +712,17 @@ public class SubChunk extends Node3D{
                 
                 // parcourt en hauteur 
                 // si la ligne en dessous a les même bits entre les 2 x à 1 alors on la récup 
-                int sliceStart = (ligne / SubChunk.CHUNKSIZEX) * SubChunk.CHUNKSIZEX;
-                while((ligne + j < sliceStart + SubChunk.CHUNKSIZEX)
+                int sliceStart = (ligne / SubChunk.CHUNKSIZEXZ) * SubChunk.CHUNKSIZEXZ;
+                while((ligne + j < sliceStart + SubChunk.CHUNKSIZEXZ)
                     && (ligne + j < faceMask.length) 
                     && (faceMask[ligne + j] & mask) == mask){
 
                     // condition de fusion en hauteur
                     boolean match = true;
                     for(int k = coord[0]; k < coord[1]; k++){
-                        if(faceAoMask[(ligne+j) * SubChunk.CHUNKSIZEX + k]         != faceAoMask[ligne * SubChunk.CHUNKSIZEX + k] // même valeur d'AO
-                        || faceSkyLightMask[(ligne+j) * SubChunk.CHUNKSIZEX + k]   != faceSkyLightMask[ligne * SubChunk.CHUNKSIZEX + k] // même valeur de lumière du ciel
-                        || faceBlockLightMask[(ligne+j) * SubChunk.CHUNKSIZEX + k] != faceBlockLightMask[ligne * SubChunk.CHUNKSIZEX + k]){ // même valeur de lumière du block
+                        if(faceAoMask[(ligne+j) * SubChunk.CHUNKSIZEXZ + k]         != faceAoMask[ligne * SubChunk.CHUNKSIZEXZ + k] // même valeur d'AO
+                        || faceSkyLightMask[(ligne+j) * SubChunk.CHUNKSIZEXZ + k]   != faceSkyLightMask[ligne * SubChunk.CHUNKSIZEXZ + k] // même valeur de lumière du ciel
+                        || faceBlockLightMask[(ligne+j) * SubChunk.CHUNKSIZEXZ + k] != faceBlockLightMask[ligne * SubChunk.CHUNKSIZEXZ + k]){ // même valeur de lumière du block
                             match = false;
                             break;
                         }
@@ -722,22 +738,22 @@ public class SubChunk extends Node3D{
                     int qx, qy, qz;
                     switch(dir){
                         case "north": case "south":
-                            // masque index = y + z * CHUNKSIZEZ, bit = X
+                            // masque index = y + z * CHUNKSIZEXZ, bit = X
                             qx = coord[0];
-                            qy = ligne % SubChunk.CHUNKSIZEY;
-                            qz = ligne / SubChunk.CHUNKSIZEZ;
+                            qy = ligne % SubChunk.CHUNKSIZEXZ;
+                            qz = ligne / SubChunk.CHUNKSIZEXZ;
                             break;
                         case "west": case "east":
-                            // masque index = y + x * CHUNKSIZEX, bit = Z
-                            qx = ligne / SubChunk.CHUNKSIZEY;
-                            qy = ligne % SubChunk.CHUNKSIZEY;
+                            // masque index = y + x * CHUNKSIZEXZ, bit = Z
+                            qx = ligne / SubChunk.CHUNKSIZEXZ;
+                            qy = ligne % SubChunk.CHUNKSIZEXZ;
                             qz = coord[0];
                             break;
                         case "up": case "down":
-                            // masque index = y + z * CHUNKSIZEY, bit = X
+                            // masque index = y + z * CHUNKSIZEXZ, bit = X
                             qx = coord[0];
-                            qy = ligne / SubChunk.CHUNKSIZEZ;  
-                            qz = ligne % SubChunk.CHUNKSIZEZ; 
+                            qy = ligne / SubChunk.CHUNKSIZEXZ;  
+                            qz = ligne % SubChunk.CHUNKSIZEXZ; 
                             break;
                         default:
                             qx = qy = qz = 0;
@@ -746,10 +762,10 @@ public class SubChunk extends Node3D{
                     int w = coord[1] - coord[0];
                     int h = coord[2];
                     
-                    int packedAoBottomFirst = faceAoMask[ligne                   * SubChunk.CHUNKSIZEX + coord[0]    ];
-                    int packedAoBottomLast  = faceAoMask[ligne                   * SubChunk.CHUNKSIZEX + (coord[1]-1)];
-                    int packedAoTopFirst    = faceAoMask[(ligne + h - 1)         * SubChunk.CHUNKSIZEX + coord[0]    ];
-                    int packedAoTopLast     = faceAoMask[(ligne + h - 1)         * SubChunk.CHUNKSIZEX + (coord[1]-1)];
+                    int packedAoBottomFirst = faceAoMask[ligne                   * SubChunk.CHUNKSIZEXZ + coord[0]    ];
+                    int packedAoBottomLast  = faceAoMask[ligne                   * SubChunk.CHUNKSIZEXZ + (coord[1]-1)];
+                    int packedAoTopFirst    = faceAoMask[(ligne + h - 1)         * SubChunk.CHUNKSIZEXZ + coord[0]    ];
+                    int packedAoTopLast     = faceAoMask[(ligne + h - 1)         * SubChunk.CHUNKSIZEXZ + (coord[1]-1)];
 
                     int ao0 = ( packedAoBottomFirst        & 0x3); // bas-gauche
                     int ao1 = ((packedAoBottomLast  >> 2)  & 0x3); // bas-droite  <- dernier bloc
@@ -757,8 +773,8 @@ public class SubChunk extends Node3D{
                     int ao3 = ((packedAoTopLast     >> 6)  & 0x3); // haut-droite <- dernier bloc, ligne du haut    
                     
                     // On utilise & 0xFF pour transformer le byte signé (-128 à 127) en int non-signé (0 à 255)
-                    int skyLight   = (faceSkyLightMask  [ligne * SubChunk.CHUNKSIZEX + coord[0]] & 0xFF) >> 4;
-                    int blockLight = (faceBlockLightMask[ligne * SubChunk.CHUNKSIZEX + coord[0]] & 0xFF);
+                    int skyLight   = faceSkyLightMask  [ligne * SubChunk.CHUNKSIZEXZ + coord[0]];
+                    int blockLight = faceBlockLightMask[ligne * SubChunk.CHUNKSIZEXZ + coord[0]];
 
                     this.quads.add(new Quad(qx, qy, qz, w, h, dir, ao0, ao1, ao2, ao3, skyLight, blockLight));
                 }   
@@ -777,28 +793,28 @@ public class SubChunk extends Node3D{
      */
     public boolean isBlockSolid(int x, int y, int z){
         // dans le subchunk courant
-        if (x >= 0 && x < CHUNKSIZEX && y >= 0 && y < CHUNKSIZEY && z >= 0 && z < CHUNKSIZEZ){
-            int index = x + y * CHUNKSIZEX + z * CHUNKSIZEX * CHUNKSIZEY;
+        if (x >= 0 && x < CHUNKSIZEXZ && y >= 0 && y < CHUNKSIZEXZ && z >= 0 && z < CHUNKSIZEXZ){
+            int index = x + y * SubChunk.CHUNKSIZEXZ + z * SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ;
             return this.blocks[index] != (byte)Blocks.AIR.id;
         }
         // en dehors délègue aux voisins, blocks en bordure
-        if (y >= CHUNKSIZEY && this.upNeighbor != null){
-            return this.upNeighbor.isBlockSolid(x, y - CHUNKSIZEY, z);
+        if (y >= CHUNKSIZEXZ && this.upNeighbor != null){
+            return this.upNeighbor.isBlockSolid(x, y - CHUNKSIZEXZ, z);
         }
         if (y < 0 && this.downNeighbor != null){
-            return this.downNeighbor.isBlockSolid(x, y + CHUNKSIZEY, z);
+            return this.downNeighbor.isBlockSolid(x, y + CHUNKSIZEXZ, z);
         }
-        if (x >= CHUNKSIZEX && this.westNeighbor != null){
-            return this.westNeighbor.isBlockSolid(x - CHUNKSIZEX, y, z);
+        if (x >= CHUNKSIZEXZ && this.westNeighbor != null){
+            return this.westNeighbor.isBlockSolid(x - CHUNKSIZEXZ, y, z);
         }
         if (x < 0 && this.eastNeighbor != null){
-            return this.eastNeighbor.isBlockSolid(x + CHUNKSIZEX, y, z);
+            return this.eastNeighbor.isBlockSolid(x + CHUNKSIZEXZ, y, z);
         }
-        if (z >= CHUNKSIZEZ && this.northNeighbor != null){
-            return this.northNeighbor.isBlockSolid(x, y, z - CHUNKSIZEZ);
+        if (z >= CHUNKSIZEXZ && this.northNeighbor != null){
+            return this.northNeighbor.isBlockSolid(x, y, z - CHUNKSIZEXZ);
         }
         if (z < 0 && this.southNeighbor != null){
-            return this.southNeighbor.isBlockSolid(x, y, z + CHUNKSIZEZ);
+            return this.southNeighbor.isBlockSolid(x, y, z + CHUNKSIZEXZ);
         }
         return false;
     }
@@ -836,8 +852,10 @@ public class SubChunk extends Node3D{
     @ChunkThread
     public void fillSubChunkBitSet(){
         this.bitSet.clear();
-        for(int i = 0; i < SubChunk.MAXBLOCK; i++){
-            if (this.blocks[i] != (byte)Blocks.AIR.id){
+        for(int i = 0; i < SubChunk.MAXBLOCK; i++){      
+            // les blocks transparent ne doivent pas être face cull, logique   
+            // BlocksManager.get(this.blocks[i]).transparent == false
+            if (this.blocks[i] != Blocks.AIR.id){
                 this.bitSet.set(i); // met a 1 l'indice i
             }
         }
@@ -851,7 +869,7 @@ public class SubChunk extends Node3D{
         // ouest
         try{            
             Chunk chunk = ChunksManager.getChunkAt(
-                this.x + SubChunk.CHUNKSIZEX,
+                this.x + SubChunk.CHUNKSIZEXZ,
                 this.z);
             this.westNeighbor = chunk.getSubChunkAt(this.y);
         }catch(Exception e){
@@ -860,7 +878,7 @@ public class SubChunk extends Node3D{
         // est
         try{
             Chunk chunk = ChunksManager.getChunkAt(
-                this.x - SubChunk.CHUNKSIZEX,
+                this.x - SubChunk.CHUNKSIZEXZ,
                 this.z);
             this.eastNeighbor = chunk.getSubChunkAt(this.y);
         }catch(Exception e){
@@ -870,7 +888,7 @@ public class SubChunk extends Node3D{
         try{
             Chunk chunk = ChunksManager.getChunkAt(
                 this.x,
-                this.z + SubChunk.CHUNKSIZEZ);
+                this.z + SubChunk.CHUNKSIZEXZ);
             this.northNeighbor = chunk.getSubChunkAt(this.y);
         }catch(Exception e){
             this.northNeighbor = null;
@@ -879,26 +897,20 @@ public class SubChunk extends Node3D{
         try{
             Chunk chunk = ChunksManager.getChunkAt(
                 this.x,
-                this.z - SubChunk.CHUNKSIZEZ);
+                this.z - SubChunk.CHUNKSIZEXZ);
             this.southNeighbor = chunk.getSubChunkAt(this.y);
         }catch(Exception e){
             this.southNeighbor = null;
         } 
         // haut
         try{
-            Chunk chunk = ChunksManager.getChunkAt(
-                this.x,
-                this.z);
-            this.upNeighbor = chunk.getSubChunkAt(this.y + SubChunk.CHUNKSIZEY);
+            this.upNeighbor = parent.getSubChunkAt(this.y + SubChunk.CHUNKSIZEXZ);
         }catch(Exception e){
             this.upNeighbor = null;
         }  
         // bas
         try{
-            Chunk chunk = ChunksManager.getChunkAt(
-                this.x,
-                this.z);
-            this.downNeighbor = chunk.getSubChunkAt(this.y - SubChunk.CHUNKSIZEY);
+            this.downNeighbor = parent.getSubChunkAt(this.y - SubChunk.CHUNKSIZEXZ);
         }catch(Exception e){
             this.downNeighbor = null;
         }  
@@ -945,10 +957,6 @@ public class SubChunk extends Node3D{
      */
     public SubChunk getNeighborDown(){
         return this.downNeighbor;  
-    }
-
-    public void setGenerating(boolean generating){
-        this.isGenerating = generating;
     }
 
     /**

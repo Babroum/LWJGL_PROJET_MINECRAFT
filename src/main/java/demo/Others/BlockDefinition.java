@@ -1,4 +1,4 @@
-package demo;
+package demo.Others;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
@@ -14,6 +14,7 @@ public class BlockDefinition {
     
     public int opacity;
     public int light;
+    public boolean transparent;
     
     // "up" -> "grass_block_top", "down" -> "dirt", etc.
     public Map<String, String> textures;
