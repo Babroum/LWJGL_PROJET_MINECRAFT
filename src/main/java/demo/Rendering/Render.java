@@ -202,14 +202,10 @@ public class Render {
         GL11.glEnable(GL11.GL_ALPHA_TEST);
         // Spécification de la précision de la transparence
         GL11.glAlphaFunc(GL11.GL_GREATER, 0.01f);
-        // Façon dont la transparence est calculée
-        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
 
         /// *** Apparence globale ***
         // Pour des raisons de performances, on désactive les textures de manière globale, on les activera au cas par cas
         GL11.glDisable(GL11.GL_TEXTURE_2D);
-        // On active la possibilité de combiner des effets
-        GL11.glEnable(GL11.GL_BLEND);
 
         // ** Réglage de la perspective  ***
         // On fixe le rectangle de la fenêtre où la 3D sera dessinée.

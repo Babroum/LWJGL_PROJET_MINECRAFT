@@ -56,6 +56,7 @@ public class SceneGraph {
         for (Chunk chunk : ChunksManager.getAllChunks()) {
             for (SubChunk sub : chunk.getAllSubChunks()) {
                 if (sub.mesh != null) count += sub.mesh.getVertexCount();
+                if (sub.transparentMesh != null) count += sub.transparentMesh.getVertexCount();
             }
         }
         return count;
@@ -84,6 +85,20 @@ public class SceneGraph {
     public void drawScene(){
         // Couleur du background de la scène
         GL11.glClearColor(this.backGroundColor.red, this.backGroundColor.green, this.backGroundColor.blue, 1f);
+        
+        // Passe 1 opaque
+        GL11.glDepthMask(true);
+        GL11.glDisable(GL11.GL_BLEND);
         this.root.drawNode(new Matrix4f().identity());
+
+        // Passe 2 transparent
+        GL11.glDepthMask(false);
+        GL11.glEnable(GL11.GL_BLEND);
+        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+        for (Chunk chunk : ChunksManager.getAllChunks()){
+            chunk.drawNodeTransparent(new Matrix4f().identity());
+        }
+        GL11.glDepthMask(true);
+        GL11.glDisable(GL11.GL_BLEND);
     }
 }

@@ -292,9 +292,18 @@ public class Chunk extends Node3D{
         // si le chunk est visible on l'affiche
         if (FrustumCulling.testAABB(this.minX, this.minY, this.minZ, this.maxX, this.maxY, this.maxZ)){
             for (SubChunk sub : subChunks){
-                if (sub.mesh.getVAO() == 0) continue; // subchunk vide, rien à dessiner
+                if (sub.mesh.getVAO() == 0 && sub.transparentMesh.getVAO() == 0) continue; // subchunk vide, rien à dessiner
                 sub.drawNode(parentModel);
             } 
         }               
     }
+
+    public void drawNodeTransparent(Matrix4f parentModel){
+    if (FrustumCulling.testAABB(this.minX, this.minY, this.minZ, this.maxX, this.maxY, this.maxZ)){
+        for (SubChunk sub : subChunks){
+            if (sub.transparentMesh.getVAO() == 0) continue;
+            sub.drawNodeTransparent(parentModel);
+        }
+    }
+}
 }

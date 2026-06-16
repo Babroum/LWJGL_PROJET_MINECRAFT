@@ -148,10 +148,11 @@ public class ChunksManager {
         }
         // générer le mesh avec un BitSet correct
         for(SubChunk sub : chunk.subChunks){
-            sub.mesh.setupSubChunkBuffers(sub.bitSet.cardinality()); // recrée vertexArrayPack avant de générer
+            sub.mesh.setupSubChunkBuffers(sub.solidBitSet.cardinality()); // recrée vertexArrayPack avant de générer            
+            sub.transparentMesh.setupSubChunkBuffers(sub.transparentBitSet.cardinality());
             sub.generateSubChunkMesh();
             // met le thread en pause si l'array est plein, le thread se relance automatiquement au moment ou OpenGLThread poll un chunk
-            if (sub.mesh.getVertexCount() > 0) {   // n'envoie pas les subchunks vides au GPU
+            if (sub.mesh.getVertexCount() > 0 || sub.transparentMesh.getVertexCount() > 0) {   // n'envoie pas les subchunks vides au GPU
                 try { Render.dirtySubChunks.put(sub); } catch(InterruptedException e) { Thread.currentThread().interrupt(); }
             }
         }
