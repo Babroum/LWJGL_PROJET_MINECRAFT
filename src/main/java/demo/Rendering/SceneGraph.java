@@ -78,6 +78,10 @@ public class SceneGraph {
         return count;
     }
 
+    public void removeChunk(Chunk chunk) {
+        root.removeChild(chunk);
+    }
+
     /**
      * Dessine la scène en appelant le nœud principale
      */

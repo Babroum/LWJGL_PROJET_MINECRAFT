@@ -1,0 +1,35 @@
+package demo.Others;
+
+import java.util.concurrent.*;
+
+public class ChunkGenerationPool {
+    // Un ExecutorService c'est un pool de N threads qui restent en vie et se partagent le travail.
+    private static final ExecutorService pool = buildPool();
+
+    private static ExecutorService buildPool() {
+        int cores   = Runtime.getRuntime().availableProcessors();
+        int workers = Math.max(1, cores - 2);  // -2 pour laisser les threads OpenGL et game logic respirer
+        // queue proportionnelle aux workers : assez pour les garder occupés
+        // sans accumuler des milliers de tâches en mémoire simultanément
+        int queueDepth = workers * 4;
+
+        return new ThreadPoolExecutor(
+            workers, // nombre minimum de threads
+            workers, // nombre maximum de threads
+            0L, // les threads ne meurent jamais (comme c'est un pool fixe)
+            TimeUnit.MILLISECONDS,
+            new ArrayBlockingQueue<>(queueDepth),
+            r -> { Thread t = new Thread(r); t.setDaemon(true); t.setName("ChunkWorker"); return t; },
+            new ThreadPoolExecutor.CallerRunsPolicy() // si queue pleine, le thread appelant exécute lui-même, par exemple le thread de rendu va executé au lieu de faire attendre la tache ici
+        );
+    }
+
+    public static void submit(Runnable task) {
+        pool.submit(task);
+    }
+
+    // pour soumission avec attente (si besoin futur)
+    public static Future<?> submitFuture(Runnable task) {
+        return pool.submit(task);
+    }
+}

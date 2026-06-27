@@ -1105,6 +1105,7 @@ public class SubChunk extends Node3D{
     @ChunkThread
     @Override
     public void drawNode(Matrix4f parentModel){
+        if (this.buffer == null) return; // chunk en cours de déchargement
         parentModel.translate(this.x, this.y, this.z, this.model);
         this.model.get(this.buffer);
         ShadersManager.runModel(this.buffer);

@@ -2,6 +2,7 @@ package demo.Rendering;
 
 import java.nio.FloatBuffer;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -17,10 +18,12 @@ import demo.Managers.AudioManager;
 import demo.Managers.BenchmarkManager;
 import demo.Managers.BlocksManager;
 import demo.Managers.BuffersManager;
+import demo.Managers.ChunksManager;
 import demo.Managers.InputManager;
 import demo.Managers.LightManager;
 import demo.Managers.ShadersManager;
 import demo.Managers.TextureManager;
+import demo.Managers.WorldManager;
 import demo.Others.FileLoader;
 import demo.Types.Color4f;
 import demo.Managers.PlayersManager;
@@ -43,6 +46,7 @@ public class Render {
     // du array ce qui permet au ChunkThread de rajouter un nouveau chunk dans l'array
     public static ArrayBlockingQueue<Chunk> chunkQueue = new ArrayBlockingQueue<>(512); // 512 ajout possibles max
     public static ArrayBlockingQueue<SubChunk> dirtySubChunks = new ArrayBlockingQueue<>(8192); // 512*16 modif possibles max
+    public static ConcurrentLinkedQueue<Chunk> chunksToUnload = new ConcurrentLinkedQueue<>();
 
     private static FloatBuffer projBuffer = BufferUtils.createFloatBuffer(16);
     private static final Matrix4f projection = new Matrix4f();
@@ -112,6 +116,18 @@ public class Render {
             // nettoie le frame buffer
 			GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);         
 
+            // décharge les chunks hors range
+            Chunk toRemove;
+            while ((toRemove = Render.chunksToUnload.poll()) != null) {
+                WorldManager.onChunkUnloaded(toRemove); // retire du unloadingChunks
+                Render.sceneGraph.removeChunk(toRemove);
+                if (ChunksManager.getChunkAt(toRemove.x, toRemove.z) != null) {
+                    ChunksManager.removeChunk(
+                        ChunksManager.floorDiv(toRemove.x, SubChunk.CHUNKSIZEXZ),
+                        ChunksManager.floorDiv(toRemove.z, SubChunk.CHUNKSIZEXZ)
+                    );
+                }
+            }
 
             // poll les chunks prêts et upload sur GPU
             Chunk chunk;

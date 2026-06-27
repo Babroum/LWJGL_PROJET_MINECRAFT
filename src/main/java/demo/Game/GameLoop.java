@@ -1,8 +1,11 @@
 package demo.Game;
 
+import org.joml.Vector3f;
+
 import demo.Managers.InputManager;
 import demo.Managers.LightManager;
 import demo.Managers.PlayersManager;
+import demo.Managers.WorldManager;
 
 /**
  * Gère tout les évènements du jeu, hors rendu
@@ -74,6 +77,9 @@ public class GameLoop {
         LightManager.processLightBFS();
         InputManager.runLogic(delta);
         PlayersManager.playersLoop(delta);
+
+        Vector3f pos = PlayersManager.player.getPosition();
+        WorldManager.tick(pos.x, pos.z);
     }
 
     /**
