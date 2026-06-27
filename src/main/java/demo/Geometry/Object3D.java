@@ -7,22 +7,23 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
 
 import demo.Annotations.OpenGLThread;
-import demo.Enum.BlocksType;
 import demo.Managers.BuffersManager;
 import demo.Managers.PlayersManager;
 import demo.Managers.ShadersManager;
 import demo.Meshing.Mesh;
+import demo.Others.BlockDefinition;
 import demo.Rendering.Render;
 import demo.Rendering.Window;
 
+@Deprecated
 public class Object3D extends Node3D{
 
     public Mesh mesh = new Mesh();
-    public BlocksType blockType;
+    public BlockDefinition blockType;
     public int[] ids;
 
     /**
-     * Dessine les bordures d'un block avec des lignes
+     * Dessine les bordures d'un bloc avec des lignes
      */
     @OpenGLThread
     public void createSubChunkBorderVBOVAO(){     

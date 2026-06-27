@@ -7,9 +7,9 @@ import demo.Geometry.Chunk;
 import demo.Geometry.SubChunk;
 import demo.Managers.AudioManager;
 import demo.Managers.ChunksManager;
-import demo.Rendering.Camera;
+import demo.Managers.PlayersManager;
+import demo.Others.Blocks;
 import demo.Rendering.Window;
-import demo.Player;
 
 /**
  * Définis les listeners GLFW
@@ -26,6 +26,13 @@ public class KeyboardInput {
     public static volatile boolean isTeleportActive;
     public static volatile boolean isChunkBorderShow;
     public static volatile boolean isJumping;
+    public static volatile boolean isBenchMarkShow;
+
+    // états des touches de mouvement, écrits par le thread OpenGL, lus par le game thread
+    public static volatile boolean keyForward;
+    public static volatile boolean keyBack;
+    public static volatile boolean keyLeft;
+    public static volatile boolean keyRight;
 
     @OpenGLThread
     public KeyboardInput(){
@@ -39,7 +46,7 @@ public class KeyboardInput {
     private static void keyPressedToggle(long window, int key, int scancode, int action, int mods) {   
         if(action == GLFW.GLFW_PRESS){
             switch (key) {
-                case GLFW.GLFW_KEY_E:
+                case GLFW.GLFW_KEY_F1:
                     KeyboardInput.isWireFrameMode = !KeyboardInput.isWireFrameMode;
                     break;
                 
@@ -47,11 +54,11 @@ public class KeyboardInput {
                     KeyboardInput.isCloseWindow = true;
                     break;
                 
-                case GLFW.GLFW_KEY_P:
+                case GLFW.GLFW_KEY_F2:
                     KeyboardInput.isMouseLock = !KeyboardInput.isMouseLock;
                     break;
 
-                case GLFW.GLFW_KEY_B:
+                case GLFW.GLFW_KEY_F3:
                     KeyboardInput.isChunkBorderShow = !KeyboardInput.isChunkBorderShow;
                     if (KeyboardInput.isChunkBorderShow){
                         for (Chunk chunk : ChunksManager.getAllChunks()){
@@ -70,8 +77,12 @@ public class KeyboardInput {
                     }
                     break;
 
-                case GLFW.GLFW_KEY_T:
+                case GLFW.GLFW_KEY_F4:
                     KeyboardInput.isTeleportActive = true;
+                    break;
+
+                case GLFW.GLFW_KEY_F5:
+                    KeyboardInput.isBenchMarkShow = !KeyboardInput.isBenchMarkShow;
                     break;
 
                 case GLFW.GLFW_KEY_KP_ADD:
@@ -82,12 +93,21 @@ public class KeyboardInput {
                     AudioManager.setMasterVolume(AudioManager.getMasterVolume() - 1);
                     break;
 
-                case GLFW.GLFW_KEY_SEMICOLON:
-                    AudioManager.playOnce("fanta");
-                    break;
-
                 case GLFW.GLFW_KEY_SPACE:
                     KeyboardInput.isJumping = true;
+                    break;
+
+                case GLFW.GLFW_KEY_1:
+                    PlayersManager.player.blockInHand = Blocks.COBBLESTONE;
+                    break;
+
+                case GLFW.GLFW_KEY_2:
+                    PlayersManager.player.blockInHand = Blocks.GLOWSTONE;
+                    break;
+                
+                case GLFW.GLFW_KEY_3:
+                    PlayersManager.player.blockInHand = Blocks.GLASS;
+                    break;
 
                 default:
                     break;
@@ -95,28 +115,12 @@ public class KeyboardInput {
         }        
     }
 
-    // utiliser pour toutes les touches avec appui continue
-    // Principalement pour les mouvements
+    // appelé depuis le thread OpenGL uniquement : lit glfwGetKey et met à jour les volatile
     @OpenGLThread
-    public static void keyPressedContinue(long windowRef, Camera camera, float move, Player player) {
-        
-        // Mouvement devant, derrière, gauche, droite, haut, bas
-        if (GLFW.glfwGetKey(Window.window, GLFW.GLFW_KEY_W) == GLFW.GLFW_PRESS) {
-            player.moveForward(move);
-        } else if (GLFW.glfwGetKey(Window.window, GLFW.GLFW_KEY_S) == GLFW.GLFW_PRESS) {
-            player.moveBackwards(move);
-        }
-        if (GLFW.glfwGetKey(Window.window, GLFW.GLFW_KEY_A) == GLFW.GLFW_PRESS) {
-            player.moveLeft(move);
-        } else if (GLFW.glfwGetKey(Window.window, GLFW.GLFW_KEY_D) == GLFW.GLFW_PRESS) {
-            player.moveRight(move);
-        }
-
-        /* Plus valable pour un joueur 
-        if (GLFW.glfwGetKey(KeyboardInput.windowRef, GLFW.GLFW_KEY_LEFT_SHIFT) == GLFW.GLFW_PRESS) {
-            camera.moveUp(move);
-        } else if (GLFW.glfwGetKey(KeyboardInput.windowRef, GLFW.GLFW_KEY_LEFT_CONTROL) == GLFW.GLFW_PRESS) {
-            camera.moveDown(move);
-        }  */  
+    public static void pollMovementKeys() {
+        keyForward = GLFW.glfwGetKey(Window.window, GLFW.GLFW_KEY_W) == GLFW.GLFW_PRESS;
+        keyBack    = GLFW.glfwGetKey(Window.window, GLFW.GLFW_KEY_S) == GLFW.GLFW_PRESS;
+        keyLeft    = GLFW.glfwGetKey(Window.window, GLFW.GLFW_KEY_A) == GLFW.GLFW_PRESS;
+        keyRight   = GLFW.glfwGetKey(Window.window, GLFW.GLFW_KEY_D) == GLFW.GLFW_PRESS;
     }
 }

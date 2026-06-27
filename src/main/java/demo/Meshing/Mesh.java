@@ -1,11 +1,9 @@
 package demo.Meshing;
 
-import demo.Enum.Directions;
-import demo.Exceptions.ArrayFull;
-
 /**
  * Une Maille décrivant un ensemble de face composées de sommet.
  */
+@Deprecated
 public class Mesh {
 
     private Face[] faces = new Face[6]; // a modif 6 faces par cube
@@ -18,9 +16,9 @@ public class Mesh {
      * @param face
      * @throws ArrayFull
      */
-    public void addFaces(Face face) throws ArrayFull{
+    public void addFaces(Face face){
         if (this.faceCount == this.faces.length){
-            throw new ArrayFull();
+            throw new RuntimeException("Array Full");
         }
         synchronized (this.faces)
         {
@@ -29,7 +27,7 @@ public class Mesh {
         this.faceCount++;
     }
 
-    public int[] getFaceVertex(Directions direction){
+    public int[] getFaceVertex(String direction){
         for(int i = 0; i < faceCount; i++){
             if (this.faces[i].direction == direction){
                 return this.faces[i].vertexs;

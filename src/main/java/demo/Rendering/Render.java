@@ -1,6 +1,5 @@
 package demo.Rendering;
 
-import java.io.IOException;
 import java.nio.FloatBuffer;
 import java.util.concurrent.ArrayBlockingQueue;
 
@@ -10,15 +9,18 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL11;
 
-import demo.GameLoop;
 import demo.Annotations.OpenGLThread;
+import demo.Game.GameLoop;
 import demo.Geometry.Chunk;
 import demo.Geometry.SubChunk;
 import demo.Managers.AudioManager;
 import demo.Managers.BenchmarkManager;
+import demo.Managers.BlocksManager;
 import demo.Managers.BuffersManager;
+import demo.Managers.InputManager;
+import demo.Managers.LightManager;
 import demo.Managers.ShadersManager;
-import demo.Managers.TexturesManager;
+import demo.Managers.TextureManager;
 import demo.Others.FileLoader;
 import demo.Types.Color4f;
 import demo.Managers.PlayersManager;
@@ -39,28 +41,42 @@ public class Render {
     // nombre de chunk que le ChunkThread peut mettre avant de s'arreter
     // le OpenGLThread va lui afficher ce qu'il y a dans l'array et des qu'il affiche 1 chunk il le retire 
     // du array ce qui permet au ChunkThread de rajouter un nouveau chunk dans l'array
-    public static ArrayBlockingQueue<Chunk> chunkQueue = new ArrayBlockingQueue<>(16); // 16 ajout possibles max
-    public static ArrayBlockingQueue<SubChunk> dirtySubChunks = new ArrayBlockingQueue<>(64); // 64 modif possibles max
+    public static ArrayBlockingQueue<Chunk> chunkQueue = new ArrayBlockingQueue<>(512); // 512 ajout possibles max
+    public static ArrayBlockingQueue<SubChunk> dirtySubChunks = new ArrayBlockingQueue<>(8192); // 512*16 modif possibles max
 
     private static FloatBuffer projBuffer = BufferUtils.createFloatBuffer(16);
     private static final Matrix4f projection = new Matrix4f();
+
+    private static final String[] TEXTURE_FILES  = {"null", "grass_block_top", "grass_block_side", "dirt", "stone", "cobblestone", "glowstone", "bedrock", "sand", "glass"};
+    private static final String[] BLOCKS_TO_LOAD = {"null", "air", "grass",                        "dirt", "stone", "cobblestone", "glowstone", "bedrock", "sand", "glass"};
+
+    // pour du debug, à modif car à chier
+    private static final int HUD_UPDATE_INTERVAL = 10;
+    private static int hudFrameCounter = 0;
+    private static String display1;
+    private static String display2;
+
+    private static final double TARGET_FPS        = 500;
+    private static final double TARGET_FRAME_TIME = 1.0 / TARGET_FPS;
+    private static double frameStartTime = 0;
 
     /**
      * Est appelé avant le début du draw scene 
      */
     @OpenGLThread
     public static void setupBeforeRendering(){
+        
         BlockBorderRenderer.init();
         // initialise en mémoire les textures des caractères
-        TexturesManager.loadTextures();
-        try{
+        try{           
+            TextureManager.init(TEXTURE_FILES);
+            BlocksManager.init(BLOCKS_TO_LOAD);
+
             AudioManager.loadSound("bird", "/Audios/bird.ogg");
-            AudioManager.loadSound("samsung", "/Audios/samsung.ogg");
-            AudioManager.loadSound("fanta", "/Audios/fanta.ogg");
             // initialise en mémoire l'image des caractères
             Render.textRender = new TextRender(FileLoader.loadFileFromClasspathBB("/Textures/font.png"), 20, 20, 19,
                                         " !\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~");          
-        }catch(IOException e){
+        }catch(Exception e){
             System.out.println(e);
         }   
     }
@@ -76,33 +92,26 @@ public class Render {
         // Prépare la 3D
         Render.initialize3D(Window.width, Window.height);
 
+        sceneGraph.setBackGroundColor(Color4f.SKY);
 
         GameLoop.init();
+        GameLoop.startGameThread();
 
         while ( !GLFW.glfwWindowShouldClose(Window.window) ) {  
             BenchmarkManager.getInstance().recordFrame();
             // démarre l'enregistrement de performances pour la frame
+            frameStartTime = GLFW.glfwGetTime();
             monitor.beginFrame();
+            double now = frameStartTime;
 
-            double now = GLFW.glfwGetTime(); 
             double delta = now - lastTime;
             lastTime = now;
             // Protection contre les gros sauts
             if (delta > 0.1) delta = 0.1; // 10FPS
 
             // nettoie le frame buffer
-			GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
+			GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);         
 
-            GameLoop.run((float)delta * 1000.0f);
-
-            // utilise le shader 
-            ShadersManager.useShader();
-            
-            // donne les matrices de camera et perspective au shader
-            ShadersManager.runProjection(Render.calculateProjection(45.0f, (float) Window.width / Window.height, 0.1f, 5000.f)); // donne la perspective de l'ecran
-            ShadersManager.runView(PlayersManager.player.getCamera().getViewMatrixBuffer()); // donne la vue de la camera
-
-            FrustumCulling.recalculateMatrix();
 
             // poll les chunks prêts et upload sur GPU
             Chunk chunk;
@@ -111,10 +120,20 @@ public class Render {
             }
 
             // subChunks modifiés update le VBO existant
-            SubChunk dirty;
-            while ((dirty = dirtySubChunks.poll()) != null) {
-                dirty.setupSubChunkVBOVAO();
+            SubChunk sub;
+            while ((sub = dirtySubChunks.poll()) != null) {
+                sub.setupSubChunkVBOVAO();
             }
+
+            LightManager.flushDirtySubChunks();
+            InputManager.runOpenGL();
+            PlayersManager.player.playerLoopRender();
+
+            ShadersManager.useShader();            
+            // donne les matrices de camera et perspective au shader
+            ShadersManager.runProjection(Render.calculateProjection(45.0f, (float) Window.width / Window.height, 0.1f, 5000.f)); // donne la perspective de l'ecran
+            ShadersManager.runView(PlayersManager.player.getCamera().getViewMatrixBuffer()); // donne la vue de la camera
+            FrustumCulling.recalculateMatrix();
 
             // enregistre le temps de rendu
             monitor.startTimer("render");
@@ -132,25 +151,23 @@ public class Render {
             Render.getTextRender().drawText("+", Window.width / 2, Window.height / 2, 30, Color4f.BLACK);
 
             // Affiche la pos du joueur
-            Vector3f pos = PlayersManager.player.getPosition();
-            Render.getTextRender().drawText(String.format("Position: (%.2f, %.2f, %.2f)%n", pos.x, pos.y - 1.5f, pos.z), Window.width / 2,20, 15, Color4f.RED);
-
-            // Affiche la touche à appuyer pour toggle le wireframe
-            Render.getTextRender().drawText("Toggle WireFrameMode : E", 0, 20, 15, Color4f.YELLOW);
-            Render.getTextRender().drawText("Toggle MouseLock : P", 0, 40, 15, Color4f.YELLOW);       
-            Render.getTextRender().drawText("Toggle ChunkBorder : B", 0, 60, 15, Color4f.YELLOW);   
-            Render.getTextRender().drawText("Toggle Teleport to (0,100,0): T", 0, 80, 15, Color4f.YELLOW);      
-
-            // Affiche le nombre de nœud à l'écran
-            //Render.getTextRender().drawText("Node3D count : " + Render.sceneGraph.getTotalNodeCount(), 0, 100, 15, Color4f.PURPLE);         
-
-            // Affiche les lignes retourner par le PerformanceManager
+            if (Render.hudFrameCounter % HUD_UPDATE_INTERVAL == 0) {
+                Render.hudFrameCounter++;
+                Vector3f pos = PlayersManager.player.getPosition();
+                Render.display1 = String.format("Position: (%.2f, %.2f, %.2f)%n", pos.x, pos.y - 1.5f, pos.z);
+                Render.display2 = String.format("Sky Light: %d , Block Light: %d %n", Render.monitor.getSkyLightRayCast(), Render.monitor.getBlockLightRayCast());                
+            }
+            Render.getTextRender().drawText(Render.display1, Window.width / 2,20, 15, Color4f.RED); 
+            Render.getTextRender().drawText(Render.display2, Window.width / 2,40, 15, Color4f.RED); 
+            Render.hudFrameCounter++;
+           
+     
             String[] lines = monitor.getDisplayLines();
             for(int i = 0; i < lines.length; i++){
                 if(lines[i] != null){
-                    Render.getTextRender().drawText(lines[i], 0, 120 + i * 20, 15, Color4f.PURPLE);
+                    Render.getTextRender().drawText(lines[i], 0, 20 + i * 20, 15, Color4f.PURPLE);
                 }
-            }
+            }    
 
             // TESTE A UTILISE POUR VOIR SI IL Y A ACCUMULATION DE RAM (FUITE DE MEMOIRE)
             /*
@@ -161,6 +178,19 @@ public class Render {
 
             AudioManager.cleanupTempSources();
             
+            // Attend que le temps de frame cible soit écoulé
+            double elapsed = GLFW.glfwGetTime() - frameStartTime;
+            double remaining = TARGET_FRAME_TIME - elapsed;
+
+            if (remaining > 0.002) {
+                // Pour les longues attentes : sleep (libère le CPU)
+                try { Thread.sleep((long)((remaining - 0.001) * 1000)); }
+                catch (InterruptedException ignored) {}
+            }
+            // Pour la dernière milliseconde : spin-wait précis
+            while (GLFW.glfwGetTime() - frameStartTime < TARGET_FRAME_TIME) {
+                Thread.onSpinWait(); // hint au CPU, évite une boucle vide agressive
+            }
 
             // Rends la fenêtre en buffer dessinée visible à l’écran
             GLFW.glfwSwapBuffers(Window.window);		
@@ -170,6 +200,7 @@ public class Render {
 		}
         
         // ferme le fenêtre quand la boucle de rendu est fini
+        GameLoop.stopGameThread();
         Window.exitWindow();
     }
 
@@ -204,20 +235,6 @@ public class Render {
     @OpenGLThread
     private static void initialize3D(final int width, final int height)
     {
-        // *** Gestion de la transparence ***
-        // On indique que l’on souhaite activer la transparence
-        GL11.glEnable(GL11.GL_ALPHA_TEST);
-        // Spécification de la précision de la transparence
-        GL11.glAlphaFunc(GL11.GL_GREATER, 0.01f);
-        // Façon dont la transparence est calculée
-        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-
-        /// *** Apparence globale ***
-        // Pour des raisons de performances, on désactive les textures de manière globale, on les activera au cas par cas
-        GL11.glDisable(GL11.GL_TEXTURE_2D);
-        // On active la possibilité de combiner des effets
-        GL11.glEnable(GL11.GL_BLEND);
-
         // ** Réglage de la perspective  ***
         // On fixe le rectangle de la fenêtre où la 3D sera dessinée.
         // Ici on veut dessiner sur toute la fenêtre

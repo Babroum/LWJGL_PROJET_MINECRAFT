@@ -10,9 +10,9 @@ import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.system.MemoryUtil;
 
-import demo.GameLoop;
 import demo.Annotations.OpenGLThread;
 import demo.Events.WindowCloseEventManager;
+import demo.Game.GameLoop;
 import demo.Managers.AudioManager;
 import demo.Managers.BenchmarkManager;
 import demo.Managers.ShadersManager;
@@ -79,6 +79,11 @@ public class Window {
         GLFW.glfwWindowHint(GLFW.GLFW_RESIZABLE, GLFW.GLFW_TRUE); // Fenêtre redimensionable?
         GLFW.glfwWindowHint(GLFW.GLFW_MAXIMIZED, GLFW.GLFW_FALSE); // La fenêtre essayera d'atteindre la taille demandée
         GLFW.glfwWindowHint(GLFW.GLFW_DOUBLEBUFFER, GLFW.GLFW_TRUE);
+
+        GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MAJOR, 4);
+        GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, 3);
+        GLFW.glfwWindowHint(GLFW.GLFW_OPENGL_PROFILE, GLFW.GLFW_OPENGL_CORE_PROFILE);
+        GLFW.glfwWindowHint(GLFW.GLFW_OPENGL_FORWARD_COMPAT, GLFW.GLFW_TRUE); // requis sur macOS
 
         Window.window = GLFW.glfwCreateWindow(Window.width, Window.height, "Wankraft", NULL, NULL); // Créer la fenêtre
         if (Window.window == MemoryUtil.NULL) {

@@ -7,6 +7,9 @@ flat in int texId; // id de texture de la face
 flat in int dir; // direction de la face
 flat in int isBorder; // détermine si c'est les bordures de subchunk à afficher ou non
 in vec2 uv; // coordonnées uv 
+in float AO;
+in float skyLight;
+in float blockLight;
 
 out vec4 FragColor;
 
@@ -17,18 +20,14 @@ void main()
     if(isBorder == 1){
         FragColor = vec4(1.0, 0.0, 0.0, 1.0); // bordure rouge pour les subchunks
         return;
-    }
-    
-    // lumière simple de base
-    float light;
-         if (dir == 0) light = 0.8; // NORTH
-    else if (dir == 1) light = 0.8; // SOUTH
-    else if (dir == 2) light = 0.8; // WEST 
-    else if (dir == 3) light = 0.8; // EAST
-    else if (dir == 4) light = 1.0; // UP, pleine lumière
-    else               light = 0.5; // DOWN, sombre
+    }     
+
+    float aoFactor = 1.0 - (AO / 3.0) * 0.5;  // fixe, géométrique 0.35
+
+    float normalizedSkyLight   = skyLight   / 15.0;
+    float normalizedBlockLight = blockLight / 15.0;
 
     // calcule la taille texture par rapport au coordonnées uv et la texture
     vec4 texColor = texture(tex, vec3(fract(uv), float(texId))); 
-    FragColor = vec4(texColor.rgb * light, texColor.a);
+    FragColor = vec4(texColor.rgb * max(normalizedBlockLight, normalizedSkyLight) * aoFactor, texColor.a);
 }

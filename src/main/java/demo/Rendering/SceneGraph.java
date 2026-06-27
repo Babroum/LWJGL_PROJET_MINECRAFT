@@ -50,27 +50,13 @@ public class SceneGraph {
         return this.getNumberOfNode(root) - 1;
     }
 
-    // calcule récursivement le nombre de sommet
+    // calcule le nombre de sommet
     private int getNumberOfVertex(Node3D node){
         int count = 0;
-        // si le nœud est un object3D/Clone et qu'il a un mesh alors on récupère le nombre de sommet du mesh
-        if (node instanceof Chunk){
-            for (Chunk chunk : ChunksManager.getAllChunks()){
-                for (SubChunk sub : chunk.getAllSubChunks()){
-                    if (sub.mesh != null){
-                        count += sub.mesh.getVertexCount();
-                    }
-                }
-            }       
-        }
-
-        // pour chaque enfant du nœud on calcule le nombre de sommet récursivement
-        Node3D[] children = node.getChildren();
-        if (children != null){
-            for (Node3D child : children){
-                if (child != null){
-                    count += this.getNumberOfVertex(child);
-                }
+        for (Chunk chunk : ChunksManager.getAllChunks()) {
+            for (SubChunk sub : chunk.getAllSubChunks()) {
+                if (sub.mesh != null) count += sub.mesh.getVertexCount();
+                if (sub.transparentMesh != null) count += sub.transparentMesh.getVertexCount();
             }
         }
         return count;
@@ -97,8 +83,23 @@ public class SceneGraph {
      */
     @OpenGLThread
     public void drawScene(){
+        Matrix4f mat = new Matrix4f();
         // Couleur du background de la scène
         GL11.glClearColor(this.backGroundColor.red, this.backGroundColor.green, this.backGroundColor.blue, 1f);
-        this.root.drawNode(new Matrix4f().identity());
+        
+        // Passe 1 opaque
+        GL11.glDepthMask(true);
+        GL11.glDisable(GL11.GL_BLEND);
+        this.root.drawNode(mat.identity());
+
+        // Passe 2 transparent
+        GL11.glDepthMask(false);
+        GL11.glEnable(GL11.GL_BLEND);
+        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+        for (Chunk chunk : ChunksManager.getAllChunks()){
+            chunk.drawNodeTransparent(mat.identity());
+        }
+        GL11.glDepthMask(true);
+        GL11.glDisable(GL11.GL_BLEND);
     }
 }

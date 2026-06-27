@@ -3,17 +3,18 @@ package demo.Meshing;
 import java.nio.IntBuffer;
 
 import org.lwjgl.system.MemoryUtil;
+
+import com.fasterxml.jackson.databind.introspect.TypeResolutionContext.Empty;
+
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
 
 import demo.Annotations.ChunkThread;
 import demo.Annotations.OpenGLThread;
 import demo.Events.KeyboardInput;
-import demo.Exceptions.ArrayEmpty;
-import demo.Exceptions.Empty;
 import demo.Managers.BuffersManager;
-import demo.Managers.TexturesManager;
 import demo.Rendering.Render;
+import demo.Managers.TextureManager;
 
 /**
  * Une Maille décrivant l'ensemble des ..
@@ -55,6 +56,9 @@ public class SubChunkMesh {
     // Tout les sommets de tout les objets avant la transformation en IntBuffer pack
     private int[] vertexArrayPack;
 
+    private final int[][] vertsBuffer = new int[6][10];
+    private final int[] arrayBuffer   = new int[60]; // 6 * 10
+
     /**
      * Le nombre de sommet dans la maille
      */
@@ -64,41 +68,106 @@ public class SubChunkMesh {
     private int[] ids; 
 
     /**
-     * Ajoute les mailles d'un cube à la maille du chunk <br>
-     * <b>Vertex Packing Ici</b>
-     * @param array
-     * @param cubeX
-     * @param cubeY
-     * @param cubeZ
+     * Ajoute un quad au donnée du mesh.
+     * @param quad Un quad
+     * @param textureId Identifiant de texture du quad
      */
-    //[ 00000 | 00000 | 00000 | 0 | 0 | 000 | 000000000000 ]
-    //    x        y      z     u   v   dir   textureId
-    // 4096 textures max
     @ChunkThread
-    public void addObjectVertexToArray(int[] array, int cubeX, int cubeY, int cubeZ) throws ArrayEmpty{
-        if (array.length < 7){
-            throw new ArrayEmpty();
+    public void addQuadVertexToArray(Quad quad, int textureId) {
+        int x = quad.x;
+        int y = quad.y;
+        int z = quad.z;
+        int w = quad.width;
+        int h = quad.height;
+        int d = 0;
+
+        // Les 4 coins : A=origine, B=+width, C=+height, D=+width+height
+        // 2 triangles sans EBO : A-B-D, A-D-C
+        int[][] verts = this.vertsBuffer; // 6 sommets * {x, y, z, u, v, dir, texId, ao, light
+
+        switch(quad.direction){
+            case 0: d=0;
+                setVert(verts,0,x+w,y,  z+1,1,1,d,textureId,quad.ao1,quad.skyLight,quad.blockLight);
+                setVert(verts,1,x,  y,  z+1,0,1,d,textureId,quad.ao0,quad.skyLight,quad.blockLight);
+                setVert(verts,2,x,  y+h,z+1,0,0,d,textureId,quad.ao2,quad.skyLight,quad.blockLight);
+                setVert(verts,3,x,  y+h,z+1,0,0,d,textureId,quad.ao2,quad.skyLight,quad.blockLight);
+                setVert(verts,4,x+w,y+h,z+1,1,0,d,textureId,quad.ao3,quad.skyLight,quad.blockLight);
+                setVert(verts,5,x+w,y,  z+1,1,1,d,textureId,quad.ao1,quad.skyLight,quad.blockLight);
+                break;
+            case 1: d=1;
+                setVert(verts,0,x,  y,  z,1,1,d,textureId,quad.ao0,quad.skyLight,quad.blockLight);
+                setVert(verts,1,x+w,y,  z,0,1,d,textureId,quad.ao1,quad.skyLight,quad.blockLight);
+                setVert(verts,2,x+w,y+h,z,0,0,d,textureId,quad.ao3,quad.skyLight,quad.blockLight);
+                setVert(verts,3,x+w,y+h,z,0,0,d,textureId,quad.ao3,quad.skyLight,quad.blockLight);
+                setVert(verts,4,x,  y+h,z,1,0,d,textureId,quad.ao2,quad.skyLight,quad.blockLight);
+                setVert(verts,5,x,  y,  z,1,1,d,textureId,quad.ao0,quad.skyLight,quad.blockLight);
+                break;
+            case 2: d=2;
+                setVert(verts,0,x+1,y,  z,  1,1,d,textureId,quad.ao0,quad.skyLight,quad.blockLight);
+                setVert(verts,1,x+1,y,  z+w,0,1,d,textureId,quad.ao1,quad.skyLight,quad.blockLight);
+                setVert(verts,2,x+1,y+h,z+w,0,0,d,textureId,quad.ao3,quad.skyLight,quad.blockLight);
+                setVert(verts,3,x+1,y+h,z+w,0,0,d,textureId,quad.ao3,quad.skyLight,quad.blockLight);
+                setVert(verts,4,x+1,y+h,z,  1,0,d,textureId,quad.ao2,quad.skyLight,quad.blockLight);
+                setVert(verts,5,x+1,y,  z,  1,1,d,textureId,quad.ao0,quad.skyLight,quad.blockLight);
+                break;
+            case 3: d=3;
+                setVert(verts,0,x,y,  z+w,1,1,d,textureId,quad.ao1,quad.skyLight,quad.blockLight);
+                setVert(verts,1,x,y,  z,  0,1,d,textureId,quad.ao0,quad.skyLight,quad.blockLight);
+                setVert(verts,2,x,y+h,z,  0,0,d,textureId,quad.ao2,quad.skyLight,quad.blockLight);
+                setVert(verts,3,x,y+h,z,  0,0,d,textureId,quad.ao2,quad.skyLight,quad.blockLight);
+                setVert(verts,4,x,y+h,z+w,1,0,d,textureId,quad.ao3,quad.skyLight,quad.blockLight);
+                setVert(verts,5,x,y,  z+w,1,1,d,textureId,quad.ao1,quad.skyLight,quad.blockLight);
+                break;
+            case 4: d=4;
+                setVert(verts,0,x,  y+1,z,  0,0,d,textureId,quad.ao0,quad.skyLight,quad.blockLight);
+                setVert(verts,1,x+w,y+1,z,  1,0,d,textureId,quad.ao1,quad.skyLight,quad.blockLight);
+                setVert(verts,2,x+w,y+1,z+h,1,1,d,textureId,quad.ao3,quad.skyLight,quad.blockLight);
+                setVert(verts,3,x+w,y+1,z+h,1,1,d,textureId,quad.ao3,quad.skyLight,quad.blockLight);
+                setVert(verts,4,x,  y+1,z+h,0,1,d,textureId,quad.ao2,quad.skyLight,quad.blockLight);
+                setVert(verts,5,x,  y+1,z,  0,0,d,textureId,quad.ao0,quad.skyLight,quad.blockLight);
+                break;
+            case 5: d=5;
+                setVert(verts,0,x,  y,z+h,0,0,d,textureId,quad.ao2,quad.skyLight,quad.blockLight);
+                setVert(verts,1,x+w,y,z+h,1,0,d,textureId,quad.ao3,quad.skyLight,quad.blockLight);
+                setVert(verts,2,x+w,y,z,  1,1,d,textureId,quad.ao1,quad.skyLight,quad.blockLight);
+                setVert(verts,3,x+w,y,z,  1,1,d,textureId,quad.ao1,quad.skyLight,quad.blockLight);
+                setVert(verts,4,x,  y,z,  0,1,d,textureId,quad.ao0,quad.skyLight,quad.blockLight);
+                setVert(verts,5,x,  y,z+h,0,0,d,textureId,quad.ao2,quad.skyLight,quad.blockLight);
+                break;
         }
-        for(int i = 0; i < array.length; i += 7){
-            int packed = 0;
-            // |= c'est le OU permet de combiner sans supprimer les valeurs
-            // le x max est 15 donc pourquoi pas avoir << 28 car 15 = 1111 donc 4 bits
-            // le centre du cube n'est pas centré donc pour avoir le sommet le plus loin on fait x + 1 donc 15 + 1 = 16 ce qui dépasse 4bits
-            packed |= (array[i]   + cubeX)  << 27; // 5 bits, décale de 27 bits (donc prend les 5 premiers bits, 32 - 27 = 5)
-            packed |= (array[i+1] + cubeY)  << 22; // 5 bits
-            packed |= (array[i+2] + cubeZ)  << 17; // 5 bits
-            packed |= (array[i+3])          << 16; // 1 bit
-            packed |= (array[i+4])          << 15; // 1 bit
-            packed |=  array[i+5]           << 12; // 3 bits
-            packed |=  array[i+6];                 // 12 bits
 
-            this.vertexArrayPack[this.vertexCount * 2] = packed;
-
-            this.vertexCount++;
-        }    
+        int[] array = this.arrayBuffer; // 6 sommets * 10 valeurs
+        for(int i = 0; i < 6; i++){
+            array[i*10]   = verts[i][0]; // x
+            array[i*10+1] = verts[i][1]; // y
+            array[i*10+2] = verts[i][2]; // z
+            array[i*10+3] = verts[i][3]; // u
+            array[i*10+4] = verts[i][4]; // v
+            array[i*10+5] = d;           // dir
+            array[i*10+6] = textureId;   // textureId
+            array[i*10+7] = verts[i][7]; // ao
+            array[i*10+8] = verts[i][8]; // skyLight
+            array[i*10+9] = verts[i][9]; // blocLight
+        }
+        try {
+            this.addObjectFaceVertexToArray(array, w, h);
+        } catch(Exception e){ e.printStackTrace(); }
     }
 
-    /**
+    private void setVert(int[][] v, int i, int x, int y, int z, int u, int vv, int d, int tex, int ao, int sky, int block){
+        v[i][0]=x;
+        v[i][1]=y; 
+        v[i][2]=z; 
+        v[i][3]=u; 
+        v[i][4]=vv;
+        v[i][5]=d; 
+        v[i][6]=tex; 
+        v[i][7]=ao; 
+        v[i][8]=sky; 
+        v[i][9]=block;
+    }
+
+        /**
      * Ajoute les mailles d'un cube à la maille du chunk <br>
      * <b>Vertex Packing Ici</b>
      * @param array
@@ -110,115 +179,37 @@ public class SubChunkMesh {
     //    x       y       z     u   v   dir     textureId
     // 4096 textures max
     @ChunkThread
-    public void addObjectFaceVertexToArray(int[] array, int cubeX, int cubeY, int cubeZ, int w, int h) throws ArrayEmpty{
-        if (array.length < 7){
-            throw new ArrayEmpty();
+    public void addObjectFaceVertexToArray(int[] array, int w, int h){
+        if (array.length < 10){
+            throw new RuntimeException("Array Empty");
         }
         // on garde la face
-        for(int i = 0; i < array.length; i += 7){
+        for(int i = 0; i < array.length; i += 10){
             int packed = 0;
             // |= c'est le OU permet de combiner sans supprimer les valeurs
             // le x max est 15 donc pourquoi pas avoir << 28 car 15 = 1111 donc 4 bits
             // le centre du cube n'est pas centré donc pour avoir le sommet le plus loin on fait x + 1 donc 15 + 1 = 16 ce qui dépasse 4bits
-            packed |= (array[i]   + cubeX)  << 27; // 5 bits, décale de 27 bits (donc prend les 5 premiers bits, 32 - 27 = 5)
-            packed |= (array[i+1] + cubeY)  << 22; // 5 bits
-            packed |= (array[i+2] + cubeZ)  << 17; // 5 bits
-            packed |= (array[i+3])          << 16; // 1 bit
-            packed |= (array[i+4])          << 15; // 1 bit
-            packed |=  array[i+5]           << 12; // 3 bits
-            packed |=  array[i+6];                 // 12 bits
-
+            packed |= (array[i])    << 27; // 5 bits, décale de 27 bits (donc prend les 5 premiers bits, 32 - 27 = 5)
+            packed |= (array[i+1])  << 22; // 5 bits
+            packed |= (array[i+2])  << 17; // 5 bits
+            packed |= (array[i+3])  << 16; // 1 bit
+            packed |= (array[i+4])  << 15; // 1 bit
+            packed |=  array[i+5]   << 12; // 3 bits
+            packed |=  array[i+6];         // 12 bits
+            
             // coordonnées UV 
             int packed2 = 0;
-            packed2 |= (w) << 27; // 5 bits
-            packed2 |= (h) << 22; // 5 bits
-
+            packed2 |= (w)                  << 27; // 5 bits
+            packed2 |= (h)                  << 22; // 5 bits
+            packed2 |= (array[i+7] & 0x3)   << 20; // 2 bits valeur 0-3
+            packed2 |= (array[i+8] & 0xF)   << 16; // 4 bits valeur 0-15
+            packed2 |= (array[i+9] & 0xF)   << 12; // 4 bits valeur 0-15            
+ 
             this.vertexArrayPack[this.vertexCount * 2] = packed;
             this.vertexArrayPack[this.vertexCount * 2 + 1] = packed2;
 
             this.vertexCount++;;
         }    
-    }
-
-
-    @ChunkThread
-    public void addQuadVertexToArray(Quad quad, int textureId) {
-        int x = quad.x;
-        int y = quad.y;
-        int z = quad.z;
-        int w = quad.width;
-        int h = quad.height;
-        int d = quad.direction.ordinal();
-
-        // Les 4 coins : A=origine, B=+width, C=+height, D=+width+height
-        // 2 triangles sans EBO : A-B-D, A-D-C
-        int[][] verts = new int[6][7]; // 6 sommets * {x, y, z, u, v, dir, texId}
-
-        switch(quad.direction){
-            case SOUTH:
-                verts[0] = new int[]{x,   y,   z, 1, 1, d, textureId};
-                verts[1] = new int[]{x+w, y,   z, 0, 1, d, textureId};
-                verts[2] = new int[]{x+w, y+h, z, 0, 0, d, textureId};
-                verts[3] = new int[]{x+w, y+h, z, 0, 0, d, textureId};
-                verts[4] = new int[]{x,   y+h, z, 1, 0, d, textureId};
-                verts[5] = new int[]{x,   y,   z, 1, 1, d, textureId};
-                break;
-            case NORTH:
-                verts[0] = new int[]{x+w, y,   z+1, 1, 1, d, textureId};
-                verts[1] = new int[]{x,   y,   z+1, 0, 1, d, textureId};
-                verts[2] = new int[]{x,   y+h, z+1, 0, 0, d, textureId};
-                verts[3] = new int[]{x,   y+h, z+1, 0, 0, d, textureId};
-                verts[4] = new int[]{x+w, y+h, z+1, 1, 0, d, textureId};
-                verts[5] = new int[]{x+w, y,   z+1, 1, 1, d, textureId};
-                break;
-            case WEST:
-                verts[0] = new int[]{x+1, y,   z,   1, 1, d, textureId};
-                verts[1] = new int[]{x+1, y,   z+w, 0, 1, d, textureId};
-                verts[2] = new int[]{x+1, y+h, z+w, 0, 0, d, textureId};
-                verts[3] = new int[]{x+1, y+h, z+w, 0, 0, d, textureId};
-                verts[4] = new int[]{x+1, y+h, z,   1, 0, d, textureId};
-                verts[5] = new int[]{x+1, y,   z,   1, 1, d, textureId};
-                break;
-            case EAST:
-                verts[0] = new int[]{x, y,   z+w, 1, 1, d, textureId};
-                verts[1] = new int[]{x, y,   z,   0, 1, d, textureId};
-                verts[2] = new int[]{x, y+h, z,   0, 0, d, textureId};
-                verts[3] = new int[]{x, y+h, z,   0, 0, d, textureId};
-                verts[4] = new int[]{x, y+h, z+w, 1, 0, d, textureId};
-                verts[5] = new int[]{x, y,   z+w, 1, 1, d, textureId};
-                break;
-            case UP: // y fixe à y+1, s'étend sur X et Z
-                verts[0] = new int[]{x,   y+1, z,   0, 0, d, textureId};
-                verts[1] = new int[]{x+w, y+1, z,   1, 0, d, textureId};
-                verts[2] = new int[]{x+w, y+1, z+h, 1, 1, d, textureId};
-                verts[3] = new int[]{x+w, y+1, z+h, 1, 1, d, textureId};
-                verts[4] = new int[]{x,   y+1, z+h, 0, 1, d, textureId};
-                verts[5] = new int[]{x,   y+1, z,   0, 0, d, textureId};
-                break;
-            case DOWN: // y fixe à y, Z inversé
-                verts[0] = new int[]{x,   y, z+h, 0, 0, d, textureId};
-                verts[1] = new int[]{x+w, y, z+h, 1, 0, d, textureId};
-                verts[2] = new int[]{x+w, y, z,   1, 1, d, textureId};
-                verts[3] = new int[]{x+w, y, z,   1, 1, d, textureId};
-                verts[4] = new int[]{x,   y, z,   0, 1, d, textureId};
-                verts[5] = new int[]{x,   y, z+h, 0, 0, d, textureId};
-                break;
-        }
-
-        int[] array = new int[42]; // 6 sommets * 7 valeurs
-        for(int i = 0; i < 6; i++){
-            array[i*7]   = verts[i][0]; // x
-            array[i*7+1] = verts[i][1]; // y
-            array[i*7+2] = verts[i][2]; // z
-            array[i*7+3] = verts[i][3]; // u
-            array[i*7+4] = verts[i][4]; // v
-            array[i*7+5] = d;           // dir
-            array[i*7+6] = textureId;   // textureId
-        }
-
-        try {
-            this.addObjectFaceVertexToArray(array, 0, 0, 0, w, h);
-        } catch(ArrayEmpty e){ e.printStackTrace(); }
     }
 
     /**
@@ -239,7 +230,7 @@ public class SubChunkMesh {
         int needed = blockCount > 0 ? blockCount * 36 : 1;
         // Ne réalloue que si le tableau actuel est trop petit
         // 6 faces * 6 sommets par bloc = 36 vertices max par bloc visible
-        // blockCount * 36 = taille exacte au pire cas
+        // blocCount * 36 = taille exacte au pire cas
         if (this.vertexArrayPack == null || this.vertexArrayPack.length < needed){
             this.vertexArrayPack = new int[needed * 2];
         }
@@ -262,6 +253,7 @@ public class SubChunkMesh {
         }
         // Alloue EXACTEMENT la taille nécessaire, off-heap
         this.vertexBufferPack = MemoryUtil.memAllocInt(this.vertexCount * 2);
+
         for(int i = 0; i < this.vertexCount; i++){
             this.vertexBufferPack.put(this.vertexArrayPack[i * 2]); // packed vertex
             this.vertexBufferPack.put(this.vertexArrayPack[i * 2 + 1]); // packed UV
@@ -280,15 +272,15 @@ public class SubChunkMesh {
         if (this.ids == null){
             this.ids = new int[4];
         }
+        // ids est initialisé, on peut return si chunk vide
+        if (this.vertexBufferPack == null){
+            return;
+        }
         // Supprime les anciens buffers GPU avant d'en créer de nouveaux
         if (this.ids[0] != 0){ 
             BuffersManager.deleteVBOVAO(new int[]{this.ids[0], this.ids[1]});
             this.ids[0] = 0;
             this.ids[1] = 0;
-        }
-        // ids est initialisé, on peut return si chunk vide
-        if (this.vertexBufferPack == null){
-            return;
         }
         int[] result = BuffersManager.createSubChunkVBOVAO(this.vertexBufferPack);
         this.ids[0] = result[0];
@@ -300,6 +292,7 @@ public class SubChunkMesh {
 
     @OpenGLThread
     public void deleteSubChunkVBOVAO(){
+        if (this.ids == null) return;
         // ids[0]=vbo, ids[1]=vao, ids[2]=vbo border, ids[3]=vao border
         BuffersManager.deleteVBOVAO(new int[]{this.ids[0], this.ids[1]});
         this.deleteSubChunkBorderVBOVAO();
@@ -357,11 +350,19 @@ public class SubChunkMesh {
     }
 
     /**
-     * Retourne le l'id du vao si il existe
+     * Retourne le l'id du vao de bordure si il existe
      * @return int
      */
     public int getBorderVAO(){
         return this.ids == null ? 0 : this.ids[2];
+    }
+
+    /**
+     * Retourne le l'id du vao si il existe
+     * @return int
+     */
+    public int getVAO() {
+        return this.ids == null ? 0 : this.ids[1];
     }
 
     /**
@@ -377,10 +378,10 @@ public class SubChunkMesh {
      * @throws Empty
      */
     @OpenGLThread
-    public void drawSubChunkMesh() throws Empty{   
-        if (this.ids == null) throw new Empty("les vbo et vao ne sont pas initialisé");
+    public void drawSubChunkMesh(){   
+        if (this.ids == null) return; // un subchunk sans ids est juste vide, pas une erreur
         if (this.ids[1] == 0) return; // sub-chunk vide, rien à dessiner
-        TexturesManager.getTextureRender().draw();
+        TextureManager.bind();
 
         // Vérifie que le border VAO existe avant de le dessiner
         if(KeyboardInput.isChunkBorderShow && this.ids[3] != 0){

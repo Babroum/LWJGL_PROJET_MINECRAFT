@@ -35,7 +35,6 @@ public class FrustumCulling {
      */
     public static boolean testAABB(int minX, int minY, int minZ, int maxX, int maxY, int maxZ){        
         if (FrustumCulling.frustumIntersect.testAab(minX, minY, minZ, maxX, maxY, maxZ)){
-            Render.monitor.addChunkVisibleCount();
             return true;
         }
         return false;

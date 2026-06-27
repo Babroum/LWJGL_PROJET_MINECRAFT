@@ -1,24 +1,54 @@
 package demo.Managers;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.concurrent.*;
 
 import org.joml.Math;
 
-import demo.WorldGenerator;
 import demo.Annotations.ChunkThread;
 import demo.Annotations.OpenGLThread;
-import demo.Enum.BlocksType;
-import demo.Exceptions.IncorrectCoordinates;
 import demo.Geometry.Chunk;
 import demo.Geometry.SubChunk;
+import demo.Geometry.WorldGenerator;
+import demo.Others.BlockDefinition;
 import demo.Rendering.Render;
 
 public class ChunksManager {
 
-    // HashMap fait pareil mais linked permet de garder l'ordre dans lequel c'est insérer
+    public static final byte SKY_LIGHT = (byte) 10;
+
+
     // C'est comme un dictionnaire, clé valeur
-    private static LinkedHashMap<String, Chunk> chunks = new LinkedHashMap<>();
+    // String remplacé par Long, optimisation
+    private static ConcurrentHashMap <Long, Chunk> chunks = new ConcurrentHashMap<>();
+
+    // Un ExecutorService c'est un pool de N threads qui restent en vie et se partagent le travail.
+    private static final ExecutorService pool = buildPool();
+
+    private static ExecutorService buildPool() {
+        int cores   = Runtime.getRuntime().availableProcessors();
+        int workers = Math.max(1, cores - 2);  // -2 pour laisser les threads OpenGL et game logic respirer
+        // queue proportionnelle aux workers : assez pour les garder occupés
+        // sans accumuler des milliers de tâches en mémoire simultanément
+        int queueDepth = workers * 4;
+
+        return new ThreadPoolExecutor(
+            workers, // nombre minimum de threads
+            workers, // nombre maximum de threads
+            0L, // les threads ne meurent jamais (comme c'est un pool fixe)
+            TimeUnit.MILLISECONDS,
+            new ArrayBlockingQueue<>(queueDepth),
+            r -> { Thread t = new Thread(r); t.setDaemon(true); t.setName("ChunkWorker"); return t; },
+            new ThreadPoolExecutor.CallerRunsPolicy() // si queue pleine, le thread appelant exécute lui-même, par exemple le thread de rendu va executé au lieu de faire attendre la tache ici
+        );
+    }
+
+    // construit la clé pour le HashMap
+    private static long chunkKey(int x, int z) {
+        return ((long) x << 32) | (z & 0xFFFFFFFFL);
+    }
 
     /**
      * Créer les chunks entre les coordonées
@@ -35,53 +65,84 @@ public class ChunksManager {
         }
     }
 
+        /**
+     * Créer un nouveau chunk à la position donné
+     * @param x int
+     * @param z int
+     * @return Chunk
+     */
+    @ChunkThread
+    public static Chunk createChunk(int x, int z){
+        long coord = chunkKey(x, z);
+        if (ChunksManager.chunks.containsKey(coord)) 
+            {throw new RuntimeException("Le chunk x: " + x + " z: "+ z + " existe déjà");}
+        Chunk chunk = new Chunk(x, z);
+        ChunksManager.chunks.put(coord, chunk);
+        return chunk;
+    }
+
     /**
      * Génère les chunks (maillages)
      * @param generator un seed
      */
-    public static void generateChunks(WorldGenerator generator) {
+    public static void generateChunks(ThreadLocal<WorldGenerator> generator) {
+        // les threads travaille chacun de leur côté mais pour chaque chunk on attend avant de passer à l'étape suivante
+
+        // chaque chunk est généré indépendamment, aucune dépendance inter-chunks
+        // Future — c'est un ticket de résultat en attente.
+        // le ? permet de dire que la tache ne retourne rien (void), on attend pas un résultat mais on s'en sert juste pour attendre la fin
+        
+        List<Future<?>> futures = new ArrayList<>();
         for (Chunk chunk : chunks.values()) {
-            int chunkX = chunk.x / SubChunk.CHUNKSIZEX;
-            int chunkZ = chunk.z / SubChunk.CHUNKSIZEZ;
-            generator.generateChunk(chunk, chunkX, chunkZ);
-            BenchmarkManager.getInstance().recordChunkGenerated();
+            // submit permet au pool de mettre en file d'attente la tâche puis thread worker la prend dès qu'il est libre
+            // passe la commande au resto d'un plat
+            futures.add(pool.submit(() -> { // pool.submit() retourne un Future
+                int cx = ChunksManager.floorDiv(chunk.x, SubChunk.CHUNKSIZEXZ);
+                int cz = ChunksManager.floorDiv(chunk.z, SubChunk.CHUNKSIZEXZ);
+                generator.get().generateChunk(chunk, cx, cz); // ThreadLocal → thread-safe
+                BenchmarkManager.getInstance().recordChunkGenerated();
+            }));
+        }
+        // Attend que TOUS les chunks soient générés avant de passer à finalizeChunks
+        for (Future<?> f : futures) {
+            // get() présente le ticket de la commande au comptoire du resto
+            // Le plat est prêt -> on le récupères immédiatement
+            // Le plat cuit encore -> on attends qu'il soit prêt, bloqué là
+            try { f.get(); } catch (Exception e) { Thread.currentThread().interrupt(); }
+
+            // après le get on est sur que c'est finit
         }
     }
 
     /**
      * Finis la génération en connectant les voisins et calculant les faces à caché entre voisins
      */
-    public static void finalizeChunks() {
+    public static void finalizeChunks() {        
+        // les 3 passes restent séquentielles entre elles,
+        // mais les chunks sont traités en parallèle à l'intérieur de chaque passe
+        List<Future<?>> futures = new ArrayList<>();
+
+        // Passe 1 : linkNeighbors — lit/écrit uniquement les refs du chunk courant → parallel safe
         for (Chunk chunk : chunks.values()){
-            for (SubChunk sub : chunk.subChunks){
-                sub.linkNeighbors();
-            }
+            futures.add(pool.submit(() -> { for (SubChunk sub : chunk.subChunks) sub.linkNeighbors(); }));
         }
+        for (Future<?> f : futures) try { f.get(); } catch (Exception e) {}
+        futures.clear(); 
+
+        // Passe 2 : initHeightMap
         for (Chunk chunk : chunks.values()){
-            for (SubChunk sub : chunk.subChunks){
-                sub.fillSubChunkBitSet();
-            }
+            futures.add(pool.submit(() -> chunk.initHeightMap()));
         }
+        for (Future<?> f : futures) try { f.get(); } catch (Exception e) {}
+        futures.clear(); 
+
+        // Passe 3 : finalizeChunk (maillage + upload GPU)
         for (Chunk chunk : chunks.values()){
-            finalizeChunk(chunk);
+            futures.add(pool.submit(() -> finalizeChunk(chunk)));
         }
-    }
-    
-    /**
-     * Créer un nouveau chunk à la position donné
-     * @param x int
-     * @param z int
-     * @return Chunk
-     * @throws IncorrectCoordinates
-     */
-    @ChunkThread
-    public static Chunk createChunk(int x, int z) throws IncorrectCoordinates{
-        String coord = String.valueOf(x)+","+String.valueOf(z);
-        if (ChunksManager.chunks.containsKey(coord)) 
-            {throw new IncorrectCoordinates("Le chunk x: " + x + " z: "+ z + " existe déjà");}
-        Chunk chunk = new Chunk(x, z);
-        ChunksManager.chunks.put(coord, chunk);
-        return chunk;
+        for (Future<?> f : futures) {
+            try { f.get(); } catch (Exception e) {}
+        }
     }
 
     /**
@@ -90,33 +151,38 @@ public class ChunksManager {
      */
     @ChunkThread
     public static void finalizeChunk(Chunk chunk){
-        // remplir le BitSet
-        for (SubChunk sub : chunk.subChunks) {
+        for (SubChunk sub : chunk.subChunks){
             sub.fillSubChunkBitSet();
         }
         // générer le mesh avec un BitSet correct
         for(SubChunk sub : chunk.subChunks){
-            sub.mesh.setupSubChunkBuffers(sub.bitSet.cardinality()); // recrée vertexArrayPack avant de générer
-            sub.generateSubChunkMesh();
+            synchronized(sub) {
+                sub.mesh.setupSubChunkBuffers(sub.solidBitSet.cardinality()); // recrée vertexArrayPack avant de générer            
+                sub.transparentMesh.setupSubChunkBuffers(sub.transparentBitSet.cardinality());
+                sub.generateSubChunkMesh();
+            }
             // met le thread en pause si l'array est plein, le thread se relance automatiquement au moment ou OpenGLThread poll un chunk
-            try { Render.dirtySubChunks.put(sub); } catch(InterruptedException e) { Thread.currentThread().interrupt(); }
+            if (sub.mesh.getVertexCount() > 0 || sub.transparentMesh.getVertexCount() > 0) {   // n'envoie pas les subchunks vides au GPU
+                try { Render.dirtySubChunks.put(sub); } catch(InterruptedException e) { Thread.currentThread().interrupt(); }
+            }
         }
         try { Render.chunkQueue.put(chunk); } catch(InterruptedException e) { Thread.currentThread().interrupt(); }
+                 
     }
 
     /**
-     * Retourne le chunk à la position donné
-     * @param x int
-     * @param z int
-     * @return Chunk
-     * @throws IncorrectCoordinates
+     * Retourne le chunk à la position donné (x, z)
+     * @param x Coordonées en x (global)
+     * @param z Coordonées en z (global)
+     * @return Le chunk retourné
      */
     @ChunkThread
-    public static Chunk getChunk(int x, int z) throws IncorrectCoordinates{
-        String coord = String.valueOf(x)+","+String.valueOf(z);
-        if (!ChunksManager.chunks.containsKey(coord)){
-            throw new IncorrectCoordinates("Le chunk x: " + x + " z: "+ z + " n'existe pas");
-        }
+    public static Chunk getChunkAt(int x, int z){
+        int localX = ChunksManager.floorDiv(x, SubChunk.CHUNKSIZEXZ);
+        int localZ = ChunksManager.floorDiv(z, SubChunk.CHUNKSIZEXZ);
+
+        long coord = chunkKey(localX, localZ);
+        if (!ChunksManager.chunks.containsKey(coord)) return null;
         return ChunksManager.chunks.get(coord);
     }
 
@@ -129,16 +195,18 @@ public class ChunksManager {
     }
 
     /**
-     * Supprime le chunk à la position donné
-     * @param x int
-     * @param z int
-     * @throws IncorrectCoordinates
+     * Supprime le chunk à la position donné (x, z)
+     * @param x Coordonées en x (global)
+     * @param z Coordonées en x (global)
      */
     @OpenGLThread
-    public static void removeChunk(int x, int z) throws IncorrectCoordinates{
-        String coord = String.valueOf(x)+","+String.valueOf(z);
+    public static void removeChunk(int x, int z){
+        int localX = ChunksManager.floorDiv(x, SubChunk.CHUNKSIZEXZ);
+        int localZ = ChunksManager.floorDiv(z, SubChunk.CHUNKSIZEXZ);
+
+        long coord = chunkKey(localX, localZ);
         if (!ChunksManager.chunks.containsKey(coord)){
-            throw new IncorrectCoordinates("Le chunk x: " + x + " z: "+ z + " n'existe pas");
+            throw new RuntimeException("Le chunk x: " + localX + " z: "+ localZ + " n'existe pas");
         }    
         // Récupère le chunk
         Chunk chunk = ChunksManager.chunks.get(coord);
@@ -146,64 +214,6 @@ public class ChunksManager {
         for(SubChunk sub : chunk.subChunks) sub.removeSubChunk();
         // Et supprime le chunk du dico
         ChunksManager.chunks.remove(coord);
-    }
-
-    /**
-     * Finalise la construction de tout les chunks
-     */
-    @ChunkThread
-    public static void finalizeAllChunk(){
-        for(Chunk chunk : ChunksManager.chunks.values()){
-            ChunksManager.finalizeChunk(chunk);
-        }
-    }
-
-    /**
-     * Retourne un block dans l'un des chunks
-     * Coordonnée global
-     * @param x int
-     * @param y int
-     * @param z int
-     * @return Object3D
-     * @throws IncorrectCoordinates
-     */
-    public static BlocksType getBlock(int x, int y, int z) throws IncorrectCoordinates{
-        if (y < 0 || y >= SubChunk.CHUNKSIZEY * Chunk.SUBCHUNKCOUNT){throw new IncorrectCoordinates("Valeur en Y incorrect");}
-
-        int chunkX = (int) Math.floor((float) x / SubChunk.CHUNKSIZEX);
-        int chunkZ = (int) Math.floor((float) z / SubChunk.CHUNKSIZEZ);
-
-        Chunk chunk = ChunksManager.getChunk(chunkX, chunkZ);
-
-        SubChunk sub = chunk.getSubChunk(y / SubChunk.CHUNKSIZEY);
-
-        int localX = ChunksManager.floorMod(x, SubChunk.CHUNKSIZEX);
-        int localY = ChunksManager.floorMod(y, SubChunk.CHUNKSIZEY);
-        int localZ = ChunksManager.floorMod(z, SubChunk.CHUNKSIZEZ);
-  
-        return sub.getBlock(localX, localY, localZ);
-    }
-
-    /**
-     * Retourne un subChunk dans l'un des chunks
-     * Coordonnée global
-     * @param x int
-     * @param y int
-     * @param z int
-     * @return SubChunk
-     * @throws IncorrectCoordinates
-     */
-    public static SubChunk getSubChunk(int x, int y, int z) throws IncorrectCoordinates{
-        if (y < 0 || y >= SubChunk.CHUNKSIZEY * Chunk.SUBCHUNKCOUNT){throw new IncorrectCoordinates("Valeur en Y incorrect");}
-
-        int chunkX = (int) Math.floor((float) x / SubChunk.CHUNKSIZEX);
-        int chunkZ = (int) Math.floor((float) z / SubChunk.CHUNKSIZEZ);
-
-        Chunk chunk = ChunksManager.getChunk(chunkX, chunkZ);
-
-        SubChunk sub = chunk.getSubChunk(y / SubChunk.CHUNKSIZEY);
-
-        return sub;
     }
 
     /**
@@ -219,6 +229,25 @@ public class ChunksManager {
     }
 
     /**
+     * Retourne un bloc dans l'un des chunks
+     * Coordonnée global
+     * @param x int
+     * @param y int
+     * @param z int
+     * @return Object3D
+     */
+    public static BlockDefinition getBlock(int x, int y, int z){
+        if (y < 0 || y >= SubChunk.CHUNKSIZEHEIGHT){throw new RuntimeException("Valeur en Y incorrect");}
+
+        Chunk chunk = ChunksManager.getChunkAt(x, z);
+
+        int localX = ChunksManager.floorMod(x, SubChunk.CHUNKSIZEXZ);
+        int localZ = ChunksManager.floorMod(z, SubChunk.CHUNKSIZEXZ);
+
+        return chunk.getBlock(localX, y, localZ);
+    }
+
+    /**
      * Calcule le modulo avec toujours un résultat positif 
      * @param x
      * @param mod
@@ -226,5 +255,24 @@ public class ChunksManager {
      */
     public static int floorMod(int x, int mod) {
         return ((x % mod) + mod) % mod;
+    }
+
+    /**
+     * Division entière qui fait toujours FLOOR (même pour les négatifs)
+     * Exemple : floorDiv(-5, 16) = -1
+     * @param a
+     * @param b
+     * @return
+     */
+    public static int floorDiv(int a, int b) {
+        int q = a / b;
+        int r = a % b;
+        // si on a un reste et que a et b ont des signes différents
+        // on doit descendre d'un cran pour faire un vrai floor
+        // ^ est un XOR
+        if (r != 0 && ((a < 0) ^ (b < 0))) {
+            q--;
+        }
+        return q;
     }
 }

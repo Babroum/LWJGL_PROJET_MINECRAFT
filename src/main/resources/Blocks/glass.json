@@ -1,0 +1,10 @@
+{
+  "id": 8,
+  "name": "glass",
+  "opacity": 1,
+  "luminance": 0,
+  "transparent": true,
+  "textures": {
+    "all": "glass"
+  }
+}
