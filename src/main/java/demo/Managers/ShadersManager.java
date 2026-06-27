@@ -106,7 +106,7 @@ public abstract class ShadersManager {
     }
 
     /**
-     * Initialise les shaders pour les bordures de blocks
+     * Initialise les shaders pour les bordures de bloc
      * @throws ShaderManagerError
      */
     @OpenGLThread
@@ -225,7 +225,7 @@ public abstract class ShadersManager {
     }
 
     /**
-     * Envoie la projection au shader des bordures de blocks
+     * Envoie la projection au shader des bordures de bloc
      * @param proj FloatBuffer
      */
     @OpenGLThread 
@@ -235,7 +235,7 @@ public abstract class ShadersManager {
     }
 
     /**
-     * Envoie la viewMatrix de la caméra au shader des bordures de blocks
+     * Envoie la viewMatrix de la caméra au shader des bordures de bloc
      * @param view FloatBuffer
      */
     @OpenGLThread 
@@ -245,7 +245,7 @@ public abstract class ShadersManager {
     }
 
     /**
-     * Envoie la pos des lignes du block au shader des bordures de blocks
+     * Envoie la pos des lignes du bloc au shader des bordures de bloc
      * @param x int
      * @param y int
      * @param z int

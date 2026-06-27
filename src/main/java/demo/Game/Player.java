@@ -1,4 +1,4 @@
-package demo;
+package demo.Game;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -13,8 +13,7 @@ import demo.Others.Blocks;
 import demo.Rendering.BlockBorderRenderer;
 import demo.Rendering.Camera;
 import demo.Rendering.Render;
-import demo.Rendering.Window;
-import demo.Types.Color4f;
+import demo.Annotations.OpenGLThread;
 import demo.Events.KeyboardInput;
 import demo.Events.MouseInput;
 import demo.Geometry.Chunk;
@@ -44,8 +43,10 @@ public class Player {
     private float velocityY = 0f; // Vitesse de chute/saut
     private final float gravity = -9.81f; // constante de gravité
 
-    private final Vector3f oldBlockBorder = new Vector3f();
-    private boolean hasBlockBorder = false;
+    private volatile int oldBlockBorderX;
+    private volatile int oldBlockBorderY;
+    private volatile int oldBlockBorderZ;
+    private volatile boolean hasBlockBorder = false;
 
     private float breakCooldown = 0f;
     private float placeCooldown = 0f;
@@ -53,8 +54,12 @@ public class Player {
 
     public BlockDefinition blockInHand = Blocks.COBBLESTONE; // pour test
 
+    // snapshots thread-safe lues par le render thread
+    public volatile float prevX, prevY, prevZ;
+    public volatile float curX,  curY,  curZ;
+
     public Player(){
-        this.position = this.camera.getPosition();
+        this.position = new Vector3f(); // indépendant de la caméra
     }
 
     public void moveForward(float inc) {
@@ -141,7 +146,7 @@ public class Player {
             this.velocityY = 0f; // stoppe la montée
         }
 
-        // si il y a un block et que l'on tombe, on arrête de tombé
+        // si il y a un bloc et que l'on tombe, on arrête de tombé
         if (this.isOnGround() && this.velocityY <= 0) {
             this.velocityY = 0f;
             this.isFalling = false;
@@ -198,118 +203,127 @@ public class Player {
         }
     }
 
-    public void playerLoop(float delta){
-        if (this.breakCooldown > 0) {
-            this.breakCooldown -= delta;
-        }
-        if (this.placeCooldown > 0){
-            this.placeCooldown -= delta;
-        }
+    // sauve la position au début du tick, avant tout mouvement
+    public void savePrevPosition() {
+        this.prevX = this.position.x;
+        this.prevY = this.position.y;
+        this.prevZ = this.position.z;
+    }
 
-        // récupère les coordonées de ce que regarde le joueur (raycast)
-        Vector3f[] look = PlayersManager.player.getCamera().getLookAt(5);
-        BlockDefinition block = Blocks.AIR;
-        SubChunk sub = null;
+    // Appelé depuis le GameLoop thread
+    public void playerLoopLogic(float delta) {
+        this.savePrevPosition(); // sauve prev AVANT tout mouvement
 
-        // si on regarde quelque chose
-        if (look != null){   
-            Vector3f hit = look[0];
+        float move = delta * Player.MOVEMENTSPEED;
+        if (KeyboardInput.keyForward)     PlayersManager.player.moveForward(move);
+        else if (KeyboardInput.keyBack)   PlayersManager.player.moveBackwards(move);
+        if (KeyboardInput.keyLeft)        PlayersManager.player.moveLeft(move);
+        else if (KeyboardInput.keyRight)  PlayersManager.player.moveRight(move);
+
+        if (this.breakCooldown > 0) this.breakCooldown -= delta;
+        if (this.placeCooldown > 0) this.placeCooldown -= delta;
+
+        Vector3f[] look = this.camera.getLookAt(5);
+
+        if (look != null) {
+            Vector3f hit   = look[0];
             Vector3f place = look[1];
             try {
-                // on floor pour évité les arrondis, 0.8 = bloc 0 et pas 1
                 int bx = (int) Math.floor(hit.x);
                 int by = (int) Math.floor(hit.y);
                 int bz = (int) Math.floor(hit.z);
- 
-                // récupère le block à tel position
-                block = ChunksManager.getBlock(bx, by, bz);
-                // pareil pour le chunk
+
+                BlockDefinition block = ChunksManager.getBlock(bx, by, bz);
                 Chunk chunk = ChunksManager.getChunkAt(bx, bz);
-                sub = chunk.getSubChunkAt(by);
+                SubChunk sub = chunk.getSubChunkAt(by);
 
                 int lx = ChunksManager.floorMod(bx, SubChunk.CHUNKSIZEXZ);
                 int ly = by % SubChunk.CHUNKSIZEXZ;
                 int lz = ChunksManager.floorMod(bz, SubChunk.CHUNKSIZEXZ);
-                int light = Math.max(sub.getBlockSkyLight(lx, ly + 1, lz), sub.getBlockSkyLight(lx, ly + 1, lz));
-                
-                Render.monitor.setBlockLightRayCast(light);                
+                Render.monitor.setBlockLightRayCast(sub.getBlockLight(lx, ly + 1, lz));
+                Render.monitor.setSkyLightRayCast(sub.getBlockSkyLight(lx, ly + 1, lz));
 
-                // si on clique gauche et que la souris n'est pas débloqué, on casse le block si il existe
+                // casser un bloc
                 if (MouseInput.isLeftButtonPressed() && KeyboardInput.isMouseLock) {
-                    // Si on a un bloc et que le cooldown est prêt et que ce n'est pas de la bedrock
                     if (block != Blocks.AIR && this.breakCooldown <= 0f && block != Blocks.BEDROCK) {
-                        // le thread ne prend que des constantes, donc on copie 
                         final SubChunk subToModify = sub;
                         final int fbx = bx, fby = by, fbz = bz;
                         chunkModifyThread.submit(() -> {
                             int localX = ChunksManager.floorMod(fbx, SubChunk.CHUNKSIZEXZ);
                             int localY = ChunksManager.floorMod(fby, SubChunk.CHUNKSIZEXZ);
                             int localZ = ChunksManager.floorMod(fbz, SubChunk.CHUNKSIZEXZ);
-
-                            subToModify.removeBlockFromSubChunk(localX, localY, localZ);                            
+                            subToModify.removeBlockFromSubChunk(localX, localY, localZ);
                         });
                         this.breakCooldown = this.breakPlaceDelay;
                     }
                 } else {
                     this.breakCooldown = 0;
-                }  
-                
-                // si on clique droit et que la souris n'est pas débloqué, on pose le block
+                }
+
+                // poser un bloc
                 if (MouseInput.isRightButtonPressed() && KeyboardInput.isMouseLock) {
                     int px = (int) Math.floor(place.x);
                     int py = (int) Math.floor(place.y);
                     int pz = (int) Math.floor(place.z);
-                    // on vérifie pour etre sur qu'il n'y ait pas de bloc
-                    if (ChunksManager.getBlock(px, py, pz) == Blocks.AIR && this.placeCooldown <= 0f && !this.isInsidePlayer(px, py, pz)){
+                    if (ChunksManager.getBlock(px, py, pz) == Blocks.AIR
+                            && this.placeCooldown <= 0f
+                            && !this.isInsidePlayer(px, py, pz)) {
                         try {
                             Chunk chunk2 = ChunksManager.getChunkAt(px, pz);
-                            final SubChunk sub2 = chunk2.getSubChunkAt(py);                            
-                            chunkModifyThread.submit(() -> {  
-                                // convertir en coordonnées locales du subchunk
+                            final SubChunk sub2 = chunk2.getSubChunkAt(py);
+                            chunkModifyThread.submit(() -> {
                                 int localX = ChunksManager.floorMod(px, SubChunk.CHUNKSIZEXZ);
                                 int localY = ChunksManager.floorMod(py, SubChunk.CHUNKSIZEXZ);
-                                int localZ = ChunksManager.floorMod(pz, SubChunk.CHUNKSIZEXZ);     
-                                
-                                sub2.addBlockToSubChunk(blockInHand, localX, localY, localZ);                            
+                                int localZ = ChunksManager.floorMod(pz, SubChunk.CHUNKSIZEXZ);
+                                sub2.addBlockToSubChunk(blockInHand, localX, localY, localZ);
                             });
                             this.placeCooldown = this.breakPlaceDelay;
-                        } catch (Exception e) {
-                            // hors du monde
-                        }
-                    } 
+                        } catch (Exception e) {}
+                    }
                 } else {
                     this.placeCooldown = 0;
-                }     
-
-                // si le block regarder n'est pas le même que le précédent on créer les buffers
-                if (block != Blocks.AIR){
-                    this.hasBlockBorder = true;
-                    this.oldBlockBorder.set(bx, by, bz);
-                } else {
-                    this.hasBlockBorder = false;
                 }
 
-                // dessine à chaque frame si un bloc est regardé
+                this.hasBlockBorder = (block != Blocks.AIR);
                 if (this.hasBlockBorder){
-                    GL11.glLineWidth(4.0f);
-                    BlockBorderRenderer.draw(
-                        (int) this.oldBlockBorder.x,
-                        (int) this.oldBlockBorder.y,
-                        (int) this.oldBlockBorder.z
-                    );
-                    GL11.glLineWidth(1.0f);
+                    this.oldBlockBorderX = bx;
+                    this.oldBlockBorderY = by;
+                    this.oldBlockBorderZ = bz;
                 }
-            } catch(Exception e){
-                // le chunk n'existe pas
-            }
-        } else {
-            // Si on ne regarde rien 
-            if (this.hasBlockBorder) {
-                this.hasBlockBorder = false;
-            }
-        }  
 
-        this.updateMovement(delta / 1000f); // en seconde
+            } catch (Exception e) {}
+        } else {
+            this.hasBlockBorder = false;
+        }
+
+        this.updateMovement(delta / 1000f);
+
+        // snapshot courante après physique, lue par le render thread
+        this.curX = this.position.x;
+        this.curY = this.position.y;
+        this.curZ = this.position.z;
+    }
+
+    // Appelé depuis le thread OpenGL (Render)
+    @OpenGLThread
+    public void playerLoopRender() {
+        float alpha = (float)(System.nanoTime() - GameLoop.lastTickTime) / (float) GameLoop.NS_PER_TICK;
+        if (alpha > 1f) alpha = 1f;
+
+        float ix = this.prevX + (this.curX - this.prevX) * alpha;
+        float iy = this.prevY + (this.curY - this.prevY) * alpha;
+        float iz = this.prevZ + (this.curZ - this.prevZ) * alpha;
+        this.camera.setPosition(ix, iy, iz);
+
+        if (this.hasBlockBorder) { 
+            GL11.glLineWidth(4.0f);
+            BlockBorderRenderer.draw(
+                this.oldBlockBorderX,
+                this.oldBlockBorderY,
+                this.oldBlockBorderZ
+            );
+            GL11.glLineWidth(1.0f);
+        }
     }
 
     // un seul thread dédié
@@ -336,13 +350,14 @@ public class Player {
     }
 
     /**
-     * Définis la postition du joueur
-     * @param pos
+     * Définis la position du joueur
+     * @param x float
+     * @param y float
+     * @param z float
      */
     public void setPosition(float x, float y, float z){
         this.position.x = x;
         this.position.y = y;
         this.position.z = z;
-        this.camera.setPosition(x, y, z);
     }
 }

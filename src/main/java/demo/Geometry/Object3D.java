@@ -15,6 +15,7 @@ import demo.Others.BlockDefinition;
 import demo.Rendering.Render;
 import demo.Rendering.Window;
 
+@Deprecated
 public class Object3D extends Node3D{
 
     public Mesh mesh = new Mesh();
@@ -22,7 +23,7 @@ public class Object3D extends Node3D{
     public int[] ids;
 
     /**
-     * Dessine les bordures d'un block avec des lignes
+     * Dessine les bordures d'un bloc avec des lignes
      */
     @OpenGLThread
     public void createSubChunkBorderVBOVAO(){     

@@ -56,7 +56,7 @@ public class BlocksManager {
 
     /**
      * Retourne le BlockDefinition avec son id.
-     * @param id Identifiant du block
+     * @param id Identifiant du bloc
      * @return
      */
     public static BlockDefinition get(int id) {

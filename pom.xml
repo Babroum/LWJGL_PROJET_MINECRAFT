@@ -125,14 +125,16 @@
           <executable>java</executable>
           <arguments>
             <argument>-XX:+UseZGC</argument> <!-- active le ZGC, un garbage collector moderne conçu pour avoir des pauses ultra-courtes -->
-            <argument>-Xms128m</argument> <!-- la JVM démarre avec 128 Mo de heap réservé -->
+            <argument>-XX:+ZUncommit</argument>        <!-- rend la mémoire à l'OS automatiquement -->
+            <argument>-XX:ZUncommitDelay=5</argument>  <!-- délai en secondes avant de rendre (défaut 300s) -->
+            <argument>-Xms64m</argument> <!-- la JVM démarre avec 128 Mo de heap réservé -->
             <argument>-Xmx512m</argument><!-- la heap ne peut jamais dépasser 512 Mo -->
             <!-- <argument>-Xlog:gc*:stdout:time,uptime</argument>  a mettre pour afficher les logs mémoires-->
+            <argument>-Djava.library.path=${project.build.directory}/natives</argument> <!-- dit à la JVM où trouver les fichiers natifs LWJGL (les .dll sur Windows, .so sur Linux) -->
             <argument>-cp</argument>
             <classpath/>
             <argument>demo.App</argument>
-            <argument>${project.basedir}/src/main/resources</argument>
-            <argument>-Djava.library.path=${project.build.directory}/natives</argument> <!-- dit à la JVM où trouver les fichiers natifs LWJGL (les .dll sur Windows, .so sur Linux) -->
+            <argument>${project.basedir}/src/main/resources</argument>            
           </arguments>
         </configuration>
       </plugin>

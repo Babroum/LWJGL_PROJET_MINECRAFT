@@ -1,7 +1,5 @@
-package demo;
+package demo.Geometry;
 
-import demo.Geometry.Chunk;
-import demo.Geometry.SubChunk;
 import demo.Others.Blocks;
 import demo.Others.FastNoiseLite;
 

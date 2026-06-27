@@ -3,6 +3,9 @@ package demo.Meshing;
 import java.nio.IntBuffer;
 
 import org.lwjgl.system.MemoryUtil;
+
+import com.fasterxml.jackson.databind.introspect.TypeResolutionContext.Empty;
+
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
 
@@ -83,59 +86,53 @@ public class SubChunkMesh {
         int[][] verts = this.vertsBuffer; // 6 sommets * {x, y, z, u, v, dir, texId, ao, light
 
         switch(quad.direction){
-            case "north":
-                d = 0;
-                verts[0] = new int[]{x+w, y,   z+1, 1, 1, d, textureId, quad.ao1, quad.skyLight, quad.blockLight};
-                verts[1] = new int[]{x,   y,   z+1, 0, 1, d, textureId, quad.ao0, quad.skyLight, quad.blockLight};
-                verts[2] = new int[]{x,   y+h, z+1, 0, 0, d, textureId, quad.ao2, quad.skyLight, quad.blockLight};
-                verts[3] = new int[]{x,   y+h, z+1, 0, 0, d, textureId, quad.ao2, quad.skyLight, quad.blockLight};
-                verts[4] = new int[]{x+w, y+h, z+1, 1, 0, d, textureId, quad.ao3, quad.skyLight, quad.blockLight};
-                verts[5] = new int[]{x+w, y,   z+1, 1, 1, d, textureId, quad.ao1, quad.skyLight, quad.blockLight};
+            case 0: d=0;
+                setVert(verts,0,x+w,y,  z+1,1,1,d,textureId,quad.ao1,quad.skyLight,quad.blockLight);
+                setVert(verts,1,x,  y,  z+1,0,1,d,textureId,quad.ao0,quad.skyLight,quad.blockLight);
+                setVert(verts,2,x,  y+h,z+1,0,0,d,textureId,quad.ao2,quad.skyLight,quad.blockLight);
+                setVert(verts,3,x,  y+h,z+1,0,0,d,textureId,quad.ao2,quad.skyLight,quad.blockLight);
+                setVert(verts,4,x+w,y+h,z+1,1,0,d,textureId,quad.ao3,quad.skyLight,quad.blockLight);
+                setVert(verts,5,x+w,y,  z+1,1,1,d,textureId,quad.ao1,quad.skyLight,quad.blockLight);
                 break;
-            case "south":
-                d = 1;
-                verts[0] = new int[]{x,   y,   z,   1, 1, d, textureId, quad.ao0, quad.skyLight, quad.blockLight};
-                verts[1] = new int[]{x+w, y,   z,   0, 1, d, textureId, quad.ao1, quad.skyLight, quad.blockLight};
-                verts[2] = new int[]{x+w, y+h, z,   0, 0, d, textureId, quad.ao3, quad.skyLight, quad.blockLight};
-                verts[3] = new int[]{x+w, y+h, z,   0, 0, d, textureId, quad.ao3, quad.skyLight, quad.blockLight};
-                verts[4] = new int[]{x,   y+h, z,   1, 0, d, textureId, quad.ao2, quad.skyLight, quad.blockLight};
-                verts[5] = new int[]{x,   y,   z,   1, 1, d, textureId, quad.ao0, quad.skyLight, quad.blockLight};
-                break;           
-            case "west":                
-                d = 2;
-                verts[0] = new int[]{x+1, y,   z,   1, 1, d, textureId, quad.ao0, quad.skyLight, quad.blockLight};
-                verts[1] = new int[]{x+1, y,   z+w, 0, 1, d, textureId, quad.ao1, quad.skyLight, quad.blockLight};
-                verts[2] = new int[]{x+1, y+h, z+w, 0, 0, d, textureId, quad.ao3, quad.skyLight, quad.blockLight};
-                verts[3] = new int[]{x+1, y+h, z+w, 0, 0, d, textureId, quad.ao3, quad.skyLight, quad.blockLight};
-                verts[4] = new int[]{x+1, y+h, z,   1, 0, d, textureId, quad.ao2, quad.skyLight, quad.blockLight};
-                verts[5] = new int[]{x+1, y,   z,   1, 1, d, textureId, quad.ao0, quad.skyLight, quad.blockLight};
-                break;            
-            case "east":
-                d = 3;
-                verts[0] = new int[]{x,   y,   z+w, 1, 1, d, textureId, quad.ao1, quad.skyLight, quad.blockLight};
-                verts[1] = new int[]{x,   y,   z,   0, 1, d, textureId, quad.ao0, quad.skyLight, quad.blockLight};
-                verts[2] = new int[]{x,   y+h, z,   0, 0, d, textureId, quad.ao2, quad.skyLight, quad.blockLight};
-                verts[3] = new int[]{x,   y+h, z,   0, 0, d, textureId, quad.ao2, quad.skyLight, quad.blockLight};
-                verts[4] = new int[]{x,   y+h, z+w, 1, 0, d, textureId, quad.ao3, quad.skyLight, quad.blockLight};
-                verts[5] = new int[]{x,   y,   z+w, 1, 1, d, textureId, quad.ao1, quad.skyLight, quad.blockLight};
+            case 1: d=1;
+                setVert(verts,0,x,  y,  z,1,1,d,textureId,quad.ao0,quad.skyLight,quad.blockLight);
+                setVert(verts,1,x+w,y,  z,0,1,d,textureId,quad.ao1,quad.skyLight,quad.blockLight);
+                setVert(verts,2,x+w,y+h,z,0,0,d,textureId,quad.ao3,quad.skyLight,quad.blockLight);
+                setVert(verts,3,x+w,y+h,z,0,0,d,textureId,quad.ao3,quad.skyLight,quad.blockLight);
+                setVert(verts,4,x,  y+h,z,1,0,d,textureId,quad.ao2,quad.skyLight,quad.blockLight);
+                setVert(verts,5,x,  y,  z,1,1,d,textureId,quad.ao0,quad.skyLight,quad.blockLight);
                 break;
-            case "up":
-                d = 4;
-                verts[0] = new int[]{x,   y+1, z,   0, 0, d, textureId, quad.ao0, quad.skyLight, quad.blockLight};
-                verts[1] = new int[]{x+w, y+1, z,   1, 0, d, textureId, quad.ao1, quad.skyLight, quad.blockLight};
-                verts[2] = new int[]{x+w, y+1, z+h, 1, 1, d, textureId, quad.ao3, quad.skyLight, quad.blockLight};
-                verts[3] = new int[]{x+w, y+1, z+h, 1, 1, d, textureId, quad.ao3, quad.skyLight, quad.blockLight};
-                verts[4] = new int[]{x,   y+1, z+h, 0, 1, d, textureId, quad.ao2, quad.skyLight, quad.blockLight};
-                verts[5] = new int[]{x,   y+1, z,   0, 0, d, textureId, quad.ao0, quad.skyLight, quad.blockLight};
+            case 2: d=2;
+                setVert(verts,0,x+1,y,  z,  1,1,d,textureId,quad.ao0,quad.skyLight,quad.blockLight);
+                setVert(verts,1,x+1,y,  z+w,0,1,d,textureId,quad.ao1,quad.skyLight,quad.blockLight);
+                setVert(verts,2,x+1,y+h,z+w,0,0,d,textureId,quad.ao3,quad.skyLight,quad.blockLight);
+                setVert(verts,3,x+1,y+h,z+w,0,0,d,textureId,quad.ao3,quad.skyLight,quad.blockLight);
+                setVert(verts,4,x+1,y+h,z,  1,0,d,textureId,quad.ao2,quad.skyLight,quad.blockLight);
+                setVert(verts,5,x+1,y,  z,  1,1,d,textureId,quad.ao0,quad.skyLight,quad.blockLight);
                 break;
-            case "down":
-                d = 5;
-                verts[0] = new int[]{x,   y,   z+h, 0, 0, d, textureId, quad.ao2, quad.skyLight, quad.blockLight};
-                verts[1] = new int[]{x+w, y,   z+h, 1, 0, d, textureId, quad.ao3, quad.skyLight, quad.blockLight};
-                verts[2] = new int[]{x+w, y,   z,   1, 1, d, textureId, quad.ao1, quad.skyLight, quad.blockLight};
-                verts[3] = new int[]{x+w, y,   z,   1, 1, d, textureId, quad.ao1, quad.skyLight, quad.blockLight};
-                verts[4] = new int[]{x,   y,   z,   0, 1, d, textureId, quad.ao0, quad.skyLight, quad.blockLight};
-                verts[5] = new int[]{x,   y,   z+h, 0, 0, d, textureId, quad.ao2, quad.skyLight, quad.blockLight};
+            case 3: d=3;
+                setVert(verts,0,x,y,  z+w,1,1,d,textureId,quad.ao1,quad.skyLight,quad.blockLight);
+                setVert(verts,1,x,y,  z,  0,1,d,textureId,quad.ao0,quad.skyLight,quad.blockLight);
+                setVert(verts,2,x,y+h,z,  0,0,d,textureId,quad.ao2,quad.skyLight,quad.blockLight);
+                setVert(verts,3,x,y+h,z,  0,0,d,textureId,quad.ao2,quad.skyLight,quad.blockLight);
+                setVert(verts,4,x,y+h,z+w,1,0,d,textureId,quad.ao3,quad.skyLight,quad.blockLight);
+                setVert(verts,5,x,y,  z+w,1,1,d,textureId,quad.ao1,quad.skyLight,quad.blockLight);
+                break;
+            case 4: d=4;
+                setVert(verts,0,x,  y+1,z,  0,0,d,textureId,quad.ao0,quad.skyLight,quad.blockLight);
+                setVert(verts,1,x+w,y+1,z,  1,0,d,textureId,quad.ao1,quad.skyLight,quad.blockLight);
+                setVert(verts,2,x+w,y+1,z+h,1,1,d,textureId,quad.ao3,quad.skyLight,quad.blockLight);
+                setVert(verts,3,x+w,y+1,z+h,1,1,d,textureId,quad.ao3,quad.skyLight,quad.blockLight);
+                setVert(verts,4,x,  y+1,z+h,0,1,d,textureId,quad.ao2,quad.skyLight,quad.blockLight);
+                setVert(verts,5,x,  y+1,z,  0,0,d,textureId,quad.ao0,quad.skyLight,quad.blockLight);
+                break;
+            case 5: d=5;
+                setVert(verts,0,x,  y,z+h,0,0,d,textureId,quad.ao2,quad.skyLight,quad.blockLight);
+                setVert(verts,1,x+w,y,z+h,1,0,d,textureId,quad.ao3,quad.skyLight,quad.blockLight);
+                setVert(verts,2,x+w,y,z,  1,1,d,textureId,quad.ao1,quad.skyLight,quad.blockLight);
+                setVert(verts,3,x+w,y,z,  1,1,d,textureId,quad.ao1,quad.skyLight,quad.blockLight);
+                setVert(verts,4,x,  y,z,  0,1,d,textureId,quad.ao0,quad.skyLight,quad.blockLight);
+                setVert(verts,5,x,  y,z+h,0,0,d,textureId,quad.ao2,quad.skyLight,quad.blockLight);
                 break;
         }
 
@@ -150,11 +147,24 @@ public class SubChunkMesh {
             array[i*10+6] = textureId;   // textureId
             array[i*10+7] = verts[i][7]; // ao
             array[i*10+8] = verts[i][8]; // skyLight
-            array[i*10+9] = verts[i][9]; // blockLight
+            array[i*10+9] = verts[i][9]; // blocLight
         }
         try {
             this.addObjectFaceVertexToArray(array, w, h);
         } catch(Exception e){ e.printStackTrace(); }
+    }
+
+    private void setVert(int[][] v, int i, int x, int y, int z, int u, int vv, int d, int tex, int ao, int sky, int block){
+        v[i][0]=x;
+        v[i][1]=y; 
+        v[i][2]=z; 
+        v[i][3]=u; 
+        v[i][4]=vv;
+        v[i][5]=d; 
+        v[i][6]=tex; 
+        v[i][7]=ao; 
+        v[i][8]=sky; 
+        v[i][9]=block;
     }
 
         /**
@@ -220,7 +230,7 @@ public class SubChunkMesh {
         int needed = blockCount > 0 ? blockCount * 36 : 1;
         // Ne réalloue que si le tableau actuel est trop petit
         // 6 faces * 6 sommets par bloc = 36 vertices max par bloc visible
-        // blockCount * 36 = taille exacte au pire cas
+        // blocCount * 36 = taille exacte au pire cas
         if (this.vertexArrayPack == null || this.vertexArrayPack.length < needed){
             this.vertexArrayPack = new int[needed * 2];
         }
@@ -243,6 +253,7 @@ public class SubChunkMesh {
         }
         // Alloue EXACTEMENT la taille nécessaire, off-heap
         this.vertexBufferPack = MemoryUtil.memAllocInt(this.vertexCount * 2);
+
         for(int i = 0; i < this.vertexCount; i++){
             this.vertexBufferPack.put(this.vertexArrayPack[i * 2]); // packed vertex
             this.vertexBufferPack.put(this.vertexArrayPack[i * 2 + 1]); // packed UV
@@ -261,15 +272,15 @@ public class SubChunkMesh {
         if (this.ids == null){
             this.ids = new int[4];
         }
+        // ids est initialisé, on peut return si chunk vide
+        if (this.vertexBufferPack == null){
+            return;
+        }
         // Supprime les anciens buffers GPU avant d'en créer de nouveaux
         if (this.ids[0] != 0){ 
             BuffersManager.deleteVBOVAO(new int[]{this.ids[0], this.ids[1]});
             this.ids[0] = 0;
             this.ids[1] = 0;
-        }
-        // ids est initialisé, on peut return si chunk vide
-        if (this.vertexBufferPack == null){
-            return;
         }
         int[] result = BuffersManager.createSubChunkVBOVAO(this.vertexBufferPack);
         this.ids[0] = result[0];

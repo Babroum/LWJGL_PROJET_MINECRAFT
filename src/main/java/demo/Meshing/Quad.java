@@ -12,12 +12,12 @@ public class Quad {
     public int z;       
     public int width; // largeur sur X
     public int height; // hauteur sur Y
-    public String direction;
+    public int direction;
     public BlockDefinition type = Blocks.GRASS;
     public int ao0, ao1, ao2, ao3; // coins A, B, C, D
     public int skyLight, blockLight;
 
-    public Quad(int x, int y, int z, int width, int height, String direction,
+    public Quad(int x, int y, int z, int width, int height, int direction,
                 int ao0, int ao1, int ao2, int ao3,
                 int skyLight, int blockLight){
         this.x = x;

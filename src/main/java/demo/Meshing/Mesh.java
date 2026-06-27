@@ -3,6 +3,7 @@ package demo.Meshing;
 /**
  * Une Maille décrivant un ensemble de face composées de sommet.
  */
+@Deprecated
 public class Mesh {
 
     private Face[] faces = new Face[6]; // a modif 6 faces par cube

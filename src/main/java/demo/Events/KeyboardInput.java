@@ -9,9 +9,7 @@ import demo.Managers.AudioManager;
 import demo.Managers.ChunksManager;
 import demo.Managers.PlayersManager;
 import demo.Others.Blocks;
-import demo.Rendering.Camera;
 import demo.Rendering.Window;
-import demo.Player;
 
 /**
  * Définis les listeners GLFW
@@ -29,6 +27,12 @@ public class KeyboardInput {
     public static volatile boolean isChunkBorderShow;
     public static volatile boolean isJumping;
     public static volatile boolean isBenchMarkShow;
+
+    // états des touches de mouvement, écrits par le thread OpenGL, lus par le game thread
+    public static volatile boolean keyForward;
+    public static volatile boolean keyBack;
+    public static volatile boolean keyLeft;
+    public static volatile boolean keyRight;
 
     @OpenGLThread
     public KeyboardInput(){
@@ -111,28 +115,12 @@ public class KeyboardInput {
         }        
     }
 
-    // utiliser pour toutes les touches avec appui continue
-    // Principalement pour les mouvements
+    // appelé depuis le thread OpenGL uniquement : lit glfwGetKey et met à jour les volatile
     @OpenGLThread
-    public static void keyPressedContinue(long windowRef, Camera camera, float move, Player player) {
-        
-        // Mouvement devant, derrière, gauche, droite, haut, bas
-        if (GLFW.glfwGetKey(Window.window, GLFW.GLFW_KEY_W) == GLFW.GLFW_PRESS) {
-            player.moveForward(move);
-        } else if (GLFW.glfwGetKey(Window.window, GLFW.GLFW_KEY_S) == GLFW.GLFW_PRESS) {
-            player.moveBackwards(move);
-        }
-        if (GLFW.glfwGetKey(Window.window, GLFW.GLFW_KEY_A) == GLFW.GLFW_PRESS) {
-            player.moveLeft(move);
-        } else if (GLFW.glfwGetKey(Window.window, GLFW.GLFW_KEY_D) == GLFW.GLFW_PRESS) {
-            player.moveRight(move);
-        }
-
-        /* Plus valable pour un joueur 
-        if (GLFW.glfwGetKey(KeyboardInput.windowRef, GLFW.GLFW_KEY_LEFT_SHIFT) == GLFW.GLFW_PRESS) {
-            camera.moveUp(move);
-        } else if (GLFW.glfwGetKey(KeyboardInput.windowRef, GLFW.GLFW_KEY_LEFT_CONTROL) == GLFW.GLFW_PRESS) {
-            camera.moveDown(move);
-        }  */  
+    public static void pollMovementKeys() {
+        keyForward = GLFW.glfwGetKey(Window.window, GLFW.GLFW_KEY_W) == GLFW.GLFW_PRESS;
+        keyBack    = GLFW.glfwGetKey(Window.window, GLFW.GLFW_KEY_S) == GLFW.GLFW_PRESS;
+        keyLeft    = GLFW.glfwGetKey(Window.window, GLFW.GLFW_KEY_A) == GLFW.GLFW_PRESS;
+        keyRight   = GLFW.glfwGetKey(Window.window, GLFW.GLFW_KEY_D) == GLFW.GLFW_PRESS;
     }
 }

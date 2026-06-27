@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.HashSet;
 
 import org.joml.Matrix4f;
@@ -14,11 +15,11 @@ import demo.Annotations.OpenGLThread;
 import demo.Events.KeyboardInput;
 import demo.Managers.BlocksManager;
 import demo.Managers.ChunksManager;
+import demo.Managers.LightManager;
 import demo.Managers.ShadersManager;
 import demo.Meshing.SubChunkMesh;
 import demo.Others.BlockDefinition;
 import demo.Others.Blocks;
-import demo.Meshing.Face;
 import demo.Meshing.Quad;
 import demo.Rendering.Render;
 
@@ -40,19 +41,20 @@ public class SubChunk extends Node3D{
     // donne au mesh le subChunk au quel il appartient
     public SubChunkMesh mesh = new SubChunkMesh();
     public SubChunkMesh transparentMesh = new SubChunkMesh();
-    public byte[] blocks; // id des blocks (MAX 256 blocks différent car 8bits)
-    public byte[] lightMap; // contient la lumière du ciel et celle du block 4bits et 4bits
-
-    private List<Quad> quads;
-
-    public boolean dirty = false;
+    public byte[] blocks; // id des blocs (MAX 256 blocs différent car 8bits)
+    public byte[] lightMap; // contient la lumière du ciel et celle du bloc 4bits et 4bits
+    
+    // garantit que le lire + écrire se fait en une seule instruction CPU indivisible
+    public AtomicBoolean dirty = new AtomicBoolean(false);
 
     public Chunk parent;
 
-    // contient des 1 et 0 (block plein, block vide(air))
+    // contient des 1 et 0 (bloc plein, bloc vide(air))
     public BitSet solidBitSet = new BitSet(SubChunk.MAXBLOCK); 
-    // contient des 1 et 0 (block plein, block transparent(vitre))
+    // contient des 1 et 0 (bloc plein, bloc transparent(vitre))
     public BitSet transparentBitSet = new BitSet(SubChunk.MAXBLOCK);
+
+    private final Set<Byte> blockTypes = new HashSet<>();
 
     private static class FaceData {
         int[] northAxis = new int[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ];
@@ -100,7 +102,6 @@ public class SubChunk extends Node3D{
     @ChunkThread
     public SubChunk(Chunk parent){
         this.parent = parent;
-        this.quads = new ArrayList<Quad>();
         this.blocks = new byte[SubChunk.MAXBLOCK];   
         this.lightMap = new byte[SubChunk.MAXBLOCK];   
         // définit la taille du buffer et du tableau de vertex  
@@ -108,10 +109,10 @@ public class SubChunk extends Node3D{
     }
 
     /**
-     * Retourne la lumière du ciel sur le block.
-     * @param x Coordonnées en x (locale).
-     * @param y Coordonnées en y (locale).
-     * @param z Coordonnées en z (locale).
+     * Retourne la lumière du ciel sur le bloc.
+     * @param x Coordonnées en x (locale) 0-15.
+     * @param y Coordonnées en y (locale) 0-15.
+     * @param z Coordonnées en z (locale) 0-15.
      * @return la lumière (0 - 15)
      */
     public int getBlockSkyLight(int x, int y, int z){         
@@ -135,10 +136,10 @@ public class SubChunk extends Node3D{
     }
 
     /**
-     * Retourne la lumière du block.
-     * @param x Coordonnées en x (locale)
-     * @param y Coordonnées en y (locale)
-     * @param z Coordonnées en z (locale)
+     * Retourne la lumière du bloc.
+     * @param x Coordonnées en x (locale) 0-15
+     * @param y Coordonnées en y (locale) 0-15
+     * @param z Coordonnées en z (locale) 0-15
      * @return la lumière (0 - 15)
      */
     public int getBlockLight(int x, int y, int z){
@@ -162,10 +163,10 @@ public class SubChunk extends Node3D{
     }
 
     /**
-     * Définis la nouvelle lumière du ciel sur le block.
-     * @param x Coordonnées en x (locale)
-     * @param y Coordonnées en y (locale)
-     * @param z Coordonnées en z (locale)
+     * Définis la nouvelle lumière du ciel sur le bloc.
+     * @param x Coordonnées en x (locale) 0-15
+     * @param y Coordonnées en y (locale) 0-15
+     * @param z Coordonnées en z (locale) 0-15
      * @param newLight Nouvelle valeur de lumière
      */
     public void setBlockSkyLight(int x, int y, int z, int newLight){
@@ -193,10 +194,10 @@ public class SubChunk extends Node3D{
     }
 
     /**
-     * Définis la nouvelle lumière du block.
-     * @param x Coordonnées en x (locale)
-     * @param y Coordonnées en y (locale)
-     * @param z Coordonnées en z (locale)
+     * Définis la nouvelle lumière du bloc.
+     * @param x Coordonnées en x (locale) 0-15
+     * @param y Coordonnées en y (locale) 0-15
+     * @param z Coordonnées en z (locale) 0-15
      * @param newLight Nouvelle valeur de lumière
      */
     public void setBlockLight(int x, int y, int z, int newLight){
@@ -245,8 +246,10 @@ public class SubChunk extends Node3D{
     /**
      * Génère la maille d'un subChunk
      */
+    // sync, comme ça peu importe par où le mesh est généré, deux threads ne peuvent jamais être dedans en même temps pour le même subchunk.
     @ChunkThread
-    public void generateSubChunkMesh(){
+    public synchronized void generateSubChunkMesh(){
+        List<Quad> quads = new ArrayList<>();
         // Lignes de blocs pleins/vides sur l'axe (ex: ligne X = 16 bits, 1 = bloc plein, 0 = bloc vide)
         // Utilisé pour calculer quelles faces sont visibles (face culling)
         // les tableaux sont créer seulement pour le face culling puis après détruit par le GC 
@@ -254,44 +257,48 @@ public class SubChunk extends Node3D{
 
         FaceData opaqueFaceData = OPAQUE_FACE_DATA_LOCAL.get();
         FaceData transparentFaceData = TRANSPARENT_FACE_DATA_LOCAL.get();
-        if (this.quads == null) this.quads = new ArrayList<>(); // réinitialise si null après un précédent mesh
 
         // calcule le face culling
         this.calculateSubChunkFaceCulling(opaqueFaceData, false); // opaque
-        this.calculateSubChunkFaceCulling(transparentFaceData, true); // transparent
 
         // collecte les types uniques
         // le Set n'accepte pas les doublons donc si j'ai 500 GRASS dans le set il n'y aura que 1 GRASS
-        Set<Byte> types = new HashSet<>();
+        this.blockTypes.clear();
         for(byte b : this.blocks){
-            if(b != (byte)Blocks.AIR.id) types.add(b);
-        }     
+            if(b != (byte)Blocks.AIR.id) this.blockTypes.add(b);
+        }
 
-        // calcule le greedy meshing pour chaque type de block     
-        for (byte blockType : types){
+        // si il y a au moins un block transparent 
+        boolean hasTransparent = this.blockTypes.stream().anyMatch(b -> BlocksManager.get(b).transparent);
+        if (!hasTransparent) {
+            this.transparentMesh.setupSubChunkBuffers(0);
+        } else {
+            this.calculateSubChunkFaceCulling(transparentFaceData, true);
+        }
+
+        // calcule le greedy meshing pour chaque type de bloc     
+        for (byte blockType : this.blockTypes){
             boolean isTransparent = BlocksManager.get(blockType).transparent;
 
             if (isTransparent){
-                this.calculateSubChunkBinaryGreedyMeshing(blockType, transparentFaceData);
-                this.uploadSubChunkTransparentMesh(blockType);
+                this.calculateSubChunkBinaryGreedyMeshing(blockType, transparentFaceData, quads);
+                this.uploadSubChunkTransparentMesh(blockType, quads);
             } else {
-                this.calculateSubChunkBinaryGreedyMeshing(blockType, opaqueFaceData);
-                this.uploadSubChunkMesh(blockType);
+                this.calculateSubChunkBinaryGreedyMeshing(blockType, opaqueFaceData, quads);
+                this.uploadSubChunkMesh(blockType, quads);
             }
         }
         // rempli le buffer de la maille avec les données pack (vertex packing)
         this.mesh.fillSubChunkVertexBufferWithArray();
         this.transparentMesh.fillSubChunkVertexBufferWithArray(); 
-
-        this.quads = null;
     }
 
     /**
-     * Retourne le block à la position.
+     * Retourne le bloc à la position.
      * @param x Coordonnée en x (locale)
      * @param y Coordonnée en x (locale)
      * @param z Coordonnée en x (locale)
-     * @return Retourne le block
+     * @return Retourne le bloc
      */
     public BlockDefinition getBlock(int x, int y, int z){
         if (x < 0 || x >= SubChunk.CHUNKSIZEXZ ||
@@ -303,7 +310,7 @@ public class SubChunk extends Node3D{
     }
 
     /**
-     * Retourne tout les blocks du sous chunk
+     * Retourne tout les bloc du sous chunk
      * @return byte[]
      */
     public byte[] getAllBlocks(){
@@ -343,7 +350,7 @@ public class SubChunk extends Node3D{
     }
 
     /**
-     * Ajoute un block dans le subChunk <br> 
+     * Ajoute un bloc dans le subChunk <br> 
      * (coordonnées locales du subChunk)
      * @param type BlockType
      * @param x int
@@ -358,33 +365,49 @@ public class SubChunk extends Node3D{
         ){throw new RuntimeException("Coordonées dans le subChunk invalide");}
         int index = x + y * SubChunk.CHUNKSIZEXZ + z * SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ;
         this.blocks[index] = (byte) type.id;
-        this.dirty = true;
 
-        this.parent.updateHeightMapZoneAt(x, z);   
-        this.rebuildSubChunk();
+        if (type.luminance > 0){
+            // set le bloc source à luminance
+            this.setBlockLight(x, y, z, type.luminance);
+            
+            int[][] neighbors = {{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1}};
+            for (int[] d : neighbors){
+                int nx = x + d[0];
+                int ny = this.y + y + d[1];
+                int nz = z + d[2];
+                
+                int gnx = this.parent.x + nx; // coordonnée globale X
+                int gnz = this.parent.z + nz; // coordonnée globale Z
+                
+                Chunk targetChunk = ChunksManager.getChunkAt(gnx, gnz);
+                if (targetChunk == null) continue;
+                SubChunk targetSub = targetChunk.getSubChunkAt(ny);
+                
+                int lnx = ChunksManager.floorMod(gnx, SubChunk.CHUNKSIZEXZ);
+                int lny = ny % SubChunk.CHUNKSIZEXZ;
+                int lnz = ChunksManager.floorMod(gnz, SubChunk.CHUNKSIZEXZ);
+                
+                if (!targetSub.isBlockSolid(lnx, lny, lnz)){
+                    targetSub.setBlockLight(lnx, lny, lnz, type.luminance);
+                    LightManager.addBlockLight(this.parent, nx, ny, nz, (byte)type.luminance);
+                }
+            }
+        }
 
-        if (x == SubChunk.CHUNKSIZEXZ - 1 && this.getNeighborWest() != null) { 
-            this.getNeighborWest().rebuildSubChunk(); 
-        }
-        if (x == 0 && this.getNeighborEast() != null) { 
-            this.getNeighborEast().rebuildSubChunk(); 
-        }
-        if (z == SubChunk.CHUNKSIZEXZ - 1 && this.getNeighborNorth() != null) { 
-            this.getNeighborNorth().rebuildSubChunk(); 
-        }
-        if (z == 0 && this.getNeighborSouth() != null) { 
-            this.getNeighborSouth().rebuildSubChunk(); 
-        }
-        if (y == 0 && this.getNeighborDown() != null) { 
-            this.getNeighborDown().rebuildSubChunk(); 
-        }
-        if (y == SubChunk.CHUNKSIZEXZ - 1 && this.getNeighborUp() != null) { 
-            this.getNeighborUp().rebuildSubChunk(); 
-        }        
+        this.parent.updateHeightMapAtWhenAdd(x, this.y + y, z);   
+
+        markDirty(this);
+
+        if (x == SubChunk.CHUNKSIZEXZ - 1) markDirty(this.getNeighborWest());
+        if (x == 0)                         markDirty(this.getNeighborEast());
+        if (z == SubChunk.CHUNKSIZEXZ - 1) markDirty(this.getNeighborNorth());
+        if (z == 0)                         markDirty(this.getNeighborSouth());
+        if (y == SubChunk.CHUNKSIZEXZ - 1) markDirty(this.getNeighborUp());
+        if (y == 0)                         markDirty(this.getNeighborDown());
     }
     
     /**
-     * Retire un block dans le subChunk <br>
+     * Retire un bloc dans le subChunk <br>
      * (coordonnées locales du subChunk)
      * @param x int
      * @param y int
@@ -396,42 +419,72 @@ public class SubChunk extends Node3D{
             y < 0 || y >= SubChunk.CHUNKSIZEXZ ||
             z < 0 || z >= SubChunk.CHUNKSIZEXZ
         ){throw new RuntimeException("Coordonées dans le subChunk invalide");}
-        int index = x + y * SubChunk.CHUNKSIZEXZ + z * SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ;
-        this.blocks[index] = (byte) Blocks.AIR.id;
-        this.dirty = true;
-        
-        this.parent.updateHeightMapZoneAt(x, z);
-        this.rebuildSubChunk();
+        int index = x + y * SubChunk.CHUNKSIZEXZ + z * SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ;    
 
-        if (x == SubChunk.CHUNKSIZEXZ - 1 && this.getNeighborWest() != null) { 
-            this.getNeighborWest().rebuildSubChunk(); 
+        BlockDefinition type = BlocksManager.get(this.blocks[index]);
+
+        if (type.luminance > 0){
+            // set le bloc source à luminance
+            this.setBlockLight(x, y, z, 0);
+            
+            int[][] neighbors = {{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1}};
+            for (int[] d : neighbors){
+                int nx = x + d[0];
+                int ny = this.y + y + d[1];
+                int nz = z + d[2];
+                
+                int gnx = this.parent.x + nx; // coordonnée globale X
+                int gnz = this.parent.z + nz; // coordonnée globale Z
+                
+                Chunk targetChunk = ChunksManager.getChunkAt(gnx, gnz);
+                if (targetChunk == null) continue;
+                SubChunk targetSub = targetChunk.getSubChunkAt(ny);
+                
+                int lnx = ChunksManager.floorMod(gnx, SubChunk.CHUNKSIZEXZ);
+                int lny = ny % SubChunk.CHUNKSIZEXZ;
+                int lnz = ChunksManager.floorMod(gnz, SubChunk.CHUNKSIZEXZ);
+                
+                if (!targetSub.isBlockSolid(lnx, lny, lnz)){
+                    targetSub.setBlockLight(lnx, lny, lnz, 0);
+                    LightManager.removeBlockLight(this.parent, nx, ny, nz, (byte)type.luminance);
+                }
+            }
         }
-        if (x == 0 && this.getNeighborEast() != null) { 
-            this.getNeighborEast().rebuildSubChunk(); 
+        
+        this.blocks[index] = (byte) Blocks.AIR.id;
+        
+        this.parent.updateHeightMapAtWhenBreak(x, this.y + y, z);
+
+        markDirty(this);
+
+        if (x == SubChunk.CHUNKSIZEXZ - 1) markDirty(this.getNeighborWest());
+        if (x == 0)                         markDirty(this.getNeighborEast());
+        if (z == SubChunk.CHUNKSIZEXZ - 1) markDirty(this.getNeighborNorth());
+        if (z == 0)                         markDirty(this.getNeighborSouth());
+        if (y == SubChunk.CHUNKSIZEXZ - 1) markDirty(this.getNeighborUp());     
+        if (y == 0)                         markDirty(this.getNeighborDown());
+    }
+
+    private void markDirty(SubChunk sub){
+        if (sub == null) return;
+        if (sub.dirty.compareAndSet(false, true)){
+            LightManager.addDirtySubChunk(sub);
         }
-        if (z == SubChunk.CHUNKSIZEXZ - 1 && this.getNeighborNorth() != null) { 
-            this.getNeighborNorth().rebuildSubChunk(); 
-        }
-        if (z == 0 && this.getNeighborSouth() != null) { 
-            this.getNeighborSouth().rebuildSubChunk(); 
-        }
-        if (y == 0 && this.getNeighborDown() != null) { 
-            this.getNeighborDown().rebuildSubChunk(); 
-        }
-        if (y == SubChunk.CHUNKSIZEXZ - 1 && this.getNeighborUp() != null) { 
-            this.getNeighborUp().rebuildSubChunk(); 
-        }        
     }
 
     @ChunkThread
     public void rebuildSubChunk(){
+
         this.linkNeighbors();
         this.fillSubChunkBitSet();
-        this.mesh.setupSubChunkBuffers(this.solidBitSet.cardinality());
-        this.transparentMesh.setupSubChunkBuffers(this.transparentBitSet.cardinality());
-        this.generateSubChunkMesh();
+        // synchronized(this) fait attendre le second thread au lieu de skipper, donc aucun rebuild n'est perdu
+        synchronized(this) {
+            this.mesh.setupSubChunkBuffers(this.solidBitSet.cardinality());
+            this.transparentMesh.setupSubChunkBuffers(this.transparentBitSet.cardinality());
+            this.generateSubChunkMesh();
+        }
         
-        // met le thread en pause si l'array est plein, le thread se relance automatiquement au moment ou OpenGLThread poll un chunk
+        // met le thread en pause si l'array est plein, le thread se relance automatiquement au moment où OpenGLThread poll un chunk
         //Render.dirtySubChunks.offer(this);
         if (this.mesh.getVertexCount() > 0 || this.transparentMesh.getVertexCount() > 0) {
             try { Render.dirtySubChunks.put(this); } catch(InterruptedException e) { Thread.currentThread().interrupt(); }
@@ -442,9 +495,9 @@ public class SubChunk extends Node3D{
      * Envoie les quads à dessiné avec le face cullings
      */
     @ChunkThread
-    private void uploadSubChunkMesh(byte blockType){
+    private void uploadSubChunkMesh(byte blockType, List<Quad> quads){
 
-        for(Quad quad : this.quads){
+        for(Quad quad : quads){
             BlockDefinition type = BlocksManager.get(blockType);
             if(type == Blocks.NULL) continue;
             int textureId =  type.getTextureLayer(quad.direction);
@@ -453,9 +506,9 @@ public class SubChunk extends Node3D{
     }
 
     @ChunkThread
-    private void uploadSubChunkTransparentMesh(byte blockType){
+    private void uploadSubChunkTransparentMesh(byte blockType, List<Quad> quads){
 
-        for(Quad quad : this.quads){
+        for(Quad quad : quads){
             BlockDefinition type = BlocksManager.get(blockType);
             if(type == Blocks.NULL) continue;
             int textureId =  type.getTextureLayer(quad.direction);
@@ -622,8 +675,8 @@ public class SubChunk extends Node3D{
     /**
      * Peut pas faire plus simple comme nom
      */
-    private void calculateSubChunkBinaryGreedyMeshing(byte blockType, FaceData faceData){
-        this.quads.clear();        
+    private void calculateSubChunkBinaryGreedyMeshing(byte blockType, FaceData faceData, List<Quad> quads){
+        quads.clear();        
         Arrays.fill(faceData.northMask, 0); Arrays.fill(faceData.southMask, 0);
         Arrays.fill(faceData.westMask,  0); Arrays.fill(faceData.eastMask,  0);
         Arrays.fill(faceData.upMask,    0); Arrays.fill(faceData.downMask,  0);
@@ -652,7 +705,7 @@ public class SubChunk extends Node3D{
                     // En gros je récup tous les bits d'un int d'Axis, que je met en 1er position des int de mask a chaque boucle
                     int northBit = (faceData.northAxis[y + x * SubChunk.CHUNKSIZEXZ] >>> (31 - z)) & 1; // décalle de 31 bits + z vers la droite puis récupère le 1er bit
                     faceData.northMask[ligne] |= (northBit << (31 - x));
-                    // si c'est un block solide alors on calcule/applique la lumière dessus
+                    // si c'est un bloc solide alors on calcule/applique la lumière dessus
                     if(northBit == 1){
                         byte ao0 = computeAO(x-1, y, z+1,   x, y-1, z+1,   x-1, y-1, z+1);
                         byte ao1 = computeAO(x+1, y, z+1,   x, y-1, z+1,   x+1, y-1, z+1);
@@ -753,16 +806,16 @@ public class SubChunk extends Node3D{
             }        
         }
 
-        this.greedyMeshingPerFace(faceData.northMask, faceData.northAoMask, faceData.northSkyLightMask, faceData.northBlockLightMask, "north");
-        this.greedyMeshingPerFace(faceData.southMask, faceData.southAoMask, faceData.southSkyLightMask, faceData.southBlockLightMask, "south");
-        this.greedyMeshingPerFace(faceData.westMask,  faceData.westAoMask,  faceData.westSkyLightMask,  faceData.westBlockLightMask,  "west");
-        this.greedyMeshingPerFace(faceData.eastMask,  faceData.eastAoMask,  faceData.eastSkyLightMask,  faceData.eastBlockLightMask,  "east");
-        this.greedyMeshingPerFace(faceData.upMask,    faceData.upAoMask,    faceData.upSkyLightMask,    faceData.upBlockLightMask,    "up");
-        this.greedyMeshingPerFace(faceData.downMask,  faceData.downAoMask,  faceData.downSkyLightMask,  faceData.downBlockLightMask,  "down");
+        this.greedyMeshingPerFace(faceData.northMask, faceData.northAoMask, faceData.northSkyLightMask, faceData.northBlockLightMask, 0, quads);
+        this.greedyMeshingPerFace(faceData.southMask, faceData.southAoMask, faceData.southSkyLightMask, faceData.southBlockLightMask, 1, quads);
+        this.greedyMeshingPerFace(faceData.westMask,  faceData.westAoMask,  faceData.westSkyLightMask,  faceData.westBlockLightMask,  2, quads);
+        this.greedyMeshingPerFace(faceData.eastMask,  faceData.eastAoMask,  faceData.eastSkyLightMask,  faceData.eastBlockLightMask,  3, quads);
+        this.greedyMeshingPerFace(faceData.upMask,    faceData.upAoMask,    faceData.upSkyLightMask,    faceData.upBlockLightMask,    4, quads);
+        this.greedyMeshingPerFace(faceData.downMask,  faceData.downAoMask,  faceData.downSkyLightMask,  faceData.downBlockLightMask,  5, quads);
     }
 
     // fait le greedy pour chaque face
-    private void greedyMeshingPerFace(int[] faceMask, byte[] faceAoMask, byte[] faceSkyLightMask, byte[] faceBlockLightMask, String dir){        
+    private void greedyMeshingPerFace(int[] faceMask, byte[] faceAoMask, byte[] faceSkyLightMask, byte[] faceBlockLightMask, int dir, List<Quad> quads){        
         for(int ligne = 0; ligne < faceMask.length; ligne++){
             int i = 0; // indice en largeur byte car dépasse pas 15
             while(i < SubChunk.CHUNKSIZEXZ){              
@@ -808,7 +861,7 @@ public class SubChunk extends Node3D{
                     for(int k = coord[0]; k < coord[1]; k++){
                         if(faceAoMask[(ligne+j) * SubChunk.CHUNKSIZEXZ + k]         != faceAoMask[ligne * SubChunk.CHUNKSIZEXZ + k] // même valeur d'AO
                         || faceSkyLightMask[(ligne+j) * SubChunk.CHUNKSIZEXZ + k]   != faceSkyLightMask[ligne * SubChunk.CHUNKSIZEXZ + k] // même valeur de lumière du ciel
-                        || faceBlockLightMask[(ligne+j) * SubChunk.CHUNKSIZEXZ + k] != faceBlockLightMask[ligne * SubChunk.CHUNKSIZEXZ + k]){ // même valeur de lumière du block
+                        || faceBlockLightMask[(ligne+j) * SubChunk.CHUNKSIZEXZ + k] != faceBlockLightMask[ligne * SubChunk.CHUNKSIZEXZ + k]){ // même valeur de lumière du bloc
                             match = false;
                             break;
                         }
@@ -823,19 +876,19 @@ public class SubChunk extends Node3D{
                 if (coord[0] < coord[1]){
                     int qx, qy, qz;
                     switch(dir){
-                        case "north": case "south":
+                        case 0: case 1:
                             // masque index = y + z * CHUNKSIZEXZ, bit = X
                             qx = coord[0];
                             qy = ligne % SubChunk.CHUNKSIZEXZ;
                             qz = ligne / SubChunk.CHUNKSIZEXZ;
                             break;
-                        case "west": case "east":
+                        case 2: case 3:
                             // masque index = y + x * CHUNKSIZEXZ, bit = Z
                             qx = ligne / SubChunk.CHUNKSIZEXZ;
                             qy = ligne % SubChunk.CHUNKSIZEXZ;
                             qz = coord[0];
                             break;
-                        case "up": case "down":
+                        case 4: case 5:
                             // masque index = y + z * CHUNKSIZEXZ, bit = X
                             qx = coord[0];
                             qy = ligne / SubChunk.CHUNKSIZEXZ;  
@@ -862,15 +915,15 @@ public class SubChunk extends Node3D{
                     int skyLight   = faceSkyLightMask  [ligne * SubChunk.CHUNKSIZEXZ + coord[0]];
                     int blockLight = faceBlockLightMask[ligne * SubChunk.CHUNKSIZEXZ + coord[0]];
 
-                    this.quads.add(new Quad(qx, qy, qz, w, h, dir, ao0, ao1, ao2, ao3, skyLight, blockLight));
+                    quads.add(new Quad(qx, qy, qz, w, h, dir, ao0, ao1, ao2, ao3, skyLight, blockLight));
                 }   
             }           
         }
     }
 
     /**
-     * Détermine si un block est solide <br>
-     * Si le block n'est pas dans le chunk (voisin d'un chunk) <br>
+     * Détermine si un bloc est solide <br>
+     * Si le bloc n'est pas dans le chunk (voisin d'un chunk) <br>
      * On demande au voisin
      * @param x
      * @param y
@@ -883,7 +936,7 @@ public class SubChunk extends Node3D{
             int index = x + y * SubChunk.CHUNKSIZEXZ + z * SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ;
             return !BlocksManager.get(this.blocks[index]).transparent;
         }
-        // en dehors délègue aux voisins, blocks en bordure
+        // en dehors délègue aux voisins, blocs en bordure
         if (y >= CHUNKSIZEXZ && this.upNeighbor != null){
             return this.upNeighbor.isBlockSolid(x, y - CHUNKSIZEXZ, z);
         }
@@ -906,7 +959,7 @@ public class SubChunk extends Node3D{
     }
 
     /**
-     * Calcule l'ambient occlusion à appliquer sur le block
+     * Calcule l'ambient occlusion à appliquer sur le bloc
      * @param side1X
      * @param side1Y
      * @param side1Z
@@ -940,12 +993,12 @@ public class SubChunk extends Node3D{
         this.solidBitSet.clear();
         this.transparentBitSet.clear();
         for(int i = 0; i < SubChunk.MAXBLOCK; i++){      
-            // les blocks solide ne doivent pas être face cull, logique   
-            // BlocksManager.get(this.blocks[i]).transparent == false
+            // les blocs solide ne doivent pas être face cull, logique   
+            // blocsManager.get(this.blocs[i]).transparent == false
             if (this.blocks[i] != Blocks.AIR.id){
                 this.solidBitSet.set(i); // met a 1 l'indice i
             }
-            // les blocks transparent ne doivent pas être face cull, mais rendu
+            // les blocs transparent ne doivent pas être face cull, mais rendu
             if (BlocksManager.get(this.blocks[i]).transparent == true){
                 this.transparentBitSet.set(i);
             }
@@ -957,42 +1010,31 @@ public class SubChunk extends Node3D{
      */
     @ChunkThread
     public void linkNeighbors(){
-        // ouest
-        try{            
-            Chunk chunk = ChunksManager.getChunkAt(
-                this.x + SubChunk.CHUNKSIZEXZ,
-                this.z);
-            this.westNeighbor = chunk.getSubChunkAt(this.y);
-        }catch(Exception e){
-            this.westNeighbor = null;
-        }  
+        // évite les try catch qui sont couteux en java
+        // ouest          
+        Chunk chunk = ChunksManager.getChunkAt(
+            this.x + SubChunk.CHUNKSIZEXZ,
+            this.z);
+        this.westNeighbor = (chunk != null) ? chunk.getSubChunkAt(this.y) : null;
+
         // est
-        try{
-            Chunk chunk = ChunksManager.getChunkAt(
-                this.x - SubChunk.CHUNKSIZEXZ,
-                this.z);
-            this.eastNeighbor = chunk.getSubChunkAt(this.y);
-        }catch(Exception e){
-            this.eastNeighbor = null;
-        }   
+        chunk = ChunksManager.getChunkAt(
+            this.x - SubChunk.CHUNKSIZEXZ,
+            this.z);
+        this.eastNeighbor = (chunk != null) ? chunk.getSubChunkAt(this.y) : null;
+
         // nord
-        try{
-            Chunk chunk = ChunksManager.getChunkAt(
-                this.x,
-                this.z + SubChunk.CHUNKSIZEXZ);
-            this.northNeighbor = chunk.getSubChunkAt(this.y);
-        }catch(Exception e){
-            this.northNeighbor = null;
-        }   
+        chunk = ChunksManager.getChunkAt(
+            this.x,
+            this.z + SubChunk.CHUNKSIZEXZ);
+        this.northNeighbor = (chunk != null) ? chunk.getSubChunkAt(this.y) : null;
+
         // sud
-        try{
-            Chunk chunk = ChunksManager.getChunkAt(
-                this.x,
-                this.z - SubChunk.CHUNKSIZEXZ);
-            this.southNeighbor = chunk.getSubChunkAt(this.y);
-        }catch(Exception e){
-            this.southNeighbor = null;
-        } 
+        chunk = ChunksManager.getChunkAt(
+            this.x,
+            this.z - SubChunk.CHUNKSIZEXZ);
+        this.southNeighbor = (chunk != null) ? chunk.getSubChunkAt(this.y) : null;
+
         // haut
         try{
             this.upNeighbor = parent.getSubChunkAt(this.y + SubChunk.CHUNKSIZEXZ);

@@ -25,14 +25,17 @@ public class Chunk extends Node3D{
     private int maxY;
     private int maxZ;
 
+    private int[] colY      = new int[256];
+    private byte[] colLight = new byte[256];
+
     /**
-     * Height map qui contient la hauteur du block (x, z) le plus proche du ciel
+     * Height map qui contient la hauteur du bloc (x, z) le plus proche du ciel
      */
     public int[] heightMap;
     
     /**
      * Initialise les subChunks du chunks.
-     * @param chunkX Coordonnées en X (locale)
+     * @param chunkX Coordonnées en x (locale) 0-15
      * @param chunkZ Coordonnées en Z  (locale)
      */
     @ChunkThread
@@ -65,142 +68,170 @@ public class Chunk extends Node3D{
         for(int x = 0; x < SubChunk.CHUNKSIZEXZ; x++){
             for(int z = 0; z < SubChunk.CHUNKSIZEXZ; z++){
                 int y = SubChunk.CHUNKSIZEHEIGHT - 1;
+                int lowestSkyY = -1; // le bloc d'air le plus bas de la colonne ciel
+
                 while (y >= 0) {           
                     if (this.getBlock(x, y, z).transparent == false) {
                         // On a touché le sol, on enregistre la hauteur
-                        this.heightMap[z + x * SubChunk.CHUNKSIZEXZ] = y + 1;
+                        this.heightMap[z + x * SubChunk.CHUNKSIZEXZ] = y;
+                        this.getSubChunkAt(y).setBlockSkyLight(x, y % SubChunk.CHUNKSIZEXZ, z, (byte)0);
                         break; 
                     }
                     
-                    // On donne 15 à l'air ET au premier bloc solide
+                    // On donne 15 à l'air directement, SANS ajouter à la queue BFS
                     this.getSubChunkAt(y).setBlockSkyLight(x, y % SubChunk.CHUNKSIZEXZ, z, (byte)15);
-                    LightManager.addSkyLight(this, x, y, z, (byte)15);
+                    lowestSkyY = y; // on descend donc c'est toujours le plus bas trouvé jusqu'ici
                     
                     y--;
                 }
+
+                if (y == 0 && this.getBlock(x, y, z).transparent == true){
+                    this.heightMap[z + x * SubChunk.CHUNKSIZEXZ] = 0;
+                }
+
+                // Une seule entrée BFS par colonne : le bloc du bas de la colonne ciel.
+                // C'est lui qui est adjacent à la surface -> c'est le seul seed utile
+                // pour la propagation latérale vers les zones d'ombre.
+                if (lowestSkyY >= 0) {
+                    LightManager.addSkyLight(this, x, lowestSkyY, z, (byte)15);
+                }
             }
-        }
+        }        
     }
 
     /**
-     * Met à jour une colonne de la height map
-     * @param x Coordonnées en x (local)
-     * @param z Coordonnées en z (local)
+     * Met à jour la height map quand un bloc est poser si besoin, et propage de l'obscurité
+     * @param x Coordonnées en x (locale) 0-15
+     * @param x Coordonnées en y (locale) 0-255
+     * @param z Coordonnées en z (locale) 0-15
      */
     @ChunkThread
-    private void updateHeightMapAt(int x, int z){
-        // Recalcule la hauteur de cette colonne
-        int y = SubChunk.CHUNKSIZEHEIGHT - 1;
-        while (y >= 0) {           
-            if (this.getBlock(x, y, z).transparent == false) {
-                this.heightMap[z + x * SubChunk.CHUNKSIZEXZ] = y + 1;
-                break; 
-            }                                   
-            y--;
-        }
-        
-        // Remet à 0 seulement cette colonne
-        for(int cy = 0; cy < SubChunk.CHUNKSIZEHEIGHT; cy++){
-            SubChunk sub = this.getSubChunkAt(cy);
-            sub.setBlockSkyLight(x, cy % SubChunk.CHUNKSIZEXZ, z, (byte)0);
-        }
-        
-        // Ajoute toute la colonne au-dessus de la surface à la queue
-        int surfaceY = this.heightMap[z + x * SubChunk.CHUNKSIZEXZ];
-        for(int cy = surfaceY; cy < SubChunk.CHUNKSIZEHEIGHT; cy++){
-            if (this.getBlock(x, cy, z).transparent == true){
-                SubChunk sub = this.getSubChunkAt(cy);
-                int yInSub = cy % SubChunk.CHUNKSIZEXZ;                  
-                sub.setBlockSkyLight(x, yInSub, z, (byte)15);
-                LightManager.addSkyLight(this, x, cy, z, (byte)15);                
+    public void updateHeightMapAtWhenAdd(int x, int y, int z){
+        SubChunk sub = this.getSubChunkAt(y);
+        int localY = y % SubChunk.CHUNKSIZEXZ;       
+
+        // bloc posé est la nouvelle heightmap
+        // les blocs en dessous sont placé dans la queue d'obscurité 
+        if (this.heightMap[z + x * SubChunk.CHUNKSIZEXZ] < y){
+            this.heightMap[z + x * SubChunk.CHUNKSIZEXZ] = y;
+
+            // Phase 1 : mettre toute la colonne à 0 avant tout BFS
+            // (évite que le BFS d'un bloc voie les blocs inférieurs encore éclairés
+            //  et les traite comme sources externes -> re-propagation incorrecte)
+            byte oldLight = (byte) sub.getBlockSkyLight(x, y % SubChunk.CHUNKSIZEXZ, z);
+            sub.setBlockSkyLight(x, localY, z, 0);
+            LightManager.removeSkyLight(this, x, y, z, oldLight);
+
+            int cy = y - 1;
+            int count = 0;
+            SubChunk bottomSub = null;
+
+            while (cy >= 0) {
+                sub = this.getSubChunkAt(cy);
+                oldLight = (byte) sub.getBlockSkyLight(x, cy % SubChunk.CHUNKSIZEXZ, z);
+                sub.setBlockSkyLight(x, cy % SubChunk.CHUNKSIZEXZ, z, 0);
+                if (sub.getBlock(x, cy % SubChunk.CHUNKSIZEXZ, z).transparent == false) {
+                    bottomSub = sub;
+                    break;
+                }
+                colY[count]   = cy;
+                colLight[count] = oldLight;
+                count++;
+                cy--;
             }
+
+            if (bottomSub != null && this.getSubChunkAt(y) != bottomSub) {
+                bottomSub.rebuildSubChunk();
+            }
+
+            // Phase 2 : propager l'obscurité maintenant que toute la colonne est à 0
+            // Le BFS ne verra plus les blocs inférieurs comme sources lumineuses
+            for (int i = 0; i < count; i++) {
+                LightManager.removeSkyLight(this, x, colY[i], z, colLight[i]);
+            }
+        }else{
+            // bloc posé sous la heightmap, pas de changement de heightmap mais il faut quand même éteindre sa lumière
+            byte oldLight = (byte) sub.getBlockSkyLight(x, localY, z);
+            sub.setBlockSkyLight(x, localY, z, 0);
+            LightManager.removeSkyLight(this, x, y, z, oldLight);
         }
     }
 
     /**
-     * Met à jour la colonne x, z et ajoute ses voisins dans la queue du bfs
-     * @param x Coordonnées en x (local)
-     * @param z Coordonnées en z (local)
+     * Met à jour la height map quand un bloc est casser si besoin, et ajoute les 6 voisins à la propagation de lumière
+     * @param x Coordonnées en x (locale) 0-15
+     * @param x Coordonnées en y (locale) 0-255
+     * @param z Coordonnées en z (locale) 0-15
      */
-    @ChunkThread
-    public void updateHeightMapZoneAt(int x, int z){
-        this.updateHeightMapAt(x, z);        
-        
-        // update les 4 voisins en forme de spirale montante pour appliquer les niveaux de light les plus élevés en dernier
-
-        // peut ne pas fonctionner dans certains cas mais jsp
-        // faire un plafond de 3x3, le centre ne passe pas à 13 si les voisins sont à 14 car les voisins ne sont pas reset donc il voit donc 14 > 14 donc faux et skip 
-        // et le fait de reset les voisins va régler le problème mais en créer un autre, où, avec un plafond de 3x3, le centre du plafond est bouché en dernier
-        // les 4 voisins adjacents passent à 0 et personne n'est là pour les mettre à 14, car on limite aux voisins adjacents.
-        int[][] neighbors = {{-1,0}, {1,0}, {0,-1}, {0,1}};
-        for(int ny = 0; ny < SubChunk.CHUNKSIZEHEIGHT; ny++){
-            for(int[] dir : neighbors){
-                int nx = x + dir[0];
-                int nz = z + dir[1];
-
-                Chunk chunk = this;
-                SubChunk sub = chunk.getSubChunkAt(ny);
-
-                //if (nx < 0 || nx >= SubChunk.CHUNKSIZEXZ || nz < 0 || nz >= SubChunk.CHUNKSIZEXZ) continue;
-
-                // si voisin en dehors alors on va voir dans le chunk à coté
-                if (nx >= SubChunk.CHUNKSIZEXZ) { 
-                    if (this.getSubChunkAt(ny).getNeighborWest() != null){
-                        sub = this.getSubChunkAt(ny).getNeighborWest();
-                        chunk = sub.parent;
-                        nx = 0;
-                    }else{continue;}
-                }
-                if (nx < 0) { 
-                    if (this.getSubChunkAt(ny).getNeighborEast() != null){
-                        sub = this.getSubChunkAt(ny).getNeighborEast();
-                        chunk = sub.parent;
-                        nx = 15;
-                    }else{continue;}
-                }
-                if (nz >= SubChunk.CHUNKSIZEXZ) { 
-                    if (this.getSubChunkAt(ny).getNeighborNorth() != null){
-                        sub = this.getSubChunkAt(ny).getNeighborNorth();
-                        chunk = sub.parent;
-                        nz = 0;
-                    }else{continue;}                   
-                }
-                if (nz < 0) { 
-                    if (this.getSubChunkAt(ny).getNeighborSouth() != null){
-                        sub = this.getSubChunkAt(ny).getNeighborSouth();
-                        chunk = sub.parent;
-                        nz = 15;
-                    }else{continue;}                  
-                }
-
-                if (chunk.getBlock(nx, ny, nz).transparent == true){
-                    int surfaceY = chunk.heightMap[nz + nx * SubChunk.CHUNKSIZEXZ];
-                    sub = chunk.getSubChunkAt(ny);
-                    int yInSub = ny % SubChunk.CHUNKSIZEXZ;  
-                    // si au dessus de la height map alors tous à 15 car soleil
-                    if (ny >= surfaceY){
-                        sub.setBlockSkyLight(nx, yInSub, nz, (byte)15);
-                        LightManager.addSkyLight(chunk, nx, ny, nz, (byte)15);
-                        continue;                    
+    public void updateHeightMapAtWhenBreak(int x, int y, int z){
+        // si le bloc cassé est la height map
+        if (this.heightMap[z + x * SubChunk.CHUNKSIZEXZ] == y){
+            int cy = y;
+            while (cy >= 0) {
+                if (this.getBlock(x, cy, z).transparent == false) {
+                    // On a touché le sol, on enregistre la hauteur
+                    this.heightMap[z + x * SubChunk.CHUNKSIZEXZ] = cy;
+                    this.getSubChunkAt(cy).setBlockSkyLight(x, cy % SubChunk.CHUNKSIZEXZ, z, (byte)0);
+                    SubChunk sub = this.getSubChunkAt(cy);
+                    if (this.getSubChunkAt(y) != sub){
+                        sub.rebuildSubChunk();
                     }
-
-                    // sinon si le dessous est éclairé par qlq chose et que > 1 il doit aussi propager ça lumière sans la changer
-                    int light = sub.getBlockSkyLight(nx, yInSub, nz);
-                    if (light > 1){
-                        LightManager.addSkyLight(chunk, nx, ny, nz, (byte)light);
-                    }
+                    break; 
                 }
+                // On donne 15 à l'air
+                this.getSubChunkAt(cy).setBlockSkyLight(x, cy % SubChunk.CHUNKSIZEXZ, z, (byte)15);
+                LightManager.addSkyLight(this, x, cy, z, (byte)15);
+                cy--;
             }
-        }
-        LightManager.updateLight();
+            if (cy == 0 && this.getBlock(x, cy, z).transparent == true){
+                this.heightMap[z + x * SubChunk.CHUNKSIZEXZ] = 0;
+            }
+        }else{
+            final int[][] LIGHT_NEIGHBORS = {{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1}};
+            for (int[] delta : LIGHT_NEIGHBORS) {                
+                int nx = x + delta[0];
+                int ny = y + delta[1];
+                int nz = z + delta[2];
+
+                Chunk targetChunk = this;
+                int localNx = nx;
+                int localNz = nz;
+
+                if (nx >= SubChunk.CHUNKSIZEXZ) {
+                    SubChunk neighbor = this.getSubChunkAt(ny).getNeighborWest();
+                    if (neighbor == null) continue;
+                    targetChunk = neighbor.parent;
+                    localNx = 0;
+                } else if (nx < 0) {
+                    SubChunk neighbor = this.getSubChunkAt(ny).getNeighborEast();
+                    if (neighbor == null) continue;
+                    targetChunk = neighbor.parent;
+                    localNx = 15;
+                } else if (nz >= SubChunk.CHUNKSIZEXZ) {
+                    SubChunk neighbor = this.getSubChunkAt(ny).getNeighborNorth();
+                    if (neighbor == null) continue;
+                    targetChunk = neighbor.parent;
+                    localNz = 0;
+                } else if (nz < 0) {
+                    SubChunk neighbor = this.getSubChunkAt(ny).getNeighborSouth();
+                    if (neighbor == null) continue;
+                    targetChunk = neighbor.parent;
+                    localNz = 15;
+                }
+
+                SubChunk targetSub = targetChunk.getSubChunkAt(ny);
+                int light = targetSub.getBlockSkyLight(localNx, ny % SubChunk.CHUNKSIZEXZ, localNz);
+                LightManager.addSkyLight(targetChunk, localNx, ny, localNz, (byte) light);
+            }
+        }          
     }
 
     /**
-     * Retourne un block dans le chunk.
-     * @param x Coordonnées en x (local)
+     * Retourne un bloc dans le chunk.
+     * @param x Coordonnées en x (locale) 0-15
      * @param y Coordonnées en y (global)
-     * @param z Coordonnées en z (local)
-     * @return Retourne le block trouvé
+     * @param z Coordonnées en z (locale) 0-15
+     * @return Retourne le bloc trouvé
      */
     public BlockDefinition getBlock(int x, int y, int z){
         if (y < 0 || y >= SubChunk.CHUNKSIZEHEIGHT){throw new RuntimeException("Valeur en Y incorrect");}
@@ -224,7 +255,7 @@ public class Chunk extends Node3D{
     }
     
     /**
-     * Ajoute un block dans le chunk <br> 
+     * Ajoute un bloc dans le chunk <br> 
      * (coordonnées locales du chunk)
      * @param type BlockType
      * @param x int
@@ -242,7 +273,7 @@ public class Chunk extends Node3D{
     }
 
     /**
-     * Retire un block dans le chunk <br>
+     * Retire un bloc dans le chunk <br>
      * (coordonnées locales du subChunk)
      * @param x int
      * @param y int
@@ -289,21 +320,19 @@ public class Chunk extends Node3D{
     @OpenGLThread
     @Override
     public void drawNode(Matrix4f parentModel){
-        // si le chunk est visible on l'affiche
-        if (FrustumCulling.testAABB(this.minX, this.minY, this.minZ, this.maxX, this.maxY, this.maxZ)){
-            for (SubChunk sub : subChunks){
-                if (sub.mesh.getVAO() == 0 && sub.transparentMesh.getVAO() == 0) continue; // subchunk vide, rien à dessiner
-                sub.drawNode(parentModel);
-            } 
-        }               
+        for (SubChunk sub : subChunks){
+            if (sub.mesh.getVAO() == 0 && sub.transparentMesh.getVAO() == 0) continue;
+            if (!FrustumCulling.testAABB(this.minX, sub.y, this.minZ, this.maxX, sub.y + 16, this.maxZ)) continue;
+            sub.drawNode(parentModel);
+        }
     }
 
     public void drawNodeTransparent(Matrix4f parentModel){
-    if (FrustumCulling.testAABB(this.minX, this.minY, this.minZ, this.maxX, this.maxY, this.maxZ)){
-        for (SubChunk sub : subChunks){
-            if (sub.transparentMesh.getVAO() == 0) continue;
-            sub.drawNodeTransparent(parentModel);
+        if (FrustumCulling.testAABB(this.minX, this.minY, this.minZ, this.maxX, this.maxY, this.maxZ)){
+            for (SubChunk sub : subChunks){
+                if (sub.transparentMesh.getVAO() == 0) continue;
+                sub.drawNodeTransparent(parentModel);
+            }
         }
     }
-}
 }

@@ -15,6 +15,7 @@ import demo.Annotations.OpenGLThread;
 public class BuffersManager {
 
     public static int activeVAOCount = 0;
+    public static long vboSizeBytes = 0;
     
     /**
      * Créer les buffers en les remplissant <br>
@@ -68,6 +69,7 @@ public class BuffersManager {
         int vbo = GL20.glGenBuffers();
         GL15.glBindBuffer(GL20.GL_ARRAY_BUFFER, vbo); 
         GL15.glBufferData(GL20.GL_ARRAY_BUFFER, vertex, GL20.GL_STATIC_DRAW);
+        vboSizeBytes += (long) vertex.capacity() * Integer.BYTES;
 
         // 3. Dire au VAO comment lire le VBO
         GL30.glVertexAttribIPointer(0, 1, GL20.GL_INT, 2 * Integer.BYTES, 0);

@@ -13,6 +13,7 @@ import demo.Others.FileLoader;
 public class TextureManager {
     private static int textureArrayId;
     private static final Map<String, Integer> nameToIndex = new HashMap<>();
+    private static int texUniformLocation = -2; // -2 = pas encore recherché ; -1 = recherché mais introuvable
 
     public static void init(String[] files) throws Exception {
         textureArrayId = GL11.glGenTextures();
@@ -50,12 +51,13 @@ public class TextureManager {
 
     public static void bind() {
         GL30.glActiveTexture(GL30.GL_TEXTURE0);
-        
         GL11.glBindTexture(GL30.GL_TEXTURE_2D_ARRAY, textureArrayId);
-
-        int location = GL30.glGetUniformLocation(ShadersManager.getProgramId(), "tex");
-        if (location != -1) {
-            GL30.glUniform1i(location, 0);
+        // recherché une seule fois (1er appel), mis en cache pour toutes les frames suivantes
+        if (texUniformLocation == -2) {
+            texUniformLocation = GL30.glGetUniformLocation(ShadersManager.getProgramId(), "tex");
+        }
+        if (texUniformLocation != -1) {
+            GL30.glUniform1i(texUniformLocation, 0);
         }
     }
 

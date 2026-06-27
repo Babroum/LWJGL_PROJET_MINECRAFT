@@ -26,3 +26,7 @@ benchmark_report.html
 
 # GitHub
 .github/java-upgrade/
+
+# Autre
+*.zip
+*.rar

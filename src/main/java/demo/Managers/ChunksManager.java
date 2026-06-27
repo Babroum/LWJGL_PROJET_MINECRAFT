@@ -2,17 +2,16 @@ package demo.Managers;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.*;
 
 import org.joml.Math;
 
-import demo.WorldGenerator;
 import demo.Annotations.ChunkThread;
 import demo.Annotations.OpenGLThread;
 import demo.Geometry.Chunk;
 import demo.Geometry.SubChunk;
+import demo.Geometry.WorldGenerator;
 import demo.Others.BlockDefinition;
 import demo.Rendering.Render;
 
@@ -20,10 +19,10 @@ public class ChunksManager {
 
     public static final byte SKY_LIGHT = (byte) 10;
 
-    // HashMap fait pareil mais linked permet de garder l'ordre dans lequel c'est insérer
+
     // C'est comme un dictionnaire, clé valeur
     // String remplacé par Long, optimisation
-    private static LinkedHashMap<Long, Chunk> chunks = new LinkedHashMap<>();
+    private static ConcurrentHashMap <Long, Chunk> chunks = new ConcurrentHashMap<>();
 
     // -2 pour laisser les threads OpenGL et game logic respirer
     // Un ExecutorService c'est un pool de N threads qui restent en vie et se partagent le travail.
@@ -117,21 +116,27 @@ public class ChunksManager {
         for (Chunk chunk : chunks.values()){
             futures.add(pool.submit(() -> { for (SubChunk sub : chunk.subChunks) sub.linkNeighbors(); }));
         }
-            
         for (Future<?> f : futures) try { f.get(); } catch (Exception e) {}
         futures.clear(); 
 
+        // Passe 2 : initHeightMap
         for (Chunk chunk : chunks.values()){
             futures.add(pool.submit(() -> chunk.initHeightMap()));
         }
-
         for (Future<?> f : futures) try { f.get(); } catch (Exception e) {}
         futures.clear(); 
 
+        // Passe 2.5 : propager toute la lumière initiale de façon synchrone, 
+        // AVANT la construction des maillages.
+        // - Vide les queues BFS en un seul appel (pas d'accumulation de millions de Long)
+        // - Les meshes générés en passe 3 auront la lumière correcte du premier coup
+        // - Le GameLoop trouvera des queues vides au démarrage (pas de surcharge initiale)
+        LightManager.processLightBFS();
+
+        // Passe 3 : finalizeChunk (maillage + upload GPU)
         for (Chunk chunk : chunks.values()){
-            futures.add(pool.submit(() -> finalizeChunk(chunk) ));
+            futures.add(pool.submit(() -> finalizeChunk(chunk)));
         }
-            
         for (Future<?> f : futures) {
             try { f.get(); } catch (Exception e) {}
         }
@@ -148,9 +153,11 @@ public class ChunksManager {
         }
         // générer le mesh avec un BitSet correct
         for(SubChunk sub : chunk.subChunks){
-            sub.mesh.setupSubChunkBuffers(sub.solidBitSet.cardinality()); // recrée vertexArrayPack avant de générer            
-            sub.transparentMesh.setupSubChunkBuffers(sub.transparentBitSet.cardinality());
-            sub.generateSubChunkMesh();
+            synchronized(sub) {
+                sub.mesh.setupSubChunkBuffers(sub.solidBitSet.cardinality()); // recrée vertexArrayPack avant de générer            
+                sub.transparentMesh.setupSubChunkBuffers(sub.transparentBitSet.cardinality());
+                sub.generateSubChunkMesh();
+            }
             // met le thread en pause si l'array est plein, le thread se relance automatiquement au moment ou OpenGLThread poll un chunk
             if (sub.mesh.getVertexCount() > 0 || sub.transparentMesh.getVertexCount() > 0) {   // n'envoie pas les subchunks vides au GPU
                 try { Render.dirtySubChunks.put(sub); } catch(InterruptedException e) { Thread.currentThread().interrupt(); }
@@ -219,7 +226,7 @@ public class ChunksManager {
     }
 
     /**
-     * Retourne un block dans l'un des chunks
+     * Retourne un bloc dans l'un des chunks
      * Coordonnée global
      * @param x int
      * @param y int

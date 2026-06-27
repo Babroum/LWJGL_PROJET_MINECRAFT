@@ -15,8 +15,8 @@ public class MouseInput {
     private static Vector2f currentPos;
     private static Vector2f displVec;
     private static boolean inWindow;
-    private static boolean leftButtonPressed;
-    private static boolean rightButtonPressed;
+    private volatile static boolean leftButtonPressed;
+    private volatile static boolean rightButtonPressed;
     private static Vector2f previousPos;
 
     /**
