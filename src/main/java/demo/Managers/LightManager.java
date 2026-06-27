@@ -275,23 +275,21 @@ public class LightManager {
     
     // BFS pur : peut tourner sur n'importe quel thread (pas OpenGL)
     public static void processLightBFS() {
-        while (!removalBlockLightQueue.isEmpty()) {
-            long packed = removalBlockLightQueue.pollFirst();
+        Long packed;
+
+        while ((packed = removalBlockLightQueue.pollFirst()) != null) {
             removalBlockLightQueuedSet.remove(packed);
             bfsRemove(packed, false);
         }
-        while (!removalSkyLightQueue.isEmpty()) {
-            long packed = removalSkyLightQueue.pollFirst();
+        while ((packed = removalSkyLightQueue.pollFirst()) != null) {
             removalSkyLightQueuedSet.remove(packed);
             bfsRemove(packed, true);
-        }        
-        while (!blockLightQueue.isEmpty()) {
-            long packed = blockLightQueue.pollFirst();
+        }                
+        while ((packed = blockLightQueue.pollFirst()) != null) {
             blockLightQueuedSet.remove(packed);
             bfsPropagate(packed, false);
         }
-        while (!skyLightQueue.isEmpty()) {
-            long packed = skyLightQueue.pollFirst();
+        while ((packed = skyLightQueue.pollFirst()) != null) {
             skyLightQueuedSet.remove(packed);
             bfsPropagate(packed, true);
         }

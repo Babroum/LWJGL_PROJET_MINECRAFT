@@ -24,16 +24,26 @@ public class ChunksManager {
     // String remplacé par Long, optimisation
     private static ConcurrentHashMap <Long, Chunk> chunks = new ConcurrentHashMap<>();
 
-    // -2 pour laisser les threads OpenGL et game logic respirer
     // Un ExecutorService c'est un pool de N threads qui restent en vie et se partagent le travail.
-    private static final ExecutorService pool = Executors.newFixedThreadPool(
-        Math.max(1, Runtime.getRuntime().availableProcessors() - 2),
-        r -> { // explique au pool ce qu'il doit faire quand il créer un thread (ThreadFactory)
-            Thread t = new Thread(r);
-            t.setDaemon(true);
-            return t;
-        }
-    );
+    private static final ExecutorService pool = buildPool();
+
+    private static ExecutorService buildPool() {
+        int cores   = Runtime.getRuntime().availableProcessors();
+        int workers = Math.max(1, cores - 2);  // -2 pour laisser les threads OpenGL et game logic respirer
+        // queue proportionnelle aux workers : assez pour les garder occupés
+        // sans accumuler des milliers de tâches en mémoire simultanément
+        int queueDepth = workers * 4;
+
+        return new ThreadPoolExecutor(
+            workers, // nombre minimum de threads
+            workers, // nombre maximum de threads
+            0L, // les threads ne meurent jamais (comme c'est un pool fixe)
+            TimeUnit.MILLISECONDS,
+            new ArrayBlockingQueue<>(queueDepth),
+            r -> { Thread t = new Thread(r); t.setDaemon(true); t.setName("ChunkWorker"); return t; },
+            new ThreadPoolExecutor.CallerRunsPolicy() // si queue pleine, le thread appelant exécute lui-même, par exemple le thread de rendu va executé au lieu de faire attendre la tache ici
+        );
+    }
 
     // construit la clé pour le HashMap
     private static long chunkKey(int x, int z) {
@@ -125,13 +135,6 @@ public class ChunksManager {
         }
         for (Future<?> f : futures) try { f.get(); } catch (Exception e) {}
         futures.clear(); 
-
-        // Passe 2.5 : propager toute la lumière initiale de façon synchrone, 
-        // AVANT la construction des maillages.
-        // - Vide les queues BFS en un seul appel (pas d'accumulation de millions de Long)
-        // - Les meshes générés en passe 3 auront la lumière correcte du premier coup
-        // - Le GameLoop trouvera des queues vides au démarrage (pas de surcharge initiale)
-        LightManager.processLightBFS();
 
         // Passe 3 : finalizeChunk (maillage + upload GPU)
         for (Chunk chunk : chunks.values()){

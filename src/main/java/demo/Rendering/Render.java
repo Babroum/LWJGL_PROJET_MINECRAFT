@@ -56,7 +56,7 @@ public class Render {
     private static String display1;
     private static String display2;
 
-    private static final double TARGET_FPS        = 244.0;
+    private static final double TARGET_FPS        = 500;
     private static final double TARGET_FRAME_TIME = 1.0 / TARGET_FPS;
     private static double frameStartTime = 0;
 

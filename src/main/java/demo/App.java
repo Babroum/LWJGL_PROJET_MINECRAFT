@@ -43,8 +43,8 @@ public class App
         Thread generationThread = new Thread(() -> {
             //ChunksManager.createChunks(-100, 100, -100, 100); // 40 000 chunks, il faut enlevé la limite de ram max dans le pom sinon crash
             //ChunksManager.createChunks(-24, 24, -24, 24);  // 2304 chunks 
-            //ChunksManager.createChunks(-16, 16, -16, 16); // 1024 chunks
-            ChunksManager.createChunks(-10, 10, -10, 10); // 400 chunks
+            ChunksManager.createChunks(-16, 16, -16, 16); // 1024 chunks
+            //ChunksManager.createChunks(-10, 10, -10, 10); // 400 chunks
             //ChunksManager.createChunks(-1, 1, -1, 1); // 16 chunks
             //ChunksManager.createChunks(0, 2, 0, 2); // 4 chunks
             ChunksManager.generateChunks(tlGenerator);
@@ -55,11 +55,4 @@ public class App
         generationThread.setDaemon(true);
         generationThread.start();
     }  
-
-    /*
-    export JAVA_HOME=/home/linuxbrew/.linuxbrew/opt/openjdk@21
-    mvn clean                                                                                   
-    mvn package
-    mvn exec:java
-    */
 }
