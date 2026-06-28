@@ -692,9 +692,9 @@ public class SubChunk extends Node3D{
         Arrays.fill(faceData.upBlockLightMask,    (byte)0); Arrays.fill(faceData.downBlockLightMask,  (byte)0);
         
         // rempli les masques avec les infos du face culling
-        for (int y = 0; y < SubChunk.CHUNKSIZEXZ; y = y + this.lodLevel){
-            for (int x = 0; x < SubChunk.CHUNKSIZEXZ; x = x + this.lodLevel){
-                for (int z = 0; z < SubChunk.CHUNKSIZEXZ; z = z + this.lodLevel){                    
+        for (int y = 0; y < SubChunk.CHUNKSIZEXZ; y++){
+            for (int x = 0; x < SubChunk.CHUNKSIZEXZ; x++){
+                for (int z = 0; z < SubChunk.CHUNKSIZEXZ; z++){                    
                     int ligne = y + z * SubChunk.CHUNKSIZEXZ;
 
                     int blockIndex = x + y * SubChunk.CHUNKSIZEXZ + z * SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ;
@@ -705,13 +705,12 @@ public class SubChunk extends Node3D{
                     faceData.northMask[ligne] |= (northBit << (31 - x));
                     // si c'est un bloc solide alors on calcule/applique la lumière dessus
                     if(northBit == 1){
-                        if (this.lodLevel == 1){
-                            byte ao0 = computeAO(x-1, y, z+1,   x, y-1, z+1,   x-1, y-1, z+1);
-                            byte ao1 = computeAO(x+1, y, z+1,   x, y-1, z+1,   x+1, y-1, z+1);
-                            byte ao2 = computeAO(x-1, y, z+1,   x, y+1, z+1,   x-1, y+1, z+1);
-                            byte ao3 = computeAO(x+1, y, z+1,   x, y+1, z+1,   x+1, y+1, z+1);
-                            faceData.northAoMask[ligne * SubChunk.CHUNKSIZEXZ + x] = (byte)(ao0|(ao1<<2)|(ao2<<4)|(ao3<<6));
-                        }       
+                        byte ao0 = computeAO(x-1, y, z+1,   x, y-1, z+1,   x-1, y-1, z+1);
+                        byte ao1 = computeAO(x+1, y, z+1,   x, y-1, z+1,   x+1, y-1, z+1);
+                        byte ao2 = computeAO(x-1, y, z+1,   x, y+1, z+1,   x-1, y+1, z+1);
+                        byte ao3 = computeAO(x+1, y, z+1,   x, y+1, z+1,   x+1, y+1, z+1);
+                        faceData.northAoMask[ligne * SubChunk.CHUNKSIZEXZ + x] = (byte)(ao0|(ao1<<2)|(ao2<<4)|(ao3<<6));
+                              
                         faceData.northSkyLightMask[ligne * SubChunk.CHUNKSIZEXZ + x] = (byte)this.getBlockSkyLight(x, y, z+1);
                         faceData.northBlockLightMask[ligne * SubChunk.CHUNKSIZEXZ + x] = (byte)this.getBlockLight(x, y, z+1);                        
                     }
@@ -719,22 +718,21 @@ public class SubChunk extends Node3D{
                     int southBit = (faceData.southAxis[y + x * SubChunk.CHUNKSIZEXZ] >> (31 - z)) & 1; // décalle de 31 bits - z vers la droite puis récupère le 1er bit*
                     faceData.southMask[ligne] |= (southBit << (31 - x));
                     if(southBit == 1){
-                        if (this.lodLevel == 1){
-                            byte ao0 = computeAO(x-1, y, z-1,   x, y-1, z-1,   x-1, y-1, z-1);
-                            byte ao1 = computeAO(x+1, y, z-1,   x, y-1, z-1,   x+1, y-1, z-1);
-                            byte ao2 = computeAO(x-1, y, z-1,   x, y+1, z-1,   x-1, y+1, z-1);
-                            byte ao3 = computeAO(x+1, y, z-1,   x, y+1, z-1,   x+1, y+1, z-1);
-                            faceData.southAoMask[ligne * SubChunk.CHUNKSIZEXZ + x] = (byte)(ao0|(ao1<<2)|(ao2<<4)|(ao3<<6));
-                        }
+                        byte ao0 = computeAO(x-1, y, z-1,   x, y-1, z-1,   x-1, y-1, z-1);
+                        byte ao1 = computeAO(x+1, y, z-1,   x, y-1, z-1,   x+1, y-1, z-1);
+                        byte ao2 = computeAO(x-1, y, z-1,   x, y+1, z-1,   x-1, y+1, z-1);
+                        byte ao3 = computeAO(x+1, y, z-1,   x, y+1, z-1,   x+1, y+1, z-1);
+                        faceData.southAoMask[ligne * SubChunk.CHUNKSIZEXZ + x] = (byte)(ao0|(ao1<<2)|(ao2<<4)|(ao3<<6));
+                        
                         faceData.southSkyLightMask[ligne * SubChunk.CHUNKSIZEXZ + x] = (byte)this.getBlockSkyLight(x, y, z-1);
                         faceData.southBlockLightMask[ligne * SubChunk.CHUNKSIZEXZ + x] = (byte)this.getBlockLight(x, y, z-1);
                     }                    
                 }                
             }            
         }
-        for (int y = 0; y < SubChunk.CHUNKSIZEXZ; y = y + this.lodLevel){
-            for (int z = 0; z < SubChunk.CHUNKSIZEXZ; z = z + this.lodLevel){                
-                for (int x = 0; x < SubChunk.CHUNKSIZEXZ; x = x + this.lodLevel){                    
+        for (int y = 0; y < SubChunk.CHUNKSIZEXZ; y++){
+            for (int z = 0; z < SubChunk.CHUNKSIZEXZ; z++){                
+                for (int x = 0; x < SubChunk.CHUNKSIZEXZ; x++){                    
                     int ligne = y + x * SubChunk.CHUNKSIZEXZ;
 
                     // filtre par type
@@ -744,13 +742,12 @@ public class SubChunk extends Node3D{
                     int westBit = (faceData.westAxis[y + z * SubChunk.CHUNKSIZEXZ] >>> (31 - x)) & 1;
                     faceData.westMask[ligne] |= (westBit << (31 - z));  
                     if(westBit == 1){
-                        if (this.lodLevel == 1){
-                            byte ao0 = computeAO(x+1, y, z-1,   x+1, y-1, z,   x+1, y-1, z-1);
-                            byte ao1 = computeAO(x+1, y, z+1,   x+1, y-1, z,   x+1, y-1, z+1);
-                            byte ao2 = computeAO(x+1, y, z-1,   x+1, y+1, z,   x+1, y+1, z-1);
-                            byte ao3 = computeAO(x+1, y, z+1,   x+1, y+1, z,   x+1, y+1, z+1);
-                            faceData.westAoMask[ligne * SubChunk.CHUNKSIZEXZ + z] = (byte)(ao0|(ao1<<2)|(ao2<<4)|(ao3<<6));
-                        }
+                        byte ao0 = computeAO(x+1, y, z-1,   x+1, y-1, z,   x+1, y-1, z-1);
+                        byte ao1 = computeAO(x+1, y, z+1,   x+1, y-1, z,   x+1, y-1, z+1);
+                        byte ao2 = computeAO(x+1, y, z-1,   x+1, y+1, z,   x+1, y+1, z-1);
+                        byte ao3 = computeAO(x+1, y, z+1,   x+1, y+1, z,   x+1, y+1, z+1);
+                        faceData.westAoMask[ligne * SubChunk.CHUNKSIZEXZ + z] = (byte)(ao0|(ao1<<2)|(ao2<<4)|(ao3<<6));
+                        
                         faceData.westSkyLightMask[ligne * SubChunk.CHUNKSIZEXZ + z] = (byte)this.getBlockSkyLight(x+1, y, z);
                         faceData.westBlockLightMask[ligne * SubChunk.CHUNKSIZEXZ + z] = (byte)this.getBlockLight(x+1, y, z);
                     }
@@ -758,13 +755,12 @@ public class SubChunk extends Node3D{
                     int eastBit = (faceData.eastAxis[y + z * SubChunk.CHUNKSIZEXZ] >> (31 - x)) & 1;
                     faceData.eastMask[ligne] |= (eastBit << (31 - z));
                     if(eastBit == 1){
-                        if (this.lodLevel == 1){
-                            byte ao0 = computeAO(x-1, y, z-1,   x-1, y-1, z,   x-1, y-1, z-1);
-                            byte ao1 = computeAO(x-1, y, z+1,   x-1, y-1, z,   x-1, y-1, z+1);
-                            byte ao2 = computeAO(x-1, y, z-1,   x-1, y+1, z,   x-1, y+1, z-1);
-                            byte ao3 = computeAO(x-1, y, z+1,   x-1, y+1, z,   x-1, y+1, z+1);                        
-                            faceData.eastAoMask[ligne * SubChunk.CHUNKSIZEXZ + z] = (byte)(ao0|(ao1<<2)|(ao2<<4)|(ao3<<6));
-                        }                      
+                        byte ao0 = computeAO(x-1, y, z-1,   x-1, y-1, z,   x-1, y-1, z-1);
+                        byte ao1 = computeAO(x-1, y, z+1,   x-1, y-1, z,   x-1, y-1, z+1);
+                        byte ao2 = computeAO(x-1, y, z-1,   x-1, y+1, z,   x-1, y+1, z-1);
+                        byte ao3 = computeAO(x-1, y, z+1,   x-1, y+1, z,   x-1, y+1, z+1);                        
+                        faceData.eastAoMask[ligne * SubChunk.CHUNKSIZEXZ + z] = (byte)(ao0|(ao1<<2)|(ao2<<4)|(ao3<<6));
+                                              
                         faceData.eastSkyLightMask[ligne * SubChunk.CHUNKSIZEXZ + z] = (byte)this.getBlockSkyLight(x-1, y, z);
                         faceData.eastBlockLightMask[ligne * SubChunk.CHUNKSIZEXZ + z] = (byte)this.getBlockLight(x-1, y, z);
                     }
@@ -772,9 +768,9 @@ public class SubChunk extends Node3D{
             }
         }    
                   
-        for (int y = 0; y < SubChunk.CHUNKSIZEXZ; y = y + this.lodLevel){
-            for (int z = 0; z < SubChunk.CHUNKSIZEXZ; z = z + this.lodLevel){
-                for (int x = 0; x < SubChunk.CHUNKSIZEXZ; x = x + this.lodLevel){
+        for (int y = 0; y < SubChunk.CHUNKSIZEXZ; y++){
+            for (int z = 0; z < SubChunk.CHUNKSIZEXZ; z++){
+                for (int x = 0; x < SubChunk.CHUNKSIZEXZ; x++){
                     int ligne = z + y * SubChunk.CHUNKSIZEXZ;
 
                     int blockIndex = x + y * SubChunk.CHUNKSIZEXZ + z * SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ;
@@ -783,13 +779,12 @@ public class SubChunk extends Node3D{
                     int upBit = (faceData.upAxis[z + x * SubChunk.CHUNKSIZEXZ] >>> (31 - y)) & 1;
                     faceData.upMask[ligne] |= (upBit << (31 - x));
                     if(upBit == 1){
-                        if (this.lodLevel == 1){
-                            byte ao0 = computeAO(x-1, y+1, z,   x, y+1, z-1,   x-1, y+1, z-1);
-                            byte ao1 = computeAO(x+1, y+1, z,   x, y+1, z-1,   x+1, y+1, z-1);
-                            byte ao2 = computeAO(x-1, y+1, z,   x, y+1, z+1,   x-1, y+1, z+1);
-                            byte ao3 = computeAO(x+1, y+1, z,   x, y+1, z+1,   x+1, y+1, z+1);
-                            faceData.upAoMask[ligne * SubChunk.CHUNKSIZEXZ + x] = (byte)(ao0|(ao1<<2)|(ao2<<4)|(ao3<<6));
-                        }
+                        byte ao0 = computeAO(x-1, y+1, z,   x, y+1, z-1,   x-1, y+1, z-1);
+                        byte ao1 = computeAO(x+1, y+1, z,   x, y+1, z-1,   x+1, y+1, z-1);
+                        byte ao2 = computeAO(x-1, y+1, z,   x, y+1, z+1,   x-1, y+1, z+1);
+                        byte ao3 = computeAO(x+1, y+1, z,   x, y+1, z+1,   x+1, y+1, z+1);
+                        faceData.upAoMask[ligne * SubChunk.CHUNKSIZEXZ + x] = (byte)(ao0|(ao1<<2)|(ao2<<4)|(ao3<<6));
+                        
                         faceData.upSkyLightMask[ligne * SubChunk.CHUNKSIZEXZ + x] = (byte)this.getBlockSkyLight(x, y+1, z);
                         faceData.upBlockLightMask[ligne * SubChunk.CHUNKSIZEXZ + x] = (byte)this.getBlockLight(x, y+1, z);
                     }
@@ -797,13 +792,12 @@ public class SubChunk extends Node3D{
                     int downBit = (faceData.downAxis[z + x * SubChunk.CHUNKSIZEXZ] >>> (31 - y)) & 1;
                     faceData.downMask[ligne] |= (downBit << (31 - x));
                     if(downBit == 1){
-                        if (this.lodLevel == 1){
-                            byte ao0 = computeAO(x-1, y-1, z,   x, y-1, z-1,   x-1, y-1, z-1);
-                            byte ao1 = computeAO(x+1, y-1, z,   x, y-1, z-1,   x+1, y-1, z-1);
-                            byte ao2 = computeAO(x-1, y-1, z,   x, y-1, z+1,   x-1, y-1, z+1);
-                            byte ao3 = computeAO(x+1, y-1, z,   x, y-1, z+1,   x+1, y-1, z+1);
-                            faceData.downAoMask[ligne * SubChunk.CHUNKSIZEXZ + x] = (byte)(ao0|(ao1<<2)|(ao2<<4)|(ao3<<6));
-                        }
+                        byte ao0 = computeAO(x-1, y-1, z,   x, y-1, z-1,   x-1, y-1, z-1);
+                        byte ao1 = computeAO(x+1, y-1, z,   x, y-1, z-1,   x+1, y-1, z-1);
+                        byte ao2 = computeAO(x-1, y-1, z,   x, y-1, z+1,   x-1, y-1, z+1);
+                        byte ao3 = computeAO(x+1, y-1, z,   x, y-1, z+1,   x+1, y-1, z+1);
+                        faceData.downAoMask[ligne * SubChunk.CHUNKSIZEXZ + x] = (byte)(ao0|(ao1<<2)|(ao2<<4)|(ao3<<6));
+                        
 
                         faceData.downSkyLightMask[ligne * SubChunk.CHUNKSIZEXZ + x] = (byte)this.getBlockSkyLight(x, y-1, z);
                         faceData.downBlockLightMask[ligne * SubChunk.CHUNKSIZEXZ + x] = (byte)this.getBlockLight(x, y-1, z);
