@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import demo.Geometry.WorldGenerator;
 import demo.Geometry.SubChunk;
@@ -14,9 +15,9 @@ import demo.Others.ChunkGenerationPool;
 
 public class WorldManager {
 
-    private static final int MAX_CHUNKS_PER_TICK = 2;
+    private static final int MAX_CHUNKS_PER_TICK = 3;
 
-    public static final int RENDER_DISTANCE = 8;
+    public static final int RENDER_DISTANCE = 10;
     public static final int UNLOAD_DISTANCE = RENDER_DISTANCE + 2;
 
     public static final int ZONE_NEAR = RENDER_DISTANCE / 4; // 25% de la render distance
@@ -47,6 +48,26 @@ public class WorldManager {
             lastPlayerChunkX = playerChunkX;
             lastPlayerChunkZ = playerChunkZ;
             scheduleChunkUnloads(playerChunkX, playerChunkZ);
+        }
+
+        int budget = 16;
+        while (budget-- > 0){
+            SubChunk subToMesh = Render.subChunkMeshQueue.poll();
+            if (subToMesh == null) break;
+            ChunkGenerationPool.submit(() -> {
+                subToMesh.fillSubChunkBitSet();
+                synchronized (subToMesh) {
+                    subToMesh.mesh.setupSubChunkBuffers(subToMesh.solidBitSet.cardinality());
+                    subToMesh.transparentMesh.setupSubChunkBuffers(subToMesh.transparentBitSet.cardinality());
+                    subToMesh.generateSubChunkMesh();
+                }
+                if (subToMesh.mesh.getVertexCount() > 0 || subToMesh.transparentMesh.getVertexCount() > 0) {
+                    try { Render.dirtySubChunks.put(subToMesh); } catch (InterruptedException e) {}
+                }
+                if (subToMesh.parent.pendingMeshCount.decrementAndGet() == 0) {
+                    try { Render.chunkQueue.put(subToMesh.parent); } catch (InterruptedException e) {}
+                }
+            });
         }
 
         // toujours appelé, même si le joueur n'a pas bougé
@@ -87,10 +108,12 @@ public class WorldManager {
             long key = chunkKey(cx, cz);
             generatingChunks.add(key);
 
+            int zone = WorldManager.getZone(cx, cz);
+
             ChunkGenerationPool.submit(() -> {
                 try {
-                    Chunk chunk = ChunksManager.createChunk(cx, cz);
-                    generator.get().generateChunk(chunk, cx, cz);
+                    Chunk chunk = ChunksManager.createChunk(cx, cz, 1);
+                    generator.get().generateChunk(chunk, cx, cz, 1);
                     finalizeNewChunk(chunk);
                 } finally {
                     generatingChunks.remove(key);
@@ -133,9 +156,9 @@ public class WorldManager {
         int dx = chunkX - lastPlayerChunkX;
         int dz = chunkZ - lastPlayerChunkZ;
         int dist2 = dx * dx + dz * dz;
-        if (dist2 <= ZONE_NEAR * ZONE_NEAR) return 0;
-        if (dist2 <= ZONE_MID  * ZONE_MID)  return 1;
-        return 2;
+        if (dist2 <= ZONE_NEAR * ZONE_NEAR) return 1;
+        if (dist2 <= ZONE_MID  * ZONE_MID)  return 2;
+        return 4;
     }
 
     private static long chunkKey(int x, int z) {
@@ -143,27 +166,21 @@ public class WorldManager {
     }
 
     private static void finalizeNewChunk(Chunk chunk) {
-        // lier les voisins du nouveau chunk ET de ses voisins
         for (SubChunk sub : chunk.subChunks) sub.linkNeighbors();
-
-        // re-link les voisins existants vers ce nouveau chunk
         relinkNeighborChunks(chunk);
-
         chunk.initHeightMap();
         LightManager.processLightBFS();
 
+        for (SubChunk sub : chunk.subChunks) sub.fillSubChunkBitSet();      
+
+        // au lieu de mesher maintenant, on met en queue        
+        AtomicInteger pending = new AtomicInteger(chunk.subChunks.length);
         for (SubChunk sub : chunk.subChunks) {
-            sub.fillSubChunkBitSet();
-            synchronized (sub) {
-                sub.mesh.setupSubChunkBuffers(sub.solidBitSet.cardinality());
-                sub.transparentMesh.setupSubChunkBuffers(sub.transparentBitSet.cardinality());
-                sub.generateSubChunkMesh();
-            }
-            if (sub.mesh.getVertexCount() > 0 || sub.transparentMesh.getVertexCount() > 0) {
-                try { Render.dirtySubChunks.put(sub); } catch (InterruptedException e) {}
-            }
+            Render.subChunkMeshQueue.add(sub);
         }
-        try { Render.chunkQueue.put(chunk); } catch (InterruptedException e) {}
+
+        // stocker pending dans le chunk pour y accéder depuis le budget loop
+        chunk.pendingMeshCount = pending;
     }
 
     private static void relinkNeighborChunks(Chunk newChunk) {

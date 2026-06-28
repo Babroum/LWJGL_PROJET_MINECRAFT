@@ -1,0 +1,10 @@
+{
+  "id": 13,
+  "name": "oak_leaves",
+  "opacity": 15,
+  "luminance": 0,
+  "transparent": true,
+  "textures": {
+    "all": "oak_leaves"
+  }
+}

@@ -1,5 +1,7 @@
 package demo.Geometry;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.joml.Matrix4f;
 
 import demo.Annotations.ChunkThread;
@@ -28,6 +30,8 @@ public class Chunk extends Node3D{
     private int[] colY      = new int[256];
     private byte[] colLight = new byte[256];
 
+    public AtomicInteger pendingMeshCount = new AtomicInteger(0);
+
     /**
      * Height map qui contient la hauteur du bloc (x, z) le plus proche du ciel
      */
@@ -39,10 +43,10 @@ public class Chunk extends Node3D{
      * @param chunkZ Coordonnées en Z  (locale)
      */
     @ChunkThread
-    public Chunk(int chunkX, int chunkZ){
+    public Chunk(int chunkX, int chunkZ, int lodLevel){
         this.subChunks = new SubChunk[Chunk.SUBCHUNKCOUNT];
         for (int i = 0; i < this.subChunks.length; i++){
-            this.subChunks[i] = new SubChunk(this);
+            this.subChunks[i] = new SubChunk(this, lodLevel);
             this.subChunks[i].setSubChunkPosition(0, i * SubChunk.CHUNKSIZEXZ, 0);
         }
         this.setChunkPosition(chunkX, chunkZ);

@@ -47,12 +47,19 @@ public class Render {
     public static ArrayBlockingQueue<Chunk> chunkQueue = new ArrayBlockingQueue<>(512); // 512 ajout possibles max
     public static ArrayBlockingQueue<SubChunk> dirtySubChunks = new ArrayBlockingQueue<>(8192); // 512*16 modif possibles max
     public static ConcurrentLinkedQueue<Chunk> chunksToUnload = new ConcurrentLinkedQueue<>();
+    public static ConcurrentLinkedQueue<SubChunk> subChunkMeshQueue = new ConcurrentLinkedQueue<>();
 
     private static FloatBuffer projBuffer = BufferUtils.createFloatBuffer(16);
     private static final Matrix4f projection = new Matrix4f();
 
-    private static final String[] TEXTURE_FILES  = {"null", "grass_block_top", "grass_block_side", "dirt", "stone", "cobblestone", "glowstone", "bedrock", "sand", "glass"};
-    private static final String[] BLOCKS_TO_LOAD = {"null", "air", "grass",                        "dirt", "stone", "cobblestone", "glowstone", "bedrock", "sand", "glass"};
+    private static final String[] TEXTURE_FILES  = 
+    {"null", "grass_block_top", "grass_block_side", "dirt", "stone", "stone_brick_wall", "cobblestone", "light_block", "bedrock", "sand", "gravel","glass",
+     "oak_log_top_bottom", "oak_log_side", "oak_leaves", "oak_planks"
+    };
+    private static final String[] BLOCKS_TO_LOAD = 
+    {"null", "air", "grass", "dirt", "stone", "stone_brick_wall", "cobblestone", "light_block", "bedrock", "sand", "gravel","glass",
+     "oak_log", "oak_planks", "oak_leaves"
+    };
 
     // pour du debug, à modif car à chier
     private static final int HUD_UPDATE_INTERVAL = 10;

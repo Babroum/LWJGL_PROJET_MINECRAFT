@@ -1,0 +1,10 @@
+{
+  "id": 10,
+  "name": "stone_brick_wall",
+  "opacity": 15,
+  "luminance": 0,
+  "transparent": false,
+  "textures": {
+    "all": "stone_brick_wall"
+  }
+}

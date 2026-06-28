@@ -1,0 +1,12 @@
+{
+  "id": 11,
+  "name": "oak_log",
+  "opacity": 15,
+  "luminance": 0,
+  "transparent": false,
+  "textures": {
+    "up": "oak_log_top_bottom",
+    "down": "oak_log_top_bottom",
+    "all": "oak_log_side"
+  }
+}

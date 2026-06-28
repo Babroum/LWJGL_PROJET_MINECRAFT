@@ -41,11 +41,17 @@ public class BlocksManager {
         Blocks.GRASS       = get(1); // L'ID défini dans le JSON
         Blocks.STONE       = get(2);
         Blocks.DIRT        = get(3);
-        Blocks.SAND        = get(4);        
-        Blocks.GLOWSTONE   = get(5); 
+        Blocks.SAND        = get(4);
+        Blocks.LIGHT_BLOCK   = get(5);
         Blocks.BEDROCK     = get(6);
-        Blocks.COBBLESTONE = get(7);  
-        Blocks.GLASS       = get(8);     
+        Blocks.COBBLESTONE = get(7);
+        Blocks.GLASS       = get(8);
+          
+        Blocks.GRAVEL        = get(9);        
+        Blocks.STONE_BRICK_WALL = get(10); 
+        Blocks.OAK_LOG = get(11);
+        Blocks.OAK_PLANKS = get(12);
+        Blocks.OAK_LEAVES = get(13);
         
         for (BlockDefinition block : REGISTRY) {
             if (block != null) {

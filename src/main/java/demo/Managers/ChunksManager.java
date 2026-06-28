@@ -34,7 +34,7 @@ public class ChunksManager {
     public static void createChunks(int fromX, int toX, int fromZ, int toZ) {
         for (int x = fromX; x < toX; x++){
             for (int z = fromZ; z < toZ; z++){
-                createChunk(x, z);
+                createChunk(x, z, 1);
             }
         }
     }
@@ -46,11 +46,11 @@ public class ChunksManager {
      * @return Chunk
      */
     @ChunkThread
-    public static Chunk createChunk(int x, int z){
+    public static Chunk createChunk(int x, int z, int lodLevel){
         long coord = chunkKey(x, z);
         if (ChunksManager.chunks.containsKey(coord)) 
             {throw new RuntimeException("Le chunk x: " + x + " z: "+ z + " existe déjà");}
-        Chunk chunk = new Chunk(x, z);
+        Chunk chunk = new Chunk(x, z, lodLevel);
         ChunksManager.chunks.put(coord, chunk);
         return chunk;
     }

@@ -102,7 +102,7 @@ public class KeyboardInput {
                     break;
 
                 case GLFW.GLFW_KEY_2:
-                    PlayersManager.player.blockInHand = Blocks.GLOWSTONE;
+                    PlayersManager.player.blockInHand = Blocks.LIGHT_BLOCK;
                     break;
                 
                 case GLFW.GLFW_KEY_3:

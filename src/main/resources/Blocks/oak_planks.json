@@ -1,0 +1,10 @@
+{
+  "id": 12,
+  "name": "oak_planks",
+  "opacity": 15,
+  "luminance": 0,
+  "transparent": false,
+  "textures": {
+    "all": "oak_planks"
+  }
+}
