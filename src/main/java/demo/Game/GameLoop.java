@@ -19,6 +19,10 @@ public class GameLoop {
     public static volatile long lastTickTime = 0L;
     public static final long NS_PER_TICK = (1_000_000_000L / TPS); // en nanosecondes
 
+    /**
+     * Démarre le thread de la gameloop
+     * La gameloop est dirigé par un nombre de tick par seconde
+     */
     public static void startGameThread() {
         running = true;
         gameThread = new Thread(() -> {
@@ -44,7 +48,7 @@ public class GameLoop {
                     catch (InterruptedException e) { Thread.currentThread().interrupt(); break; }
                 }
             }
-        }, "GameLoop-Thread");
+        }, "GameLoop Thread");
         gameThread.setDaemon(true);
         gameThread.start();
     }

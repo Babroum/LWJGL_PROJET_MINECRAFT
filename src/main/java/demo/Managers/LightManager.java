@@ -305,6 +305,10 @@ public class LightManager {
         }
     }
 
+    /**
+     * Ajoute un subChunk à la queue des subChunk à rebuild
+     * @param sub le subChunk ajouté à la liste
+     */
     public static void addDirtySubChunk(SubChunk sub) {
         dirtySubChunks.add(sub);
     }

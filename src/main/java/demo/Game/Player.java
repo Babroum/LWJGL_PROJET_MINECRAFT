@@ -2,6 +2,7 @@ package demo.Game;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 
 import org.joml.Vector3f;
 import org.lwjgl.opengl.GL11;
@@ -62,26 +63,46 @@ public class Player {
         this.position = new Vector3f(); // indépendant de la caméra
     }
 
+    /**
+     * Déplace le joueur vers l'avant
+     * @param inc Vitesse du déplacement
+     */
     public void moveForward(float inc) {
         move(this.camera.getForwardDirection(inc));
     }
 
+    /**
+     * Déplace le joueur vers l'arrière
+     * @param inc Vitesse du déplacement
+     */
     public void moveBackwards(float inc) {
         // L'arrière, c'est l'avant inversé
         Vector3f dir = this.camera.getForwardDirection(inc).negate();
         move(dir);
     }
 
+    /**
+     * Déplace le joueur vers la gauche
+     * @param inc Vitesse du déplacement
+     */
     public void moveLeft(float inc) {
         // La gauche, c'est la droite inversée
         Vector3f dir = this.camera.getRightDirection(inc).negate();
         move(dir);
     }
 
+    /**
+     * Déplace le joueur vers la droite
+     * @param inc Vitesse du déplacement
+     */
     public void moveRight(float inc) {
         move(this.camera.getRightDirection(inc));
     }
 
+    /**
+     * Déplace le joueur
+     * @param dir Direction du déplacement
+     */
     private void move(Vector3f dir) {
         float nextX = this.position.x + dir.x;
         // On vérifie si on peut bouger en X en gardant le Z et Y actuels
@@ -98,6 +119,7 @@ public class Player {
         this.setPosition(this.position.x, this.position.y, this.position.z);
     }
 
+    // comme un boite de collision du joueur, si il gros ou pas (antoine)
     private boolean canMoveToWithBuffer(float x, float z, float radius) {
         // On vérifie les 4 coins/côtés pour simuler une épaisseur
         return canMoveTo(x + radius, z + radius) && // Coin haut-droite
@@ -106,6 +128,7 @@ public class Player {
             canMoveTo(x - radius, z - radius);   // Coin bas-gauche
     }
     
+    // si le joueur peut aller vers newX et newZ sans collisionnée
     private boolean canMoveTo(float newX, float newZ){
         int bx = newX < 0 ? (int) Math.floor(newX) : (int) newX;
         int bz = newZ < 0 ? (int) Math.floor(newZ) : (int) newZ;
@@ -119,6 +142,9 @@ public class Player {
         }
     }
 
+    /**
+     * Fait sauter le joueur si le mouvement est possible
+     */
     public void jump(){
         // Si le joueur ne tombe pas
         if (!this.isFalling  && !isBlockCeiling()){
@@ -127,6 +153,10 @@ public class Player {
         }
     }
 
+    /**
+     * Met à jour les mouvements du joueur
+     * @param delta Vitesse des déplacements
+     */
     public void updateMovement(float delta){
         // Si le joueur tombe on applique la gravité sur la vitesse de chute
         this.velocityY += this.gravity * delta;
@@ -158,6 +188,7 @@ public class Player {
         this.setPosition(this.position.x, this.position.y, this.position.z);
     }
 
+    // vérifie si le block (px, py, pz) est dans le joueur
     private boolean isInsidePlayer(int px, int py, int pz){
         // vérifie si le bloc chevauche la boite de collision du joueur
         float minX = this.position.x - this.playerRadius;
@@ -173,6 +204,7 @@ public class Player {
             pz + 1 > minZ && pz < maxZ;
     }
 
+    // Vérifie si le joueur est sur le sol
     private boolean isOnGround() {
         // On vérifie sous les pieds à la position Y actuelle (légèrement décalée vers le bas)
         float footY = this.position.y - this.playerHeight - 0.01f; 
@@ -184,6 +216,7 @@ public class Player {
             isBlockAt(this.position.x - this.playerRadius, footY, this.position.z - this.playerRadius);
     }
 
+    // Vérifie si il y a un bloc au dessus du joueur
     private boolean isBlockCeiling(){
         float headY = this.position.y + 0.1f;
         return isBlockAt(this.position.x + this.playerRadius, headY, this.position.z + this.playerRadius) ||
@@ -192,6 +225,7 @@ public class Player {
             isBlockAt(this.position.x - this.playerRadius, headY, this.position.z - this.playerRadius);
     }
 
+    // Vérifie si il y a un bloc en x, y, z
     private boolean isBlockAt(float x, float y, float z) {
         try {
             int bx = (int) Math.floor(x);
@@ -211,6 +245,7 @@ public class Player {
     }
 
     // Appelé depuis le GameLoop thread
+    // logique du joueur, déplacements, action, etc...
     public void playerLoopLogic(float delta) {
         this.savePrevPosition(); // sauve prev AVANT tout mouvement
 
@@ -328,7 +363,7 @@ public class Player {
 
     // un seul thread dédié
     private static ExecutorService chunkModifyThread = Executors.newSingleThreadExecutor(r -> {
-        Thread t = new Thread(r);
+        Thread t = new Thread(r, "Player Action Thread");
         t.setDaemon(true);
         return t;
     });

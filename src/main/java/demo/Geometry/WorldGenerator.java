@@ -227,7 +227,7 @@ public class WorldGenerator {
      * @param chunkX index X du chunk en unités de chunk
      * @param chunkZ index Z du chunk en unités de chunk
      */
-    public void generateChunk(Chunk chunk, int chunkX, int chunkZ, int lodLevel) {
+    public void generateChunk(Chunk chunk, int chunkX, int chunkZ) {
         // PASSE 1 : grille basse résolution       
 
         // Tableau 3D de densités pré-calculées aux nœuds de la grille
@@ -254,11 +254,11 @@ public class WorldGenerator {
         }
         // PASSE 2 : interpolation trilinéaire bloc par bloc
 
-        for (int bx = 0; bx < WorldGenerator.CHUNK_SIZE; bx = bx + lodLevel) {
-            for (int bz = 0; bz < WorldGenerator.CHUNK_SIZE; bz = bz + lodLevel) {
+        for (int bx = 0; bx < WorldGenerator.CHUNK_SIZE; bx++) {
+            for (int bz = 0; bz < WorldGenerator.CHUNK_SIZE; bz++) {
                 SubChunk currentSub = chunk.getSubChunkAt(0);
                 int currentSubIndex = 0;
-                for (int by = 0; by < WorldGenerator.CHUNK_HEIGHT; by = by + lodLevel) {
+                for (int by = 0; by < WorldGenerator.CHUNK_HEIGHT; by++) {
 
                     // Identifie la cellule de grille contenant ce bloc (coin inférieur-gauche)
                     int cx = bx / WorldGenerator.STEP_XZ; // indice cellule en X

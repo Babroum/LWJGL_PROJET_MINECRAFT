@@ -24,11 +24,19 @@ public class ChunkGenerationPool {
         );
     }
 
+    /**
+     * Envoie une tache au pool de thread
+     * @param task La tache envoyer
+     */
     public static void submit(Runnable task) {
         pool.submit(task);
     }
 
-    // pour soumission avec attente (si besoin futur)
+    /**
+     * Envoie une tache au pool de thread, et retourne la complétion de la tâche
+     * @param task La tache envoyer
+     * @return Complétion de la tâche
+     */
     public static Future<?> submitFuture(Runnable task) {
         return pool.submit(task);
     }

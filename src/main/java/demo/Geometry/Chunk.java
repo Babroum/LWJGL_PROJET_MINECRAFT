@@ -39,14 +39,14 @@ public class Chunk extends Node3D{
     
     /**
      * Initialise les subChunks du chunks.
-     * @param chunkX Coordonnées en x (locale) 0-15
-     * @param chunkZ Coordonnées en Z  (locale)
+     * @param chunkX Coordonnées en x (locale)
+     * @param chunkZ Coordonnées en z (locale)
      */
     @ChunkThread
-    public Chunk(int chunkX, int chunkZ, int lodLevel){
+    public Chunk(int chunkX, int chunkZ){
         this.subChunks = new SubChunk[Chunk.SUBCHUNKCOUNT];
         for (int i = 0; i < this.subChunks.length; i++){
-            this.subChunks[i] = new SubChunk(this, lodLevel);
+            this.subChunks[i] = new SubChunk(this);
             this.subChunks[i].setSubChunkPosition(0, i * SubChunk.CHUNKSIZEXZ, 0);
         }
         this.setChunkPosition(chunkX, chunkZ);
@@ -242,6 +242,31 @@ public class Chunk extends Node3D{
         SubChunk sub = this.getSubChunkAt(y);
 
         return sub.getBlock(x, y % SubChunk.CHUNKSIZEXZ, z);
+    }
+
+    /**
+     * Retourne tous les blocs dans le chunk.
+     * @return Retourne un table de byte contenant tout les ids des blocs du chunk
+     */
+    public byte[] getAllSubChunkBlocks(){
+        byte[] allBlocks = new byte[SubChunk.MAXBLOCK * Chunk.SUBCHUNKCOUNT];
+        int index = 0;
+        for(SubChunk sub : this.subChunks){
+            byte[] blocks = sub.getAllBlocks();
+            System.arraycopy(blocks, 0, allBlocks, index, blocks.length);
+            index += blocks.length;
+        }
+        return allBlocks;
+    }
+    /**
+     * Définis tous les bloc dans le chunk
+     * @param allBlocks les 65536 blocs à redistribué
+     */
+    public void setAllSubChunkBlocks(byte[] allBlocks){
+        for(int i = 0; i < this.subChunks.length; i++){
+            int offset = i * SubChunk.MAXBLOCK;
+            System.arraycopy(allBlocks, offset, this.subChunks[i].blocks, 0, SubChunk.MAXBLOCK);
+        }
     }
 
     /**

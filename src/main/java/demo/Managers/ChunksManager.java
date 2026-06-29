@@ -8,7 +8,6 @@ import demo.Annotations.OpenGLThread;
 import demo.Geometry.Chunk;
 import demo.Geometry.SubChunk;
 import demo.Others.BlockDefinition;
-import demo.Rendering.Render;
 
 public class ChunksManager {
 
@@ -34,23 +33,23 @@ public class ChunksManager {
     public static void createChunks(int fromX, int toX, int fromZ, int toZ) {
         for (int x = fromX; x < toX; x++){
             for (int z = fromZ; z < toZ; z++){
-                createChunk(x, z, 1);
+                createChunk(x, z);
             }
         }
     }
 
-        /**
+    /**
      * Créer un nouveau chunk à la position donné
      * @param x int
      * @param z int
      * @return Chunk
      */
     @ChunkThread
-    public static Chunk createChunk(int x, int z, int lodLevel){
+    public static Chunk createChunk(int x, int z){
         long coord = chunkKey(x, z);
         if (ChunksManager.chunks.containsKey(coord)) 
             {throw new RuntimeException("Le chunk x: " + x + " z: "+ z + " existe déjà");}
-        Chunk chunk = new Chunk(x, z, lodLevel);
+        Chunk chunk = new Chunk(x, z);
         ChunksManager.chunks.put(coord, chunk);
         return chunk;
     }

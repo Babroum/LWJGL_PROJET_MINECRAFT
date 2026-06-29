@@ -116,6 +116,9 @@ public class KeyboardInput {
     }
 
     // appelé depuis le thread OpenGL uniquement : lit glfwGetKey et met à jour les volatile
+    /**
+     * Récupère les appuies des touches de déplacements (avant, arrière, gauche, droite)
+     */
     @OpenGLThread
     public static void pollMovementKeys() {
         keyForward = GLFW.glfwGetKey(Window.window, GLFW.GLFW_KEY_W) == GLFW.GLFW_PRESS;

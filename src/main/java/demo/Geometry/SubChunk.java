@@ -100,7 +100,7 @@ public class SubChunk extends Node3D{
     private static final ThreadLocal<FaceData> TRANSPARENT_FACE_DATA_LOCAL = ThreadLocal.withInitial(() -> new FaceData());
 
     @ChunkThread
-    public SubChunk(Chunk parent, int lodLevel){
+    public SubChunk(Chunk parent){
         this.parent = parent;
         this.blocks = new byte[SubChunk.MAXBLOCK];   
         this.lightMap = new byte[SubChunk.MAXBLOCK];  
@@ -223,6 +223,9 @@ public class SubChunk extends Node3D{
             { this.southNeighbor.setBlockLight(x, y, z + CHUNKSIZEXZ, newLight); return; }
     }
 
+    /**
+     * Vide la light map du subChunk
+     */
     public void clearSubChunkLight(){
         for (int i = 0; i < this.lightMap.length; i++){
             this.lightMap[i] = 0;
@@ -470,6 +473,9 @@ public class SubChunk extends Node3D{
         }
     }
 
+    /**
+     * Reconstruit le subChunk (mesh)
+     */
     @ChunkThread
     public void rebuildSubChunk(){
 
@@ -490,7 +496,7 @@ public class SubChunk extends Node3D{
     }
 
     /**
-     * Envoie les quads à dessiné avec le face cullings
+     * Envoie le mesh à dessiné
      */
     @ChunkThread
     private void uploadSubChunkMesh(byte blockType, List<Quad> quads){
@@ -503,6 +509,9 @@ public class SubChunk extends Node3D{
         }        
     }
 
+    /**
+     * Envoie le mesh transparent à dessiné
+     */
     @ChunkThread
     private void uploadSubChunkTransparentMesh(byte blockType, List<Quad> quads){
 
@@ -843,10 +852,11 @@ public class SubChunk extends Node3D{
                     continue;
                 }
 
-                int mask = 0;
-                for (int mi = coord[0]; mi < coord[1]; mi++) {
-                    mask |= (1 << (31 - mi));
-                }
+                // exemple x=2 x=5 (5 - (2 - 1)) = 4 largeur
+                //        1 << 4 = 00010000
+                //  (1 << 4) - 1 = 00001111
+                int width = coord[1] - coord[0];
+                int mask = ((1 << width) - 1) << (32 - coord[1]);
                 faceMask[ligne] = faceMask[ligne] & ~mask;
                 
                 // parcourt en hauteur 

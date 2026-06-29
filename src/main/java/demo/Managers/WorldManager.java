@@ -45,11 +45,13 @@ public class WorldManager {
 
         boolean playerMoved = playerChunkX != lastPlayerChunkX || playerChunkZ != lastPlayerChunkZ;
         if (playerMoved) {
+            // si le joueur à bougé alors on décharge
             lastPlayerChunkX = playerChunkX;
             lastPlayerChunkZ = playerChunkZ;
             scheduleChunkUnloads(playerChunkX, playerChunkZ);
         }
 
+        // ici les mesh des chunks sont créer chaque tick avec un budget
         int budget = 16;
         while (budget-- > 0){
             SubChunk subToMesh = Render.subChunkMeshQueue.poll();
@@ -61,9 +63,11 @@ public class WorldManager {
                     subToMesh.transparentMesh.setupSubChunkBuffers(subToMesh.transparentBitSet.cardinality());
                     subToMesh.generateSubChunkMesh();
                 }
+                // si il y a au moins une vertice dans le subchunk
                 if (subToMesh.mesh.getVertexCount() > 0 || subToMesh.transparentMesh.getVertexCount() > 0) {
                     try { Render.dirtySubChunks.put(subToMesh); } catch (InterruptedException e) {}
                 }
+                // si tout les subchunks sont chargés alors on ajoute le chunk à la scène
                 if (subToMesh.parent.pendingMeshCount.decrementAndGet() == 0) {
                     try { Render.chunkQueue.put(subToMesh.parent); } catch (InterruptedException e) {}
                 }
@@ -81,6 +85,7 @@ public class WorldManager {
     private static void scheduleChunkLoads(int centerX, int centerZ) {
         List<int[]> toLoad = new ArrayList<>();
 
+        // détermine la zone autour du joueur, et charge en spirale
         for (int dx = -RENDER_DISTANCE; dx <= RENDER_DISTANCE; dx++) {
             for (int dz = -RENDER_DISTANCE; dz <= RENDER_DISTANCE; dz++) {
                 if (dx * dx + dz * dz > RENDER_DISTANCE * RENDER_DISTANCE) continue;
@@ -102,7 +107,7 @@ public class WorldManager {
 
         int submitted = 0;
         for (int[] coord : toLoad) {
-            if (submitted >= MAX_CHUNKS_PER_TICK) break; // <-- limite
+            if (submitted >= MAX_CHUNKS_PER_TICK) break; // limite
 
             int cx = coord[0], cz = coord[1];
             long key = chunkKey(cx, cz);
@@ -110,10 +115,11 @@ public class WorldManager {
 
             int zone = WorldManager.getZone(cx, cz);
 
+            // on créer les chunks mais pas le mesh, seulement la light map, connexion aux voisins
             ChunkGenerationPool.submit(() -> {
                 try {
-                    Chunk chunk = ChunksManager.createChunk(cx, cz, 1);
-                    generator.get().generateChunk(chunk, cx, cz, 1);
+                    Chunk chunk = ChunksManager.createChunk(cx, cz);
+                    generator.get().generateChunk(chunk, cx, cz);
                     finalizeNewChunk(chunk);
                 } finally {
                     generatingChunks.remove(key);
@@ -149,8 +155,9 @@ public class WorldManager {
     }
 
     /**
+     * A MODIFIER VALEUR
      * Retourne la zone LOD d'un chunk (pour usage futur)
-     * 0 = NEAR, 1 = MID, 2 = FAR
+     * 1 = NEAR, 2 = MID, 4 = FAR
      */
     public static int getZone(int chunkX, int chunkZ) {
         int dx = chunkX - lastPlayerChunkX;

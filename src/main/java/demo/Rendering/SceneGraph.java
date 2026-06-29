@@ -78,6 +78,10 @@ public class SceneGraph {
         return count;
     }
 
+    /**
+     * Retire un chunk de la scène
+     * @param chunk Chunk retiré
+     */
     public void removeChunk(Chunk chunk) {
         root.removeChild(chunk);
     }

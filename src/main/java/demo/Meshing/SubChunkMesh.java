@@ -87,12 +87,12 @@ public class SubChunkMesh {
 
         switch(quad.direction){
             case 0: d=0;
-                setVert(verts,0,x+w,y,  z,1,1,d,textureId,quad.ao1,quad.skyLight,quad.blockLight);
-                setVert(verts,1,x,  y,  z,0,1,d,textureId,quad.ao0,quad.skyLight,quad.blockLight);
-                setVert(verts,2,x,  y+h,z,0,0,d,textureId,quad.ao2,quad.skyLight,quad.blockLight);
-                setVert(verts,3,x,  y+h,z,0,0,d,textureId,quad.ao2,quad.skyLight,quad.blockLight);
-                setVert(verts,4,x+w,y+h,z,1,0,d,textureId,quad.ao3,quad.skyLight,quad.blockLight);
-                setVert(verts,5,x+w,y,  z,1,1,d,textureId,quad.ao1,quad.skyLight,quad.blockLight);
+                setVert(verts,0,x+w,y,  z+1,1,1,d,textureId,quad.ao1,quad.skyLight,quad.blockLight);
+                setVert(verts,1,x,  y,  z+1,0,1,d,textureId,quad.ao0,quad.skyLight,quad.blockLight);
+                setVert(verts,2,x,  y+h,z+1,0,0,d,textureId,quad.ao2,quad.skyLight,quad.blockLight);
+                setVert(verts,3,x,  y+h,z+1,0,0,d,textureId,quad.ao2,quad.skyLight,quad.blockLight);
+                setVert(verts,4,x+w,y+h,z+1,1,0,d,textureId,quad.ao3,quad.skyLight,quad.blockLight);
+                setVert(verts,5,x+w,y,  z+1,1,1,d,textureId,quad.ao1,quad.skyLight,quad.blockLight);
                 break;
             case 1: d=1;
                 setVert(verts,0,x,  y,  z,1,1,d,textureId,quad.ao0,quad.skyLight,quad.blockLight);
@@ -103,12 +103,12 @@ public class SubChunkMesh {
                 setVert(verts,5,x,  y,  z,1,1,d,textureId,quad.ao0,quad.skyLight,quad.blockLight);
                 break;
             case 2: d=2;
-                setVert(verts,0,x,y,  z,  1,1,d,textureId,quad.ao0,quad.skyLight,quad.blockLight);
-                setVert(verts,1,x,y,  z+w,0,1,d,textureId,quad.ao1,quad.skyLight,quad.blockLight);
-                setVert(verts,2,x,y+h,z+w,0,0,d,textureId,quad.ao3,quad.skyLight,quad.blockLight);
-                setVert(verts,3,x,y+h,z+w,0,0,d,textureId,quad.ao3,quad.skyLight,quad.blockLight);
-                setVert(verts,4,x,y+h,z,  1,0,d,textureId,quad.ao2,quad.skyLight,quad.blockLight);
-                setVert(verts,5,x,y,  z,  1,1,d,textureId,quad.ao0,quad.skyLight,quad.blockLight);
+                setVert(verts,0,x+1,y,  z,  1,1,d,textureId,quad.ao0,quad.skyLight,quad.blockLight);
+                setVert(verts,1,x+1,y,  z+w,0,1,d,textureId,quad.ao1,quad.skyLight,quad.blockLight);
+                setVert(verts,2,x+1,y+h,z+w,0,0,d,textureId,quad.ao3,quad.skyLight,quad.blockLight);
+                setVert(verts,3,x+1,y+h,z+w,0,0,d,textureId,quad.ao3,quad.skyLight,quad.blockLight);
+                setVert(verts,4,x+1,y+h,z,  1,0,d,textureId,quad.ao2,quad.skyLight,quad.blockLight);
+                setVert(verts,5,x+1,y,  z,  1,1,d,textureId,quad.ao0,quad.skyLight,quad.blockLight);
                 break;
             case 3: d=3;
                 setVert(verts,0,x,y,  z+w,1,1,d,textureId,quad.ao1,quad.skyLight,quad.blockLight);
@@ -119,12 +119,12 @@ public class SubChunkMesh {
                 setVert(verts,5,x,y,  z+w,1,1,d,textureId,quad.ao1,quad.skyLight,quad.blockLight);
                 break;
             case 4: d=4;
-                setVert(verts,0,x,  y,z,  0,0,d,textureId,quad.ao0,quad.skyLight,quad.blockLight);
-                setVert(verts,1,x+w,y,z,  1,0,d,textureId,quad.ao1,quad.skyLight,quad.blockLight);
-                setVert(verts,2,x+w,y,z+h,1,1,d,textureId,quad.ao3,quad.skyLight,quad.blockLight);
-                setVert(verts,3,x+w,y,z+h,1,1,d,textureId,quad.ao3,quad.skyLight,quad.blockLight);
-                setVert(verts,4,x,  y,z+h,0,1,d,textureId,quad.ao2,quad.skyLight,quad.blockLight);
-                setVert(verts,5,x,  y,z,  0,0,d,textureId,quad.ao0,quad.skyLight,quad.blockLight);
+                setVert(verts,0,x,  y+1,z,  0,0,d,textureId,quad.ao0,quad.skyLight,quad.blockLight);
+                setVert(verts,1,x+w,y+1,z,  1,0,d,textureId,quad.ao1,quad.skyLight,quad.blockLight);
+                setVert(verts,2,x+w,y+1,z+h,1,1,d,textureId,quad.ao3,quad.skyLight,quad.blockLight);
+                setVert(verts,3,x+w,y+1,z+h,1,1,d,textureId,quad.ao3,quad.skyLight,quad.blockLight);
+                setVert(verts,4,x,  y+1,z+h,0,1,d,textureId,quad.ao2,quad.skyLight,quad.blockLight);
+                setVert(verts,5,x,  y+1,z,  0,0,d,textureId,quad.ao0,quad.skyLight,quad.blockLight);
                 break;
             case 5: d=5;
                 setVert(verts,0,x,  y,z+h,0,0,d,textureId,quad.ao2,quad.skyLight,quad.blockLight);
@@ -154,6 +154,7 @@ public class SubChunkMesh {
         } catch(Exception e){ e.printStackTrace(); }
     }
 
+    // utilitaire pour simplifier
     private void setVert(int[][] v, int i, int x, int y, int z, int u, int vv, int d, int tex, int ao, int sky, int block){
         v[i][0]=x;
         v[i][1]=y; 
