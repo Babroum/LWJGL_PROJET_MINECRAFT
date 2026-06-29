@@ -1,6 +1,7 @@
 package demo;
 
 import demo.Managers.BenchmarkManager;
+import demo.Others.ChunkSerializer;
 import demo.Rendering.SceneGraph;
 import demo.Rendering.Window;
 
@@ -28,6 +29,7 @@ public class App
     }
 
     public static void draw(SceneGraph scene){
+        ChunkSerializer.init(); // créer le dossier saves/world/ si n'existe pas
         BenchmarkManager.getInstance().start();
     }  
 }

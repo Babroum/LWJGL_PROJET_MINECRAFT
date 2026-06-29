@@ -2,6 +2,7 @@ package demo.Others;
 
 import java.io.IOException;
 import java.nio.file.*;
+import java.util.Comparator;
 
 import demo.Geometry.Chunk;
 import demo.Managers.ChunksManager;
@@ -12,7 +13,29 @@ public class ChunkSerializer {
     public static void init(){
         try{                       
             Path path = Paths.get(ChunkSerializer.SAVE_DIR);
-            Files.createDirectories(path);
+            if (!Files.exists(path)) {
+                Files.createDirectories(path);
+            } else {
+                // Vider le dossier sans le supprimer lui-même
+                try {
+                    Files.walk(path)
+                        .sorted(Comparator.reverseOrder())
+                        .skip(1) // Saute la racine
+                        .forEach(file -> {
+                            try {
+                                // Supprime le fichier ou le dossier (doit être vide)
+                                Files.delete(file); 
+                            } catch (IOException e) {
+                                // Affiche quel fichier pose problème pour le débogage
+                                System.err.println("Échec suppression: " + file + " - " + e.getMessage());
+                                throw new RuntimeException("Impossible de supprimer : " + file, e);
+                            }
+                        });
+                    System.out.println("Nettoyage terminé.");
+                } catch (IOException e) {
+                     System.out.println("Erreur lors du parcours du dossier"+e);
+                }
+            }
         }catch (IOException e){
             System.out.println(e);
         }
@@ -20,23 +43,31 @@ public class ChunkSerializer {
 
     public static void save(Chunk chunk){
         byte[] blocks = chunk.getAllSubChunkBlocks();
-        try{
+        Path path = getPath(ChunksManager.floorDiv(chunk.x, 16), ChunksManager.floorDiv(chunk.z, 16));
+        Path tempPath = path.resolveSibling(path.getFileName() + ".tmp");
+
+        try {
+            // écrit dans un fichier temporaire
+            Files.write(tempPath, blocks, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
             
-            Path path = ChunkSerializer.getPath(ChunksManager.floorDiv(chunk.x, 16),ChunksManager.floorDiv(chunk.z, 16));
-            Files.write(path, blocks);
-        }catch (IOException e){
-            System.out.println(e);
+            // déplace le fichier temporaire vers le fichier final
+            // cela garantit que le fichier final n'est jamais partiel ou verrouillé pendant l'écriture
+            Files.move(tempPath, path, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+        } catch (IOException e) {
+            System.err.println("Erreur sauvegarde chunk " + chunk.x + "," + chunk.z + ": " + e.getMessage());
+            // nettoyer le fichier temporaire en cas d'échec
+            try { Files.deleteIfExists(tempPath); } catch (IOException ex) {}
         }
     }
 
     public static byte[] load(int cx, int cz){
-        if (!exists(cx, cz)) return null;
-        try{
-            Path path = ChunkSerializer.getPath(cx, cz);
-            byte[] blocks = Files.readAllBytes(path);
-            return blocks;
-        }catch(IOException e){
-            System.out.println(e);
+        Path path = getPath(cx, cz);
+        if (!Files.exists(path)) return null;
+        try {
+            return Files.readAllBytes(path);
+        } catch (IOException e) {
+            // Cas fréquent sous Windows : "Le processus ne peut pas accéder au fichier car il est utilisé par un autre processus"
+            System.err.println("Erreur lecture chunk " + cx + "," + cz + " (Fichier peut-être verrouillé): " + e.getMessage());
             return null;
         }
     }

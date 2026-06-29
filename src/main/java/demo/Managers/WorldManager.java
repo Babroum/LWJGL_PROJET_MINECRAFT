@@ -12,6 +12,7 @@ import demo.Geometry.SubChunk;
 import demo.Geometry.Chunk;
 import demo.Rendering.Render;
 import demo.Others.ChunkGenerationPool;
+import demo.Others.ChunkSerializer;
 
 public class WorldManager {
 
@@ -119,7 +120,14 @@ public class WorldManager {
             ChunkGenerationPool.submit(() -> {
                 try {
                     Chunk chunk = ChunksManager.createChunk(cx, cz);
-                    generator.get().generateChunk(chunk, cx, cz);
+                    byte[] saved = ChunkSerializer.load(cx, cz);
+                    if (saved != null) {
+                        // chunk déjà connun, on restaure les blocs depuis le fichier
+                        chunk.setAllSubChunkBlocks(saved);
+                    } else {
+                        // chunk nouveau, génération
+                        generator.get().generateChunk(chunk, cx, cz);
+                    }
                     finalizeNewChunk(chunk);
                 } finally {
                     generatingChunks.remove(key);
@@ -180,14 +188,13 @@ public class WorldManager {
 
         for (SubChunk sub : chunk.subChunks) sub.fillSubChunkBitSet();      
 
+        // stocker pending dans le chunk pour y accéder depuis le budget loop
+        chunk.pendingMeshCount = new AtomicInteger(chunk.subChunks.length);
+
         // au lieu de mesher maintenant, on met en queue        
-        AtomicInteger pending = new AtomicInteger(chunk.subChunks.length);
         for (SubChunk sub : chunk.subChunks) {
             Render.subChunkMeshQueue.add(sub);
         }
-
-        // stocker pending dans le chunk pour y accéder depuis le budget loop
-        chunk.pendingMeshCount = pending;
     }
 
     private static void relinkNeighborChunks(Chunk newChunk) {

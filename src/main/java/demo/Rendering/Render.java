@@ -24,6 +24,7 @@ import demo.Managers.LightManager;
 import demo.Managers.ShadersManager;
 import demo.Managers.TextureManager;
 import demo.Managers.WorldManager;
+import demo.Others.ChunkSerializer;
 import demo.Others.FileLoader;
 import demo.Types.Color4f;
 import demo.Managers.PlayersManager;
@@ -126,6 +127,7 @@ public class Render {
             // décharge les chunks hors range
             Chunk toRemove;
             while ((toRemove = Render.chunksToUnload.poll()) != null) {
+                ChunkSerializer.save(toRemove); // sauvegarde le chunk en fichier
                 WorldManager.onChunkUnloaded(toRemove); // retire du unloadingChunks
                 Render.sceneGraph.removeChunk(toRemove);
                 if (ChunksManager.getChunkAt(toRemove.x, toRemove.z) != null) {

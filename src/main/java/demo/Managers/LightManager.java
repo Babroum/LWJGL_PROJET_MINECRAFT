@@ -10,6 +10,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import demo.Annotations.OpenGLThread;
 import demo.Geometry.Chunk;
 import demo.Geometry.SubChunk;
+import demo.Others.ChunkGenerationPool;
 
 public class LightManager {
 
@@ -301,7 +302,8 @@ public class LightManager {
         SubChunk s;
         while ((s = dirtySubChunks.poll()) != null) {
             s.dirty.set(false);
-            s.rebuildSubChunk();
+            final SubChunk sub = s;
+            ChunkGenerationPool.submit(() -> sub.rebuildSubChunk()); // async sur pool
         }
     }
 
