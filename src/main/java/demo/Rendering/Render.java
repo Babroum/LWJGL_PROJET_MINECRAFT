@@ -151,7 +151,6 @@ public class Render {
             InputManager.runOpenGL();
             PlayersManager.player.playerLoopRender();
 
-            ShadersManager.useShader();            
             // donne les matrices de camera et perspective au shader
             ShadersManager.runProjection(Render.calculateProjection(45.0f, (float) Window.width / Window.height, 0.1f, 5000.f)); // donne la perspective de l'ecran
             ShadersManager.runView(PlayersManager.player.getCamera().getViewMatrixBuffer()); // donne la vue de la camera
@@ -281,6 +280,16 @@ public class Render {
         // récupère les ids des uniformes dans les .glsl
         // pour ne pas à avoir à les re recup à chaque frame
         ShadersManager.getUniformLocations();    
+
+        ShadersManager.useShader();    
+        
+        int renderDistanceBlocks = WorldManager.RENDER_DISTANCE * 16;
+        float fogEnd = renderDistanceBlocks * 0.9f;
+        float fogStart = fogEnd * 0.2f;
+
+        ShadersManager.runFogStart(fogStart);
+        ShadersManager.runFogEnd(fogEnd);
+        ShadersManager.runSkyColor(Color4f.SKY.red, Color4f.SKY.green, Color4f.SKY.blue);
     }
     
     /**

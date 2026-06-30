@@ -5,11 +5,14 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Future;
+import java.util.Random;
 
 import demo.Geometry.WorldGenerator;
 import demo.Geometry.SubChunk;
 import demo.Geometry.Chunk;
 import demo.Rendering.Render;
+import demo.Others.Blocks;
 import demo.Others.ChunkGenerationPool;
 import demo.Others.ChunkSerializer;
 
@@ -105,38 +108,75 @@ public class WorldManager {
         // trie par distance croissante : on génère les plus proches en premier
         toLoad.sort(Comparator.comparingInt(a -> a[2]));
 
+        // Phase 1 : générer le terrain en parallèle
+        List<Future<?>> futures = new ArrayList<>();
+        List<Chunk> generatedChunks = new java.util.concurrent.CopyOnWriteArrayList<>();
+
         int submitted = 0;
         for (int[] coord : toLoad) {
-            if (submitted >= MAX_CHUNKS_PER_TICK) break; // limite
+            if (submitted >= MAX_CHUNKS_PER_TICK) break;
 
             int cx = coord[0], cz = coord[1];
             long key = chunkKey(cx, cz);
             generatingChunks.add(key);
 
-            int zone = WorldManager.getZone(cx, cz);
-
-            // on créer les chunks mais pas le mesh, seulement la light map, connexion aux voisins
-            ChunkGenerationPool.submit(() -> {
+            futures.add(ChunkGenerationPool.submitFuture(() -> {
                 try {
                     Chunk chunk = ChunksManager.createChunk(cx, cz);
                     byte[] saved = ChunkSerializer.load(cx, cz);
                     if (saved != null) {
-                        // chunk déjà connun, on restaure les blocs depuis le fichier
                         chunk.setAllSubChunkBlocks(saved);
                     } else {
-                        // chunk nouveau, génération
                         generator.get().generateChunk(chunk, cx, cz);
                     }
-                    finalizeNewChunk(chunk);
-                    chunk.isReady = true;
+                    for (SubChunk sub : chunk.subChunks) sub.linkNeighbors();
+                    relinkNeighborChunks(chunk);
+                    chunk.initHeightMap();
+                    for (SubChunk sub : chunk.subChunks) sub.fillSubChunkBitSet();
+                    generatedChunks.add(chunk);
                 } catch (Exception e) {
-                    e.printStackTrace(); 
+                    e.printStackTrace();
                 } finally {
                     generatingChunks.remove(key);
                 }
-            });
+            }));
             submitted++;
         }
+
+        //
+        // Un seul thread attend les futures et lance la phase 2
+        ChunkGenerationPool.submit(() -> {
+            for (Future<?> f : futures) {
+                try { f.get(); } catch (Exception e) {}
+            }
+            // Tous les chunks de la phase 1 sont prêts, on peut placer les arbres
+            for (Chunk chunk : generatedChunks) {
+                boolean isFromSave = ChunkSerializer.load(
+                    ChunksManager.floorDiv(chunk.x, 16),
+                    ChunksManager.floorDiv(chunk.z, 16)
+                ) != null;
+
+                if (!isFromSave) {
+                    Random random = new Random();
+                    for (int x = 0; x < SubChunk.CHUNKSIZEXZ; x++) {
+                        for (int z = 0; z < SubChunk.CHUNKSIZEXZ; z++) {
+                            int y = chunk.heightMap[z + x * SubChunk.CHUNKSIZEXZ];
+                            if (chunk.getBlock(x, y, z) == Blocks.GRASS) {
+                                if (random.nextInt(50) == 0) {
+                                    generator.get().generateTree(x, y + 1, z, chunk);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                chunk.pendingMeshCount.set(chunk.subChunks.length);
+                for (SubChunk sub : chunk.subChunks) {
+                    Render.subChunkMeshQueue.add(sub);
+                }
+                chunk.isReady = true;
+            }
+        });
     }
 
     /**
@@ -182,22 +222,6 @@ public class WorldManager {
 
     private static long chunkKey(int x, int z) {
         return ((long) x << 32) | (z & 0xFFFFFFFFL);
-    }
-
-    private static void finalizeNewChunk(Chunk chunk) {
-        for (SubChunk sub : chunk.subChunks) sub.linkNeighbors();
-        relinkNeighborChunks(chunk);
-        chunk.initHeightMap();
-
-        for (SubChunk sub : chunk.subChunks) sub.fillSubChunkBitSet();      
-
-        // stocker pending dans le chunk pour y accéder depuis le budget loop
-        chunk.pendingMeshCount.set(chunk.subChunks.length);
-
-        // au lieu de mesher maintenant, on met en queue    
-        for (SubChunk sub : chunk.subChunks) {
-            Render.subChunkMeshQueue.add(sub);
-        }
     }
 
     private static void relinkNeighborChunks(Chunk newChunk) {

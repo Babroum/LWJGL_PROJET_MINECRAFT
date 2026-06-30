@@ -352,7 +352,7 @@ public class Chunk extends Node3D{
     @Override
     public void drawNode(Matrix4f parentModel){
         for (SubChunk sub : subChunks){
-            if (sub.mesh.getVAO() == 0 && sub.transparentMesh.getVAO() == 0) continue;
+            if (sub.mesh.getVAO() == 0 && sub.transparentMesh.getVAO() == 0 && sub.glassMesh.getVAO() == 0) continue;
             if (!FrustumCulling.testAABB(this.minX, sub.y, this.minZ, this.maxX, sub.y + 16, this.maxZ)) continue;
             sub.drawNode(parentModel);
         }

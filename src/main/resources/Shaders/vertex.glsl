@@ -14,6 +14,7 @@ out vec2 uv;
 out float AO;
 out float skyLight;
 out float blockLight;
+out float fogDistance;
 
 uniform mat4 projection;
 uniform mat4 view;
@@ -47,4 +48,5 @@ void main()
     AO = float(ao);
     skyLight = float(sky);
     blockLight = float(block);
+    fogDistance = length((view * model * vec4(position, 1.0)).xyz);
 }

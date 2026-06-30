@@ -11,7 +11,7 @@ public class ChunkGenerationPool {
         int workers = Math.max(1, cores - 2);  // -2 pour laisser les threads OpenGL et game logic respirer
         // queue proportionnelle aux workers : assez pour les garder occupés
         // sans accumuler des milliers de tâches en mémoire simultanément
-        int queueDepth = workers * 4;
+        int queueDepth = 512;
 
         return new ThreadPoolExecutor(
             workers, // nombre minimum de threads
@@ -20,7 +20,8 @@ public class ChunkGenerationPool {
             TimeUnit.MILLISECONDS,
             new ArrayBlockingQueue<>(queueDepth),
             r -> { Thread t = new Thread(r); t.setDaemon(true); t.setName("ChunkWorker"); return t; },
-            new ThreadPoolExecutor.CallerRunsPolicy() // si queue pleine, le thread appelant exécute lui-même, par exemple le thread de rendu va executé au lieu de faire attendre la tache ici
+            //new ThreadPoolExecutor.CallerRunsPolicy() // si queue pleine, le thread appelant exécute lui-même, par exemple le thread de rendu va executé au lieu de faire attendre la tache ici
+            new ThreadPoolExecutor.DiscardPolicy() // si queue pleine, alors on ignore silencieusement la tâche et elle sert re ajouté au prochain tick
         );
     }
 

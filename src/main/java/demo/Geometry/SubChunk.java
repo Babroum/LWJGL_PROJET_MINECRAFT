@@ -40,7 +40,9 @@ public class SubChunk extends Node3D{
 
     // donne au mesh le subChunk au quel il appartient
     public SubChunkMesh mesh = new SubChunkMesh();
-    public SubChunkMesh transparentMesh = new SubChunkMesh();
+    public SubChunkMesh transparentMesh = new SubChunkMesh();    
+    public SubChunkMesh glassMesh = new SubChunkMesh();   // ancien transparentMesh renommé
+
     public byte[] blocks; // id des blocs (MAX 256 blocs différent car 8bits)
     public byte[] lightMap; // contient la lumière du ciel et celle du bloc 4bits et 4bits
     
@@ -53,6 +55,10 @@ public class SubChunk extends Node3D{
     public BitSet solidBitSet = new BitSet(SubChunk.MAXBLOCK); 
     // contient des 1 et 0 (bloc plein, bloc transparent(vitre))
     public BitSet transparentBitSet = new BitSet(SubChunk.MAXBLOCK);
+
+    private static final int MODE_OPAQUE      = 0;
+    private static final int MODE_GLASS       = 1;
+    private static final int MODE_TRANSPARENT = 2;
 
     private final Set<Byte> blockTypes = new HashSet<>();
 
@@ -98,6 +104,7 @@ public class SubChunk extends Node3D{
     // c'est pour cela qu'un threadlocal, va créer une instance de FACE_DATA_LOCAL sur chaque thread
     private static final ThreadLocal<FaceData> OPAQUE_FACE_DATA_LOCAL      = ThreadLocal.withInitial(() -> new FaceData());
     private static final ThreadLocal<FaceData> TRANSPARENT_FACE_DATA_LOCAL = ThreadLocal.withInitial(() -> new FaceData());
+    private static final ThreadLocal<FaceData> GLASS_FACE_DATA_LOCAL       = ThreadLocal.withInitial(() -> new FaceData());
 
     @ChunkThread
     public SubChunk(Chunk parent){
@@ -253,47 +260,53 @@ public class SubChunk extends Node3D{
     @ChunkThread
     public synchronized void generateSubChunkMesh(){
         List<Quad> quads = new ArrayList<>();
-        // Lignes de blocs pleins/vides sur l'axe (ex: ligne X = 16 bits, 1 = bloc plein, 0 = bloc vide)
-        // Utilisé pour calculer quelles faces sont visibles (face culling)
-        // les tableaux sont créer seulement pour le face culling puis après détruit par le GC 
-        // car il ne servent plus à rien tant que le chunk n'est pas rebuils
 
-        FaceData opaqueFaceData = OPAQUE_FACE_DATA_LOCAL.get();
+        FaceData opaqueFaceData      = OPAQUE_FACE_DATA_LOCAL.get();
+        FaceData glassFaceData       = GLASS_FACE_DATA_LOCAL.get();
         FaceData transparentFaceData = TRANSPARENT_FACE_DATA_LOCAL.get();
 
-        // calcule le face culling
-        this.calculateSubChunkFaceCulling(opaqueFaceData, false); // opaque
-
-        // collecte les types uniques
-        // le Set n'accepte pas les doublons donc si j'ai 500 GRASS dans le set il n'y aura que 1 GRASS
+        // Collecte les types uniques
         this.blockTypes.clear();
-        for(byte b : this.blocks){
-            if(b != (byte)Blocks.AIR.id) this.blockTypes.add(b);
+        for (byte b : this.blocks){
+            if (b != (byte)Blocks.AIR.id) this.blockTypes.add(b);
         }
 
-        // si il y a au moins un block transparent 
-        boolean hasTransparent = this.blockTypes.stream().anyMatch(b -> BlocksManager.get(b).transparent);
-        if (!hasTransparent) {
-            this.transparentMesh.setupSubChunkBuffers(0);
-        } else {
-            this.calculateSubChunkFaceCulling(transparentFaceData, true);
+        // Vérifie si on a du verre et/ou des blocs transparents non-verre
+        boolean hasGlass       = this.blockTypes.contains((byte)Blocks.GLASS.id);
+        boolean hasTransparent = this.blockTypes.stream()
+            .anyMatch(b -> BlocksManager.get(b).transparent && b != (byte)Blocks.GLASS.id);
+
+        // Face culling opaque (toujours calculé)
+        this.calculateSubChunkFaceCulling(opaqueFaceData, MODE_OPAQUE);
+
+        // Face culling verre : culling verre-verre
+        if (hasGlass){
+            this.calculateSubChunkFaceCulling(glassFaceData, MODE_GLASS);
         }
 
-        // calcule le greedy meshing pour chaque type de bloc     
+        // Face culling transparent (feuilles etc.) : pas de culling entre eux
+        if (hasTransparent){
+            this.calculateSubChunkFaceCulling(transparentFaceData, MODE_TRANSPARENT);
+        }
+
         for (byte blockType : this.blockTypes){
             boolean isTransparent = BlocksManager.get(blockType).transparent;
 
-            if (isTransparent){
-                this.calculateSubChunkBinaryGreedyMeshing(blockType, transparentFaceData, quads);
-                this.uploadSubChunkTransparentMesh(blockType, quads);
-            } else {
+            if (!isTransparent){
                 this.calculateSubChunkBinaryGreedyMeshing(blockType, opaqueFaceData, quads);
                 this.uploadSubChunkMesh(blockType, quads);
+            } else if (blockType == (byte)Blocks.GLASS.id){
+                this.calculateSubChunkBinaryGreedyMeshing(blockType, glassFaceData, quads);
+                this.uploadSubChunkGlassMesh(blockType, quads);
+            } else {
+                this.calculateSubChunkBinaryGreedyMeshing(blockType, transparentFaceData, quads);
+                this.uploadSubChunkTransparentMesh(blockType, quads);
             }
         }
-        // rempli le buffer de la maille avec les données pack (vertex packing)
+
         this.mesh.fillSubChunkVertexBufferWithArray();
-        this.transparentMesh.fillSubChunkVertexBufferWithArray(); 
+        this.transparentMesh.fillSubChunkVertexBufferWithArray();
+        this.glassMesh.fillSubChunkVertexBufferWithArray();
         this.blockTypes.clear();
     }
 
@@ -336,6 +349,9 @@ public class SubChunk extends Node3D{
         if (this.transparentMesh.getVertexCount() > 0) {
             this.transparentMesh.createSubChunkVBOVAO();
         }
+        if (this.glassMesh.getVertexCount() > 0) {
+            this.glassMesh.createSubChunkVBOVAO();
+        }
     }
 
     /**
@@ -347,9 +363,11 @@ public class SubChunk extends Node3D{
         // Libère le buffer CPU off-heap s'il n'a pas encore été uploadé
         this.mesh.cleanup();
         this.transparentMesh.cleanup();
-        // Libère les buffers GPU
+        this.glassMesh.cleanup();
+
         this.mesh.deleteSubChunkVBOVAO();
         this.transparentMesh.deleteSubChunkVBOVAO();
+        this.glassMesh.deleteSubChunkVBOVAO();
         this.cleanup();
     }
 
@@ -485,12 +503,13 @@ public class SubChunk extends Node3D{
         synchronized(this) {
             this.mesh.setupSubChunkBuffers(this.solidBitSet.cardinality());
             this.transparentMesh.setupSubChunkBuffers(this.transparentBitSet.cardinality());
+            this.glassMesh.setupSubChunkBuffers(this.transparentBitSet.cardinality());
             this.generateSubChunkMesh();
         }
         
         // met le thread en pause si l'array est plein, le thread se relance automatiquement au moment où OpenGLThread poll un chunk
         //Render.dirtySubChunks.offer(this);
-        if (this.mesh.getVertexCount() > 0 || this.transparentMesh.getVertexCount() > 0) {
+        if (this.mesh.getVertexCount() > 0 || this.transparentMesh.getVertexCount() > 0 || this.glassMesh.getVertexCount() > 0) {
             try { Render.dirtySubChunks.put(this); } catch(InterruptedException e) { Thread.currentThread().interrupt(); }
         }
     }
@@ -509,17 +528,23 @@ public class SubChunk extends Node3D{
         }        
     }
 
-    /**
-     * Envoie le mesh transparent à dessiné
-     */
     @ChunkThread
     private void uploadSubChunkTransparentMesh(byte blockType, List<Quad> quads){
-
         for(Quad quad : quads){
             BlockDefinition type = BlocksManager.get(blockType);
             if(type == Blocks.NULL) continue;
-            int textureId =  type.getTextureLayer(quad.direction);
+            int textureId = type.getTextureLayer(quad.direction);
             this.transparentMesh.addQuadVertexToArray(quad, textureId);
+        }        
+    }
+
+    @ChunkThread
+    private void uploadSubChunkGlassMesh(byte blockType, List<Quad> quads){
+        for(Quad quad : quads){
+            BlockDefinition type = BlocksManager.get(blockType);
+            if(type == Blocks.NULL) continue;
+            int textureId = type.getTextureLayer(quad.direction);
+            this.glassMesh.addQuadVertexToArray(quad, textureId);
         }        
     }
 
@@ -528,7 +553,7 @@ public class SubChunk extends Node3D{
      * Calcule aussi avec les faces des chunks voisins
      */
     @ChunkThread
-    private void calculateSubChunkFaceCulling(FaceData faceData, boolean transparent){
+    private void calculateSubChunkFaceCulling(FaceData faceData, int mode){
         Arrays.fill(faceData.northAxis, 0); Arrays.fill(faceData.southAxis, 0);        
         Arrays.fill(faceData.westAxis,  0); Arrays.fill(faceData.eastAxis,  0);
         Arrays.fill(faceData.upAxis,    0); Arrays.fill(faceData.downAxis,  0);
@@ -539,9 +564,7 @@ public class SubChunk extends Node3D{
                 int index = y + x * SubChunk.CHUNKSIZEXZ;
                 for (int z = 0; z < SubChunk.CHUNKSIZEXZ; z++){
                     int bitSetIndex = x + y * SubChunk.CHUNKSIZEXZ + z * SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ;
-                    boolean value;
-                    if (transparent){value = solidBitSet.get(bitSetIndex) && transparentBitSet.get(bitSetIndex);}
-                    else {value = solidBitSet.get(bitSetIndex) && !transparentBitSet.get(bitSetIndex);}
+                    boolean value = computeValue(bitSetIndex, mode);
                     faceData.northAxis[index] |= (value ? 1 : 0) << (31 - z);
                 }
                 int ligne = faceData.northAxis[index];
@@ -550,133 +573,127 @@ public class SubChunk extends Node3D{
                 if (this.getNeighborSouth() != null){
                     int bitSetIndex = x + y * SubChunk.CHUNKSIZEXZ + 15 * SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ;
                     SubChunk neighbor = this.getNeighborSouth();
-                    if (transparent){
-                        boolean voisinCache = neighbor.solidBitSet.get(bitSetIndex);
-                        ligneNeighborSouth = voisinCache ? 1 : 0;
-                    } else {
-                        boolean voisinCache = neighbor.solidBitSet.get(bitSetIndex) && !neighbor.transparentBitSet.get(bitSetIndex);
-                        ligneNeighborSouth = voisinCache ? 1 : 0;
-                    }
+                    ligneNeighborSouth = computeNeighborValue(neighbor, bitSetIndex, mode) ? 1 : 0;
                 }
-                ligneNeighborSouth = ligneNeighborSouth << 31;     
+                ligneNeighborSouth = ligneNeighborSouth << 31;
 
                 int ligneNeighborNorth = 0;
                 if (this.getNeighborNorth() != null){
                     int bitSetIndex = x + y * SubChunk.CHUNKSIZEXZ + 0 * SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ;
                     SubChunk neighbor = this.getNeighborNorth();
-                    if (transparent){
-                        boolean voisinCache = neighbor.solidBitSet.get(bitSetIndex);
-                        ligneNeighborNorth = voisinCache ? 1 : 0;
-                    } else {
-                        boolean voisinCache = neighbor.solidBitSet.get(bitSetIndex) && !neighbor.transparentBitSet.get(bitSetIndex);
-                        ligneNeighborNorth = voisinCache ? 1 : 0;
-                    }
+                    ligneNeighborNorth = computeNeighborValue(neighbor, bitSetIndex, mode) ? 1 : 0;
                 }
-                ligneNeighborNorth = ligneNeighborNorth << 16;  
+                ligneNeighborNorth = ligneNeighborNorth << 16;
 
-                faceData.southAxis[index] = ligne & ~((ligne >>> 1) | ligneNeighborSouth); // faces vers le sud  
-                faceData.northAxis[index] = ligne & ~((ligne << 1) | ligneNeighborNorth); // faces vers le nord
+                if (mode == MODE_TRANSPARENT) {
+                    faceData.southAxis[index] = ligne & ~ligneNeighborSouth;
+                    faceData.northAxis[index] = ligne & ~ligneNeighborNorth;
+                } else {
+                    faceData.southAxis[index] = ligne & ~((ligne >>> 1) | ligneNeighborSouth);
+                    faceData.northAxis[index] = ligne & ~((ligne << 1)  | ligneNeighborNorth);
+                }
             }
         }
-        // Récup ouest est, on remplit l'int qui correspond a la ligne avec le BitSet du subChunk
+
+        // Récup ouest est
         for (int y = 0; y < SubChunk.CHUNKSIZEXZ; y++){
             for (int z = 0; z < SubChunk.CHUNKSIZEXZ; z++){
-                int index = y + z * SubChunk.CHUNKSIZEXZ;      
+                int index = y + z * SubChunk.CHUNKSIZEXZ;
                 for (int x = 0; x < SubChunk.CHUNKSIZEXZ; x++){
-                    int bitSetIndex = x + y * SubChunk.CHUNKSIZEXZ + z * SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ;                 
-                    boolean value;
-                    if (transparent){value = solidBitSet.get(bitSetIndex) && transparentBitSet.get(bitSetIndex);}
-                    else {value = solidBitSet.get(bitSetIndex) && !transparentBitSet.get(bitSetIndex);}   
-                    faceData.eastAxis[index] |= (value ? 1 : 0) << (31 - x);                    
+                    int bitSetIndex = x + y * SubChunk.CHUNKSIZEXZ + z * SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ;
+                    boolean value = computeValue(bitSetIndex, mode);
+                    faceData.eastAxis[index] |= (value ? 1 : 0) << (31 - x);
                 }
                 int ligne = faceData.eastAxis[index];
-                
-                // Est : récupère les bits les plus à droite du voisin est (x = 15)
+
                 int ligneNeighborEast = 0;
-                // si il y a un voisin
                 if (this.getNeighborEast() != null){
                     int bitSetIndex = 15 + y * SubChunk.CHUNKSIZEXZ + z * SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ;
-                    // on récupère la valeur du solidBitSet à l'index
-                    // met le dernier bit a 1
                     SubChunk neighbor = this.getNeighborEast();
-                    if (transparent){
-                        // voisin cache si opaque OU transparent (vitre/vitre)
-                        boolean voisinCache = neighbor.solidBitSet.get(bitSetIndex);
-                        ligneNeighborEast = voisinCache ? 1 : 0;
-                    } else {
-                        // voisin cache si opaque seulement
-                        boolean voisinCache = neighbor.solidBitSet.get(bitSetIndex) && !neighbor.transparentBitSet.get(bitSetIndex);
-                        ligneNeighborEast = voisinCache ? 1 : 0;
-                    }
-                }                                 
-                // si on récup le bit le plus a droite du voisin il faut le mettre le plus a gauche pour le subChunk actuel
+                    ligneNeighborEast = computeNeighborValue(neighbor, bitSetIndex, mode) ? 1 : 0;
+                }
                 ligneNeighborEast = ligneNeighborEast << 31;
 
                 int ligneNeighborWest = 0;
                 if (this.getNeighborWest() != null){
                     int bitSetIndex = 0 + y * SubChunk.CHUNKSIZEXZ + z * SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ;
                     SubChunk neighbor = this.getNeighborWest();
-                    if (transparent){
-                        // voisin cache si opaque OU transparent (vitre/vitre)
-                        boolean voisinCache = neighbor.solidBitSet.get(bitSetIndex);
-                        ligneNeighborWest = voisinCache ? 1 : 0;
-                    } else {
-                        // voisin cache si opaque seulement
-                        boolean voisinCache = neighbor.solidBitSet.get(bitSetIndex) && !neighbor.transparentBitSet.get(bitSetIndex);
-                        ligneNeighborWest = voisinCache ? 1 : 0;
-                    }
-                }   
-                // si on récup le bit le plus a droite du voisin il faut le mettre le plus a droite par rapport a la ligne donc au milieu de l'int pour le subChunk actuel
+                    ligneNeighborWest = computeNeighborValue(neighbor, bitSetIndex, mode) ? 1 : 0;
+                }
                 ligneNeighborWest = ligneNeighborWest << 16;
 
-                // le >> ajoute un 1 au début le >>> ajoute un 0
-                faceData.eastAxis[index] = ligne & ~((ligne >>> 1) | ligneNeighborEast); // faces vers l'est + le bloc voisin
-                faceData.westAxis[index] = ligne & ~((ligne << 1) | ligneNeighborWest); // faces vers l'ouest + le bloc voisin     
+                if (mode == MODE_TRANSPARENT) {
+                    faceData.eastAxis[index] = ligne & ~ligneNeighborEast;
+                    faceData.westAxis[index] = ligne & ~ligneNeighborWest;
+                } else {
+                    faceData.eastAxis[index] = ligne & ~((ligne >>> 1) | ligneNeighborEast);
+                    faceData.westAxis[index] = ligne & ~((ligne << 1)  | ligneNeighborWest);
+                }
             }
         }
+
         // Récup haut bas
         for (int z = 0; z < SubChunk.CHUNKSIZEXZ; z++){
             for (int x = 0; x < SubChunk.CHUNKSIZEXZ; x++){
                 int index = z + x * SubChunk.CHUNKSIZEXZ;
                 for (int y = 0; y < SubChunk.CHUNKSIZEXZ; y++){
                     int bitSetIndex = x + y * SubChunk.CHUNKSIZEXZ + z * SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ;
-                    boolean value;
-                    if (transparent){value = solidBitSet.get(bitSetIndex) && transparentBitSet.get(bitSetIndex);}
-                    else {value = solidBitSet.get(bitSetIndex) && !transparentBitSet.get(bitSetIndex);}
+                    boolean value = computeValue(bitSetIndex, mode);
                     faceData.upAxis[index] |= (value ? 1 : 0) << (31 - y);
                 }
                 int ligne = faceData.upAxis[index];
+
                 int ligneNeighborUp = 0;
                 if (this.getNeighborUp() != null){
                     int bitSetIndex = x + 0 * SubChunk.CHUNKSIZEXZ + z * SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ;
-                    ligneNeighborUp = ((this.getNeighborUp().solidBitSet.get(bitSetIndex) && !this.getNeighborUp().transparentBitSet.get(bitSetIndex)) ? 1 : 0);
                     SubChunk neighbor = this.getNeighborUp();
-                    if (transparent){
-                        boolean voisinCache = neighbor.solidBitSet.get(bitSetIndex);
-                        ligneNeighborUp = voisinCache ? 1 : 0;
-                    } else {
-                        boolean voisinCache = neighbor.solidBitSet.get(bitSetIndex) && !neighbor.transparentBitSet.get(bitSetIndex);
-                        ligneNeighborUp = voisinCache ? 1 : 0;
-                    }
+                    ligneNeighborUp = computeNeighborValue(neighbor, bitSetIndex, mode) ? 1 : 0;
                 }
                 ligneNeighborUp = ligneNeighborUp << 16;
+
                 int ligneNeighborDown = 0;
                 if (this.getNeighborDown() != null){
                     int bitSetIndex = x + 15 * SubChunk.CHUNKSIZEXZ + z * SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ;
                     SubChunk neighbor = this.getNeighborDown();
-                    if (transparent){
-                        boolean voisinCache = neighbor.solidBitSet.get(bitSetIndex);
-                        ligneNeighborDown = voisinCache ? 1 : 0;
-                    } else {
-                        boolean voisinCache = neighbor.solidBitSet.get(bitSetIndex) && !neighbor.transparentBitSet.get(bitSetIndex);
-                        ligneNeighborDown = voisinCache ? 1 : 0;
-                    }
+                    ligneNeighborDown = computeNeighborValue(neighbor, bitSetIndex, mode) ? 1 : 0;
                 }
                 ligneNeighborDown = ligneNeighborDown << 31;
-                faceData.upAxis[index] = ligne & ~((ligne << 1) | ligneNeighborUp); // faces vers le haut
-                faceData.downAxis[index] = ligne & ~((ligne >>> 1) | ligneNeighborDown); // faces vers le bas  
+
+                if (mode == MODE_TRANSPARENT) {
+                    faceData.upAxis[index]   = ligne & ~ligneNeighborUp;
+                    faceData.downAxis[index] = ligne & ~ligneNeighborDown;
+                } else {
+                    faceData.upAxis[index]   = ligne & ~((ligne << 1)  | ligneNeighborUp);
+                    faceData.downAxis[index] = ligne & ~((ligne >>> 1) | ligneNeighborDown);
+                }
             }
         }
+    }
+
+    // Calcule si le bloc courant doit être inclus dans la ligne selon le mode
+    // -> nouvelle syntaxe qui permet d'évité le break ici il est implicite
+    private boolean computeValue(int bitSetIndex, int mode) {
+        boolean solid  = solidBitSet.get(bitSetIndex);
+        boolean transp = transparentBitSet.get(bitSetIndex);
+        return switch (mode) {
+            case MODE_OPAQUE -> solid && !transp;
+            case MODE_GLASS  -> solid && transp && (this.blocks[bitSetIndex] == Blocks.GLASS.id);
+            default          -> solid && transp && (this.blocks[bitSetIndex] != Blocks.GLASS.id);
+        };
+    }
+
+    // Calcule si le bloc voisin cache la face selon le mode
+    private boolean computeNeighborValue(SubChunk neighbor, int bitSetIndex, int mode) {
+        boolean nSolid  = neighbor.solidBitSet.get(bitSetIndex);
+        boolean nTransp = neighbor.transparentBitSet.get(bitSetIndex);
+        return switch (mode) {
+            // opaque : caché par un voisin opaque seulement
+            case MODE_OPAQUE -> nSolid && !nTransp;
+            // verre : caché par n'importe quel voisin solide (verre/verre ou opaque/verre)
+            case MODE_GLASS  -> nSolid;
+            // feuilles etc. : caché uniquement par un voisin opaque
+            default          -> nSolid && !nTransp;
+        };
     }
 
     /**
@@ -1110,26 +1127,23 @@ public class SubChunk extends Node3D{
         this.mesh.drawSubChunkMesh();
     }    
 
-    @ChunkThread
+    @OpenGLThread
     @Override
     public void drawNode(Matrix4f parentModel){
-        if (this.buffer == null) return; // chunk en cours de déchargement
+        if (this.buffer == null) return;
         parentModel.translate(this.x, this.y, this.z, this.model);
         this.model.get(this.buffer);
         ShadersManager.runModel(this.buffer);
         this.mesh.drawSubChunkMesh();
-    }
-
-    @OpenGLThread
-    public void drawTransparent(){
-        this.transparentMesh.drawSubChunkMesh();
+        this.transparentMesh.drawSubChunkMesh(); // même passe, pas de blend
     }
 
     @OpenGLThread
     public void drawNodeTransparent(Matrix4f parentModel){
+        if (this.buffer == null) return;
         parentModel.translate(this.x, this.y, this.z, this.model);
         this.model.get(this.buffer);
         ShadersManager.runModel(this.buffer);
-        this.transparentMesh.drawSubChunkMesh();
+        this.glassMesh.drawSubChunkMesh();
     }
 }

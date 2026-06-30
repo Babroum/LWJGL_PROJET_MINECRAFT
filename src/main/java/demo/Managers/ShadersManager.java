@@ -21,6 +21,9 @@ public abstract class ShadersManager {
     private static int locationProj, locationView, locationModel;
     private static int locationProjBlockBorder, locationViewBlockBorder, locationBlockPosBlockBorder;
     private static int locationOrtho, locationTextColor;
+    private static int locationFogStart;
+    private static int locationFogEnd;
+    private static int locationSkyColor;
 
     private static final Matrix4f textOrthoMatrix = new Matrix4f();
     private static int lastWidth = 0, lastHeight = 0;
@@ -187,6 +190,10 @@ public abstract class ShadersManager {
 
         locationOrtho = GL20.glGetUniformLocation(programTextId, "ortho");
         locationTextColor = GL20.glGetUniformLocation(programTextId, "color");
+
+        locationFogStart = GL20.glGetUniformLocation(programId, "fogStart");
+        locationFogEnd   = GL20.glGetUniformLocation(programId, "fogEnd");
+        locationSkyColor = GL20.glGetUniformLocation(programId, "skyColor");
     }
 
     @OpenGLThread
@@ -202,6 +209,35 @@ public abstract class ShadersManager {
     @OpenGLThread
     public static void useTextShader(){
         GL20.glUseProgram(ShadersManager.programTextId);
+    }
+
+    /**
+     * Envoie la distance de début du fog au shader
+     * @param fogStart float
+     */
+    @OpenGLThread
+    public static void runFogStart(float fogStart){
+        GL20.glUniform1f(ShadersManager.locationFogStart, fogStart);
+    }
+
+    /**
+     * Envoie la distance de fin du fog au shader
+     * @param fogEnd float
+     */
+    @OpenGLThread
+    public static void runFogEnd(float fogEnd){
+        GL20.glUniform1f(ShadersManager.locationFogEnd, fogEnd);
+    }
+
+    /**
+     * Envoie la couleur du ciel/fog au shader
+     * @param r float
+     * @param g float
+     * @param b float
+     */
+    @OpenGLThread
+    public static void runSkyColor(float r, float g, float b){
+        GL20.glUniform3f(ShadersManager.locationSkyColor, r, g, b);
     }
 
     /**
