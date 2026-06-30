@@ -19,6 +19,7 @@ out float fogDistance;
 uniform mat4 projection;
 uniform mat4 view;
 uniform mat4 model;
+uniform float time;
 
 void main()
 {
@@ -41,6 +42,14 @@ void main()
     isBorder = (texId == 0 && u_bit == 0 && v_bit == 0) ? 1 : 0; // détecte bordure
 
     vec3 position = vec3(float(x), float(y), float(z));
+
+    // === vertex waving pour le feuillage ===
+    const int LEAVES_TEX_ID = 14;
+    if (texId == LEAVES_TEX_ID) {
+        float waveStrength = 0.01;
+        position.x += sin(time * 2.0 + position.x * 0.5 + position.z * 0.5) * waveStrength;
+        position.z += cos(time * 1.7 + position.x * 0.5 + position.z * 0.5) * waveStrength;
+    }
 
     gl_Position = projection * view * model * vec4(position, 1.0); // un vec3 est utilisé pour construire un vec4
     uv = vec2(u_bit == 0 ? 0.0 : float(w),

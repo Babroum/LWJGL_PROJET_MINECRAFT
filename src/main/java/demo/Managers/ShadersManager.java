@@ -18,17 +18,58 @@ public abstract class ShadersManager {
     private static int programBlockBorderId;
     private static int programTextId;
 
+    private static int programPostProcessId;
+    private static int locationScreenTex;
+
     private static int locationProj, locationView, locationModel;
     private static int locationProjBlockBorder, locationViewBlockBorder, locationBlockPosBlockBorder;
     private static int locationOrtho, locationTextColor;
     private static int locationFogStart;
     private static int locationFogEnd;
     private static int locationSkyColor;
+    private static int locationTime;
 
     private static final Matrix4f textOrthoMatrix = new Matrix4f();
     private static int lastWidth = 0, lastHeight = 0;
 
-    
+    /**
+     * Initialise le shader de post-process (FBO)
+     */
+    @OpenGLThread
+    public static void createPostProcessShader(){
+        String vertexShader;
+        String fragmentShader;
+        try{
+            vertexShader = FileLoader.loadShaderFromClasspathS("/Shaders/vertex_postprocess.glsl");
+            fragmentShader = FileLoader.loadShaderFromClasspathS("/Shaders/fragment_postprocess.glsl");
+        }catch(IOException e){
+            e.printStackTrace();
+            return;
+        }
+
+        int[] ids = ShadersManager.create(vertexShader, fragmentShader);
+        int vsId = ids[0];
+        int fgId = ids[1];
+
+        ShadersManager.programPostProcessId = GL20.glCreateProgram();
+        GL20.glAttachShader(ShadersManager.programPostProcessId, vsId);
+        GL20.glAttachShader(ShadersManager.programPostProcessId, fgId);
+
+        GL20.glLinkProgram(ShadersManager.programPostProcessId);
+        int success = GL20.glGetProgrami(ShadersManager.programPostProcessId, GL20.GL_LINK_STATUS);
+        if (success == GL20.GL_FALSE){
+            throw new RuntimeException("ShaderManagerError : "+GL20.glGetProgramInfoLog(ShadersManager.programPostProcessId));
+        }
+
+        GL20.glDetachShader(ShadersManager.programPostProcessId, vsId);
+        GL20.glDeleteShader(vsId);
+
+        GL20.glDetachShader(ShadersManager.programPostProcessId, fgId);
+        GL20.glDeleteShader(fgId);
+
+        locationScreenTex = GL20.glGetUniformLocation(programPostProcessId, "screenTex");
+    }
+
     /**
      * Initialise les shaders pour le texte
      */
@@ -194,6 +235,13 @@ public abstract class ShadersManager {
         locationFogStart = GL20.glGetUniformLocation(programId, "fogStart");
         locationFogEnd   = GL20.glGetUniformLocation(programId, "fogEnd");
         locationSkyColor = GL20.glGetUniformLocation(programId, "skyColor");
+
+        locationTime = GL20.glGetUniformLocation(programId, "time");
+    }
+
+    @OpenGLThread
+    public static void usePostProcessShader(){
+        GL20.glUseProgram(ShadersManager.programPostProcessId);
     }
 
     @OpenGLThread
@@ -209,6 +257,16 @@ public abstract class ShadersManager {
     @OpenGLThread
     public static void useTextShader(){
         GL20.glUseProgram(ShadersManager.programTextId);
+    }
+
+    @OpenGLThread
+    public static void runTime(float time){
+        GL20.glUniform1f(ShadersManager.locationTime, time);
+    }
+
+    @OpenGLThread
+    public static void runScreenTex(int textureUnit){
+        GL20.glUniform1i(ShadersManager.locationScreenTex, textureUnit);
     }
 
     /**
@@ -332,6 +390,11 @@ public abstract class ShadersManager {
     }
 
     @OpenGLThread
+    public static void closeProgramPostProcessId(){
+        GL20.glDeleteProgram(ShadersManager.programPostProcessId);
+    }
+
+    @OpenGLThread
     public static void closeProgramId(){
         GL20.glDeleteProgram(ShadersManager.programId);
     }
@@ -344,6 +407,11 @@ public abstract class ShadersManager {
     @OpenGLThread
     public static void closeProgramTextId(){
         GL20.glDeleteProgram(ShadersManager.programTextId);
+    }
+
+    @OpenGLThread
+    public static int getProgramPostProcessId(){
+        return ShadersManager.programPostProcessId;
     }
 
     @OpenGLThread
