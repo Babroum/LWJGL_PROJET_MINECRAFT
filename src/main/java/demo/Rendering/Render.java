@@ -131,10 +131,7 @@ public class Render {
                 WorldManager.onChunkUnloaded(toRemove); // retire du unloadingChunks
                 Render.sceneGraph.removeChunk(toRemove);
                 if (ChunksManager.getChunkAt(toRemove.x, toRemove.z) != null) {
-                    ChunksManager.removeChunk(
-                        ChunksManager.floorDiv(toRemove.x, SubChunk.CHUNKSIZEXZ),
-                        ChunksManager.floorDiv(toRemove.z, SubChunk.CHUNKSIZEXZ)
-                    );
+                    ChunksManager.removeChunk(toRemove.x, toRemove.z);
                 }
             }
 

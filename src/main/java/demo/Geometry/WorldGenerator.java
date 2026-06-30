@@ -440,8 +440,8 @@ public class WorldGenerator {
                         if (sub == null) return;
 
                         // l'arbre peut spawn que si les feuilles sont plaçables
-                        if (sub.getBlock(coordX, y + i, coordZ) != Blocks.OAK_LEAVES &&
-                            sub.getBlock(coordX, y + i, coordZ) != Blocks.AIR){
+                        if (sub.getBlock(coordX, (y + i) % SubChunk.CHUNKSIZEXZ, coordZ) != Blocks.OAK_LEAVES &&
+                            sub.getBlock(coordX, (y + i) % SubChunk.CHUNKSIZEXZ, coordZ) != Blocks.AIR){
                             return;
                         }
                     }
@@ -449,7 +449,7 @@ public class WorldGenerator {
             }
             // pareil pour le tronc
             if (i <= trunkHeight){
-                if (sub.getBlock(x, y + i, z) != Blocks.AIR){
+                if (sub.getBlock(x, (y + i) % SubChunk.CHUNKSIZEXZ, z) != Blocks.AIR){
                     return;
                 }
             }

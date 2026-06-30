@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import demo.Geometry.WorldGenerator;
 import demo.Geometry.SubChunk;
@@ -16,7 +15,7 @@ import demo.Others.ChunkSerializer;
 
 public class WorldManager {
 
-    private static final int MAX_CHUNKS_PER_TICK = 3;
+    private static final int MAX_CHUNKS_PER_TICK = 4;
 
     public static final int RENDER_DISTANCE = 10;
     public static final int UNLOAD_DISTANCE = RENDER_DISTANCE + 2;
@@ -34,7 +33,7 @@ public class WorldManager {
     private static final Set<Long> unloadingChunks = ConcurrentHashMap.newKeySet();
 
     private static ThreadLocal<WorldGenerator> generator = ThreadLocal.withInitial(
-        () -> new WorldGenerator(4949849L)
+        () -> new WorldGenerator(4649686131987684165L)
     );
 
     /**
@@ -129,6 +128,9 @@ public class WorldManager {
                         generator.get().generateChunk(chunk, cx, cz);
                     }
                     finalizeNewChunk(chunk);
+                    chunk.isReady = true;
+                } catch (Exception e) {
+                    e.printStackTrace(); 
                 } finally {
                     generatingChunks.remove(key);
                 }
@@ -142,6 +144,8 @@ public class WorldManager {
      */
     private static void scheduleChunkUnloads(int centerX, int centerZ) {
         for (Chunk chunk : ChunksManager.getAllChunks()) {
+            if (!chunk.isReady) continue; 
+
             int cx = ChunksManager.floorDiv(chunk.x, SubChunk.CHUNKSIZEXZ);
             int cz = ChunksManager.floorDiv(chunk.z, SubChunk.CHUNKSIZEXZ);
             int dx = cx - centerX;
@@ -184,14 +188,13 @@ public class WorldManager {
         for (SubChunk sub : chunk.subChunks) sub.linkNeighbors();
         relinkNeighborChunks(chunk);
         chunk.initHeightMap();
-        LightManager.processLightBFS();
 
         for (SubChunk sub : chunk.subChunks) sub.fillSubChunkBitSet();      
 
         // stocker pending dans le chunk pour y accéder depuis le budget loop
-        chunk.pendingMeshCount = new AtomicInteger(chunk.subChunks.length);
+        chunk.pendingMeshCount.set(chunk.subChunks.length);
 
-        // au lieu de mesher maintenant, on met en queue        
+        // au lieu de mesher maintenant, on met en queue    
         for (SubChunk sub : chunk.subChunks) {
             Render.subChunkMeshQueue.add(sub);
         }
@@ -204,8 +207,9 @@ public class WorldManager {
             if (neighbor == null) continue;
             for (SubChunk sub : neighbor.subChunks) {
                 sub.linkNeighbors();
-                sub.dirty.set(true);
-                LightManager.addDirtySubChunk(sub);
+                if (sub.dirty.compareAndSet(false, true)) {
+                    LightManager.addDirtySubChunk(sub);
+                }
             }
         }
     }

@@ -30,6 +30,8 @@ public class Chunk extends Node3D{
     private int[] colY      = new int[256];
     private byte[] colLight = new byte[256];
 
+    public volatile boolean isReady = false;
+
     public AtomicInteger pendingMeshCount = new AtomicInteger(0);
 
     /**

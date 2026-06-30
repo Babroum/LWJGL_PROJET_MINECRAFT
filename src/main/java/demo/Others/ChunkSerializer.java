@@ -20,7 +20,7 @@ public class ChunkSerializer {
                 try {
                     Files.walk(path)
                         .sorted(Comparator.reverseOrder())
-                        .skip(1) // Saute la racine
+                        .filter(p -> !p.equals(path)) // Saute la racine
                         .forEach(file -> {
                             try {
                                 // Supprime le fichier ou le dossier (doit être vide)
@@ -31,7 +31,6 @@ public class ChunkSerializer {
                                 throw new RuntimeException("Impossible de supprimer : " + file, e);
                             }
                         });
-                    System.out.println("Nettoyage terminé.");
                 } catch (IOException e) {
                      System.out.println("Erreur lors du parcours du dossier"+e);
                 }
