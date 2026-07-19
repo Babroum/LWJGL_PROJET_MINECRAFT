@@ -11,7 +11,7 @@ public class BlocksManager {
     private static final BlockDefinition[] REGISTRY = new BlockDefinition[256];
     private static final ObjectMapper mapper = new ObjectMapper();
 
-    public static void init(String[] files) {
+    public static void init(String[] files) throws Exception {
         for (String blockName : files) {
             try {
                 // On récupère l'InputStream comme dans ton FileLoader
@@ -19,6 +19,7 @@ public class BlocksManager {
                 
                 if (is != null) {
                     BlockDefinition block = mapper.readValue(is, BlockDefinition.class);
+                    block.checkInfo();
                     REGISTRY[block.id] = block;
                     is.close();
                 }
@@ -30,7 +31,7 @@ public class BlocksManager {
         
         // Sécurité Air
         if (REGISTRY[0] == null) {
-            BlockDefinition air = new BlockDefinition();
+            BlockDefinition air = new BlockDefinition();            
             air.id = 0; air.name = "Air"; air.opacity = 1;
             REGISTRY[0] = air;
         }
@@ -45,13 +46,15 @@ public class BlocksManager {
         Blocks.LIGHT_BLOCK   = get(5);
         Blocks.BEDROCK     = get(6);
         Blocks.COBBLESTONE = get(7);
-        Blocks.GLASS       = get(8);
-          
+        Blocks.GLASS       = get(8);          
         Blocks.GRAVEL        = get(9);        
         Blocks.STONE_BRICK_WALL = get(10); 
         Blocks.OAK_LOG = get(11);
         Blocks.OAK_PLANKS = get(12);
         Blocks.OAK_LEAVES = get(13);
+
+        Blocks.WATER = get(14);
+        Blocks.TORCH = get(15);
         
         for (BlockDefinition block : REGISTRY) {
             if (block != null) {

@@ -130,6 +130,13 @@ public class ChunksManager {
         return chunk.getBlock(localX, y, localZ);
     }
 
+    // prend un RANGE, pas un point
+    public static boolean isCollidingBlockAt(BlockDefinition block, float minLx, float maxLx, float minLy, float maxLy, float minLz, float maxLz){
+        return (maxLx >= block.x && minLx <= block.x + block.width) &&
+               (maxLy >= block.y && minLy <= block.y + block.height) &&
+               (maxLz >= block.z && minLz <= block.z + block.depth);
+    }
+
     /**
      * Calcule le modulo avec toujours un résultat positif 
      * @param x

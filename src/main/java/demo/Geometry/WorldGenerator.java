@@ -59,16 +59,16 @@ public class WorldGenerator {
     private final FastNoiseLite depthNoise;
 
     /** Hauteur de référence en blocs autour de laquelle oscille la surface. */
-    private static final int BASE_HEIGHT = 68;
+    public static final int BASE_HEIGHT = 68;
 
     /** Niveau de la mer. En dessous -> sable, au dessus -> herbe. */
-    private static final int SEA_LEVEL = 64;
+    public static final int SEA_LEVEL = 64;
 
     /** Taille horizontale d'un chunk en blocs. */
-    private static final int CHUNK_SIZE   = SubChunk.CHUNKSIZEXZ;
+    public static final int CHUNK_SIZE   = SubChunk.CHUNKSIZEXZ;
 
     /** Hauteur totale d'un chunk en blocs (sous-chunks × hauteur par sous-chunk). */
-    private static final int CHUNK_HEIGHT = SubChunk.CHUNKSIZEHEIGHT;
+    public static final int CHUNK_HEIGHT = SubChunk.CHUNKSIZEHEIGHT;
 
     //  Grille basse résolution
 
@@ -359,7 +359,7 @@ public class WorldGenerator {
                         currentSubIndex = by;
                         currentSub = chunk.getSubChunkAt(by);
                     }
-                    int localY        = by % WorldGenerator.CHUNK_SIZE;
+                    int localY = by % WorldGenerator.CHUNK_SIZE;
                     int idx = bx + localY * WorldGenerator.CHUNK_SIZE + bz * WorldGenerator.CHUNK_HEIGHT;
 
                     // Y=0 -> bedrock : toujours présent, fin de colonne
@@ -367,9 +367,9 @@ public class WorldGenerator {
                         currentSub.blocks[idx] = (byte) Blocks.BEDROCK.id;
                         continue;
                     }
-
-                    // Bloc air avant la surface -> on continue vers le bas
+                    
                     if (currentSub.blocks[idx] == (byte) Blocks.AIR.id && !surfacePlaced) {
+                        // Bloc air avant la surface -> on continue vers le bas
                         dirtDepth = -1;
                         continue;
                     }
@@ -383,7 +383,7 @@ public class WorldGenerator {
                             currentSub.blocks[idx] = (byte) Blocks.GRASS.id;                            
                         }
                         else{
-                            currentSub.blocks[idx] = (byte) Blocks.SAND.id;
+                            currentSub.blocks[idx] = (byte) Blocks.SAND.id;                            
                         }
                     } else if (dirtDepth > 0) {
                         currentSub.blocks[idx] = (byte) Blocks.DIRT.id;

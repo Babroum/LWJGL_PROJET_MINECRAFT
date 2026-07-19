@@ -2,7 +2,6 @@ package demo.Game;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
 
 import org.joml.Vector3f;
 import org.lwjgl.opengl.GL11;
@@ -21,28 +20,47 @@ import demo.Geometry.Chunk;
 import demo.Geometry.SubChunk;
 
 /**
- * Une joueur 
+ * Le joueur : position, déplacement, collisions, actions (casser/poser un bloc).
  */
 public class Player {
 
     /**
-     * Vitesse de déplacement de la caméra
+     * Vitesse de déplacement de base.
      */
     public static final float MOVEMENTSPEED = 0.005f;
+
     /**
-     * Sensibilité de la souris
+     * Sensibilité de la souris.
      */
     public static final float MOUSESENS = 0.1f;
-    
+
+    /**
+     * Hauteur maximale d'un obstacle que le joueur peut monter automatiquement (auto-step).
+     * 8 sub-unités sur 16 = un demi-bloc.
+     */
+    private static final float STEP_HEIGHT = 8f / 16f;
+
+    /**
+     * Petite marge utilisée dans les comparaisons de position pour éviter
+     * les erreurs d'arrondi flottant sur les frontières de bloc.
+     */
+    private static final float EPSILON = 0.001f;
+
     private Camera camera = new Camera();
 
     public Vector3f position;
-    private float playerHeight = 1.5f; // si le joueur est grand ou pas
-    private float playerRadius = 0.3f; // si le joueur est gros ou pas
-    
-    private boolean isFalling = false; 
-    private float velocityY = 0f; // Vitesse de chute/saut
+    private float playerHeight = 1.5f; // hauteur du joueur
+    private float playerRadius = 0.3f; // largeur du joueur
+
+    private boolean isFalling = false;
+    private float velocityY = 0f; // vitesse de chute/saut
     private final float gravity = -9.81f; // constante de gravité
+
+    /**
+     * Hauteur (en coordonnées monde) du sommet du bloc/objet sous les pieds du joueur.
+     * Mise à jour à chaque fois que isOnGround détecte un contact.
+     */
+    private float lastGroundSurfaceY = 0f;
 
     private volatile int oldBlockBorderX;
     private volatile int oldBlockBorderY;
@@ -51,7 +69,7 @@ public class Player {
 
     private float breakCooldown = 0f;
     private float placeCooldown = 0f;
-    private float breakPlaceDelay = 200f; // temps en millisecondes pour casser/poser un bloc
+    private float breakPlaceDelay = 200f; // délai en millisecondes pour casser/poser un bloc
 
     public BlockDefinition blockInHand = Blocks.COBBLESTONE; // pour test
 
@@ -64,106 +82,180 @@ public class Player {
     }
 
     /**
-     * Déplace le joueur vers l'avant
-     * @param inc Vitesse du déplacement
+     * Déplace le joueur vers l'avant.
+     * @param inc vitesse du déplacement
      */
     public void moveForward(float inc) {
         move(this.camera.getForwardDirection(inc));
     }
 
     /**
-     * Déplace le joueur vers l'arrière
-     * @param inc Vitesse du déplacement
+     * Déplace le joueur vers l'arrière.
+     * @param inc vitesse du déplacement
      */
     public void moveBackwards(float inc) {
-        // L'arrière, c'est l'avant inversé
         Vector3f dir = this.camera.getForwardDirection(inc).negate();
         move(dir);
     }
 
     /**
-     * Déplace le joueur vers la gauche
-     * @param inc Vitesse du déplacement
+     * Déplace le joueur vers la gauche.
+     * @param inc vitesse du déplacement
      */
     public void moveLeft(float inc) {
-        // La gauche, c'est la droite inversée
         Vector3f dir = this.camera.getRightDirection(inc).negate();
         move(dir);
     }
 
     /**
-     * Déplace le joueur vers la droite
-     * @param inc Vitesse du déplacement
+     * Déplace le joueur vers la droite.
+     * @param inc vitesse du déplacement
      */
     public void moveRight(float inc) {
         move(this.camera.getRightDirection(inc));
     }
 
     /**
-     * Déplace le joueur
-     * @param dir Direction du déplacement
+     * Déplace le joueur en X puis en Z, avec auto-step si un petit obstacle bloque le passage.
+     * @param dir direction du déplacement
      */
     private void move(Vector3f dir) {
         float nextX = this.position.x + dir.x;
-        // On vérifie si on peut bouger en X en gardant le Z et Y actuels
-        if (canMoveToWithBuffer(nextX, this.position.z, this.playerRadius)) {
+        if (tryMoveTo(nextX, this.position.z)) {
             this.position.x = nextX;
         }
 
         float nextZ = this.position.z + dir.z;
-        // On vérifie si on peut bouger en Z en gardant le X (éventuellement mis à jour) et Y
-        if (canMoveToWithBuffer(this.position.x, nextZ, this.playerRadius)) {
+        if (tryMoveTo(this.position.x, nextZ)) {
             this.position.z = nextZ;
         }
-        
+
         this.setPosition(this.position.x, this.position.y, this.position.z);
     }
 
-    // comme un boite de collision du joueur, si il gros ou pas (antoine)
-    private boolean canMoveToWithBuffer(float x, float z, float radius) {
-        // On vérifie les 4 coins/côtés pour simuler une épaisseur
-        return canMoveTo(x + radius, z + radius) && // Coin haut-droite
-            canMoveTo(x - radius, z + radius) && // Coin haut-gauche
-            canMoveTo(x + radius, z - radius) && // Coin bas-droite
-            canMoveTo(x - radius, z - radius);   // Coin bas-gauche
-    }
-    
-    // si le joueur peut aller vers newX et newZ sans collisionnée
-    private boolean canMoveTo(float newX, float newZ){
-        int bx = newX < 0 ? (int) Math.floor(newX) : (int) newX;
-        int bz = newZ < 0 ? (int) Math.floor(newZ) : (int) newZ;
-        int by = (int)(this.position.y - this.playerHeight);
-        try {
-            BlockDefinition blockFeet = ChunksManager.getBlock(bx, by, bz);
-            BlockDefinition blockHead = ChunksManager.getBlock(bx, by + 1, bz);
-            return blockFeet == Blocks.AIR && blockHead == Blocks.AIR;
-        } catch (Exception e) {
-            return false;
+    /**
+     * Tente un déplacement horizontal. Si le passage est libre, autorise le mouvement.
+     * Si bloqué par un obstacle bas (hauteur <= STEP_HEIGHT), relève le joueur automatiquement.
+     * @param newX nouvelle position X
+     * @param newZ nouvelle position Z
+     * @return true si le déplacement est possible (avec ou sans auto-step)
+     */
+    private boolean tryMoveTo(float newX, float newZ) {
+        float currentFootY = this.position.y - this.playerHeight;
+
+        // passage libre à la hauteur actuelle
+        if (canMoveToAtFootY(newX, newZ, currentFootY)) {
+            return true;
         }
+
+        // bloqué : on regarde si l'obstacle est assez bas pour être monté automatiquement
+        float obstacleTop = getObstacleTopHeight(newX, newZ, currentFootY);
+        if (obstacleTop < 0f) {
+            return false; // aucun obstacle bas identifié, mur normal
+        }
+
+        float stepDelta = obstacleTop - currentFootY;
+        if (stepDelta <= 0f || stepDelta > STEP_HEIGHT + EPSILON) {
+            return false; // pas un step valide (trop haut, ou rien à monter)
+        }
+
+        // on vérifie qu'il y a la place en hauteur une fois monté (pas de plafond)
+        if (canMoveToAtFootY(newX, newZ, obstacleTop)) {
+            this.position.y = obstacleTop + this.playerHeight;
+            return true;
+        }
+
+        return false;
     }
 
     /**
-     * Fait sauter le joueur si le mouvement est possible
+     * Vérifie si le joueur peut occuper la position (newX, newZ) avec les pieds à footY,
+     * sans collisionner avec un bloc. On ajoute un epsilon au-dessus de footY pour ne pas
+     * compter comme collision le simple contact avec la surface sur laquelle on se tient.
+     * @param newX position X testée
+     * @param newZ position Z testée
+     * @param footY hauteur des pieds testée
+     * @return true si la position est libre
+     */
+    private boolean canMoveToAtFootY(float newX, float newZ, float footY) {
+        float minX = newX - this.playerRadius;
+        float maxX = newX + this.playerRadius;
+        float minZ = newZ - this.playerRadius;
+        float maxZ = newZ + this.playerRadius;
+        float minY = footY + EPSILON; // ignore le contact avec la surface, ne teste que le volume au-dessus
+        float maxY = footY + this.playerHeight;
+        return !isBlockAt(minX, maxX, minY, maxY, minZ, maxZ);
+    }
+
+    /**
+     * Cherche la hauteur du sommet du bloc/objet qui bloque le passage à (x, z),
+     * en scannant uniquement la tranche entre les pieds actuels et pieds + STEP_HEIGHT.
+     * @param x position X testée
+     * @param z position Z testée
+     * @param currentFootY hauteur actuelle des pieds
+     * @return hauteur du sommet le plus haut trouvé, ou -1 si aucun obstacle bas
+     */
+    private float getObstacleTopHeight(float x, float z, float currentFootY) {
+        float minX = x - this.playerRadius;
+        float maxX = x + this.playerRadius;
+        float minZ = z - this.playerRadius;
+        float maxZ = z + this.playerRadius;
+        float minY = currentFootY - EPSILON;
+        float maxY = currentFootY + STEP_HEIGHT + EPSILON;
+
+        int bxMin = (int) Math.floor(minX + EPSILON), bxMax = (int) Math.floor(maxX - EPSILON);
+        int byMin = (int) Math.floor(minY),           byMax = (int) Math.floor(maxY);
+        int bzMin = (int) Math.floor(minZ + EPSILON), bzMax = (int) Math.floor(maxZ - EPSILON);
+
+        float highest = -1f;
+
+        for (int bx = bxMin; bx <= bxMax; bx++) {
+            for (int by = byMin; by <= byMax; by++) {
+                for (int bz = bzMin; bz <= bzMax; bz++) {
+                    try {
+                        BlockDefinition block = ChunksManager.getBlock(bx, by, bz);
+                        if (block == Blocks.AIR || block == Blocks.WATER) continue;
+
+                        float lMinX = (Math.max(minX, bx)     - bx) * 16;
+                        float lMaxX = (Math.min(maxX, bx + 1) - bx) * 16;
+                        float lMinY = (Math.max(minY, by)     - by) * 16;
+                        float lMaxY = (Math.min(maxY, by + 1) - by) * 16;
+                        float lMinZ = (Math.max(minZ, bz)     - bz) * 16;
+                        float lMaxZ = (Math.min(maxZ, bz + 1) - bz) * 16;
+
+                        if (ChunksManager.isCollidingBlockAt(block, lMinX, lMaxX, lMinY, lMaxY, lMinZ, lMaxZ)) {
+                            float surfaceY = by + block.height / 16f;
+                            if (surfaceY > highest) highest = surfaceY;
+                        }
+                    } catch (Exception e) {
+                        // chunk pas chargé, on ignore cette cellule
+                    }
+                }
+            }
+        }
+
+        return highest;
+    }
+
+    /**
+     * Fait sauter le joueur si un saut est possible (pas déjà en chute, pas de plafond).
      */
     public void jump(){
-        // Si le joueur ne tombe pas
-        if (!this.isFalling  && !isBlockCeiling()){
-            this.velocityY = 4.95f; // force de saut comme dans minecraft :)
+        if (!this.isFalling && !isBlockCeiling()){
+            this.velocityY = 4.95f; // force de saut comme dans minecraft
             this.isFalling = true;
         }
     }
 
     /**
-     * Met à jour les mouvements du joueur
-     * @param delta Vitesse des déplacements
+     * Met à jour la physique du joueur : gravité, chute, snap au sol.
+     * @param delta temps écoulé depuis le dernier appel
      */
     public void updateMovement(float delta){
-        // Si le joueur tombe on applique la gravité sur la vitesse de chute
         this.velocityY += this.gravity * delta;
-        // Chute par rapport à la vitesse de chute
         this.position.y += velocityY * delta;
 
-        // garde-fou au cas où les chunks ne sont pas encore chargés
+        // garde-fou si les chunks ne sont pas encore chargés
         if (this.position.y < 0) {
             this.velocityY = 0f;
             this.isFalling = false;
@@ -173,81 +265,177 @@ public class Player {
 
         // si le joueur monte et touche un plafond
         if (this.velocityY > 0 && this.isBlockCeiling()){
-            this.velocityY = 0f; // stoppe la montée
+            this.velocityY = 0f;
         }
 
-        // si il y a un bloc et que l'on tombe, on arrête de tombé
+        // si le joueur touche le sol en tombant, on le pose exactement sur le vrai sommet du bloc
         if (this.isOnGround() && this.velocityY <= 0) {
             this.velocityY = 0f;
             this.isFalling = false;
-            this.position.y = (int)Math.floor(this.position.y - this.playerHeight - 0.01f) + 1 + this.playerHeight;
+            this.position.y = this.lastGroundSurfaceY + this.playerHeight;
         } else {
-            // sinon on tombe
             this.isFalling = true;
         }
+
         this.setPosition(this.position.x, this.position.y, this.position.z);
     }
 
-    // vérifie si le block (px, py, pz) est dans le joueur
+    /**
+     * Vérifie si le bloc qu'on s'apprête à poser (px, py, pz) chevauche le joueur.
+     * Utilise la vraie bounding box de l'objet posé, pas un cube plein.
+     * @param px position X du bloc à poser
+     * @param py position Y du bloc à poser
+     * @param pz position Z du bloc à poser
+     * @return true si l'objet posé chevaucherait le joueur
+     */
     private boolean isInsidePlayer(int px, int py, int pz){
-        // vérifie si le bloc chevauche la boite de collision du joueur
+        BlockDefinition placing = this.blockInHand;
+
+        float objMinX = px + placing.x / 16f;
+        float objMaxX = px + (placing.x + placing.width)  / 16f;
+        float objMinY = py + placing.y / 16f;
+        float objMaxY = py + (placing.y + placing.height) / 16f;
+        float objMinZ = pz + placing.z / 16f;
+        float objMaxZ = pz + (placing.z + placing.depth)  / 16f;
+
         float minX = this.position.x - this.playerRadius;
         float maxX = this.position.x + this.playerRadius;
         float minZ = this.position.z - this.playerRadius;
         float maxZ = this.position.z + this.playerRadius;
         float minY = this.position.y - this.playerHeight;
         float maxY = this.position.y;
-        
-        // le bloc occupe de px à px+1, py à py+1, pz à pz+1
-        return px + 1 > minX && px < maxX &&
-            py + 1 > minY && py < maxY &&
-            pz + 1 > minZ && pz < maxZ;
+
+        return objMaxX > minX && objMinX < maxX &&
+               objMaxY > minY && objMinY < maxY &&
+               objMaxZ > minZ && objMinZ < maxZ;
     }
 
-    // Vérifie si le joueur est sur le sol
+    /**
+     * Vérifie si le joueur est sur le sol. Teste une fine tranche Y sous les pieds
+     * et retient la hauteur du sommet touché dans lastGroundSurfaceY.
+     * @return true si un support est détecté sous les pieds
+     */
     private boolean isOnGround() {
-        // On vérifie sous les pieds à la position Y actuelle (légèrement décalée vers le bas)
-        float footY = this.position.y - this.playerHeight - 0.01f; 
+        float minX = this.position.x - this.playerRadius;
+        float maxX = this.position.x + this.playerRadius;
+        float minZ = this.position.z - this.playerRadius;
+        float maxZ = this.position.z + this.playerRadius;
+        float footY = this.position.y - this.playerHeight - EPSILON;
+        float footYTop = footY + 0.05f;
 
-        // On teste les 4 coins de la boîte de collision
-        return isBlockAt(this.position.x + this.playerRadius, footY, this.position.z + this.playerRadius) ||
-            isBlockAt(this.position.x - this.playerRadius, footY, this.position.z + this.playerRadius) ||
-            isBlockAt(this.position.x + this.playerRadius, footY, this.position.z - this.playerRadius) ||
-            isBlockAt(this.position.x - this.playerRadius, footY, this.position.z - this.playerRadius);
+        return findGroundSurface(minX, maxX, footY, footYTop, minZ, maxZ);
     }
 
-    // Vérifie si il y a un bloc au dessus du joueur
+    /**
+     * Vérifie s'il y a un bloc au-dessus de la tête du joueur (plafond).
+     * @return true si un obstacle est détecté au-dessus de la tête
+     */
     private boolean isBlockCeiling(){
+        float minX = this.position.x - this.playerRadius;
+        float maxX = this.position.x + this.playerRadius;
+        float minZ = this.position.z - this.playerRadius;
+        float maxZ = this.position.z + this.playerRadius;
         float headY = this.position.y + 0.1f;
-        return isBlockAt(this.position.x + this.playerRadius, headY, this.position.z + this.playerRadius) ||
-            isBlockAt(this.position.x - this.playerRadius, headY, this.position.z + this.playerRadius) ||
-            isBlockAt(this.position.x + this.playerRadius, headY, this.position.z - this.playerRadius) ||
-            isBlockAt(this.position.x - this.playerRadius, headY, this.position.z - this.playerRadius);
+        float headYTop = headY + 0.02f;
+
+        return isBlockAt(minX, maxX, headY, headYTop, minZ, maxZ);
     }
 
-    // Vérifie si il y a un bloc en x, y, z
-    private boolean isBlockAt(float x, float y, float z) {
-        try {
-            int bx = (int) Math.floor(x);
-            int by = (int) Math.floor(y);
-            int bz = (int) Math.floor(z);
-            return ChunksManager.getBlock(bx, by, bz) != Blocks.AIR;
-        } catch (Exception e) {
-            return false;
+    /**
+     * Recherche un support sous la tranche Y donnée et retient la hauteur du sommet
+     * le plus haut trouvé dans lastGroundSurfaceY.
+     * @return true si un support est trouvé
+     */
+    private boolean findGroundSurface(float minX, float maxX, float minY, float maxY, float minZ, float maxZ) {
+        int bxMin = (int) Math.floor(minX), bxMax = (int) Math.floor(maxX);
+        int byMin = (int) Math.floor(minY), byMax = (int) Math.floor(maxY);
+        int bzMin = (int) Math.floor(minZ), bzMax = (int) Math.floor(maxZ);
+
+        boolean found = false;
+        float highest = Float.NEGATIVE_INFINITY;
+
+        for (int bx = bxMin; bx <= bxMax; bx++) {
+            for (int by = byMin; by <= byMax; by++) {
+                for (int bz = bzMin; bz <= bzMax; bz++) {
+                    try {
+                        BlockDefinition block = ChunksManager.getBlock(bx, by, bz);
+                        if (block == Blocks.AIR || block == Blocks.WATER) continue;
+
+                        float lMinX = (Math.max(minX, bx)     - bx) * 16;
+                        float lMaxX = (Math.min(maxX, bx + 1) - bx) * 16;
+                        float lMinY = (Math.max(minY, by)     - by) * 16;
+                        float lMaxY = (Math.min(maxY, by + 1) - by) * 16;
+                        float lMinZ = (Math.max(minZ, bz)     - bz) * 16;
+                        float lMaxZ = (Math.min(maxZ, bz + 1) - bz) * 16;
+
+                        if (ChunksManager.isCollidingBlockAt(block, lMinX, lMaxX, lMinY, lMaxY, lMinZ, lMaxZ)) {
+                            float surfaceY = by + block.height / 16f;
+                            if (surfaceY > highest) highest = surfaceY;
+                            found = true;
+                        }
+                    } catch (Exception e) {
+                        // chunk pas chargé, on ignore cette cellule
+                    }
+                }
+            }
         }
+
+        if (found) this.lastGroundSurfaceY = highest;
+        return found;
     }
 
-    // sauve la position au début du tick, avant tout mouvement
+    /**
+     * Vérifie si une bounding box (coordonnées monde) chevauche un bloc solide.
+     * Parcourt toutes les cellules touchées par la boîte, pas seulement une.
+     * @return true si la boîte chevauche au moins un bloc solide
+     */
+    private boolean isBlockAt(float minX, float maxX, float minY, float maxY, float minZ, float maxZ) {
+        int bxMin = (int) Math.floor(minX), bxMax = (int) Math.floor(maxX);
+        int byMin = (int) Math.floor(minY), byMax = (int) Math.floor(maxY);
+        int bzMin = (int) Math.floor(minZ), bzMax = (int) Math.floor(maxZ);
+
+        for (int bx = bxMin; bx <= bxMax; bx++) {
+            for (int by = byMin; by <= byMax; by++) {
+                for (int bz = bzMin; bz <= bzMax; bz++) {
+                    try {
+                        BlockDefinition block = ChunksManager.getBlock(bx, by, bz);
+                        if (block == Blocks.AIR || block == Blocks.WATER) continue;
+
+                        float lMinX = (Math.max(minX, bx)     - bx) * 16;
+                        float lMaxX = (Math.min(maxX, bx + 1) - bx) * 16;
+                        float lMinY = (Math.max(minY, by)     - by) * 16;
+                        float lMaxY = (Math.min(maxY, by + 1) - by) * 16;
+                        float lMinZ = (Math.max(minZ, bz)     - bz) * 16;
+                        float lMaxZ = (Math.min(maxZ, bz + 1) - bz) * 16;
+
+                        if (ChunksManager.isCollidingBlockAt(block, lMinX, lMaxX, lMinY, lMaxY, lMinZ, lMaxZ)) {
+                            return true;
+                        }
+                    } catch (Exception e) {
+                        // chunk pas chargé, on ignore cette cellule
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Sauve la position au début du tick, avant tout mouvement.
+     */
     public void savePrevPosition() {
         this.prevX = this.position.x;
         this.prevY = this.position.y;
         this.prevZ = this.position.z;
     }
 
-    // Appelé depuis le GameLoop thread
-    // logique du joueur, déplacements, action, etc...
+    /**
+     * Logique du joueur appelée depuis le GameLoop thread : déplacements, actions.
+     * @param delta temps écoulé depuis le dernier tick
+     */
     public void playerLoopLogic(float delta) {
-        this.savePrevPosition(); // sauve prev AVANT tout mouvement
+        this.savePrevPosition();
 
         float move = delta * Player.MOVEMENTSPEED;
         if (KeyboardInput.keyForward)     PlayersManager.player.moveForward(move);
@@ -300,19 +488,24 @@ public class Player {
                     int px = (int) Math.floor(place.x);
                     int py = (int) Math.floor(place.y);
                     int pz = (int) Math.floor(place.z);
-                    if (ChunksManager.getBlock(px, py, pz) == Blocks.AIR
-                            && this.placeCooldown <= 0f
-                            && !this.isInsidePlayer(px, py, pz)) {
+                    if (this.placeCooldown <= 0f && !this.isInsidePlayer(px, py, pz)) {
                         try {
                             Chunk chunk2 = ChunksManager.getChunkAt(px, pz);
                             final SubChunk sub2 = chunk2.getSubChunkAt(py);
-                            chunkModifyThread.submit(() -> {
-                                int localX = ChunksManager.floorMod(px, SubChunk.CHUNKSIZEXZ);
-                                int localY = ChunksManager.floorMod(py, SubChunk.CHUNKSIZEXZ);
-                                int localZ = ChunksManager.floorMod(pz, SubChunk.CHUNKSIZEXZ);
-                                sub2.addBlockToSubChunk(blockInHand, localX, localY, localZ);
-                            });
-                            this.placeCooldown = this.breakPlaceDelay;
+                            lx = ChunksManager.floorMod(px, SubChunk.CHUNKSIZEXZ);
+                            ly = ChunksManager.floorMod(py, SubChunk.CHUNKSIZEXZ);
+                            lz = ChunksManager.floorMod(pz, SubChunk.CHUNKSIZEXZ);
+                            int liquidLevel = sub2.getLiquidLevel(lx, ly, lz);
+                            block = ChunksManager.getBlock(px, py, pz);
+                            if (block == Blocks.AIR || liquidLevel != block.liquidLevel){
+                                chunkModifyThread.submit(() -> {
+                                    int localX = ChunksManager.floorMod(px, SubChunk.CHUNKSIZEXZ);
+                                    int localY = ChunksManager.floorMod(py, SubChunk.CHUNKSIZEXZ);
+                                    int localZ = ChunksManager.floorMod(pz, SubChunk.CHUNKSIZEXZ);
+                                    sub2.addBlockToSubChunk(blockInHand, localX, localY, localZ);
+                                });
+                                this.placeCooldown = this.breakPlaceDelay;
+                            }
                         } catch (Exception e) {}
                     }
                 } else {
@@ -339,7 +532,9 @@ public class Player {
         this.curZ = this.position.z;
     }
 
-    // Appelé depuis le thread OpenGL (Render)
+    /**
+     * Rendu appelé depuis le thread OpenGL : interpolation de la position, affichage du contour du bloc visé.
+     */
     @OpenGLThread
     public void playerLoopRender() {
         float alpha = (float)(System.nanoTime() - GameLoop.lastTickTime) / (float) GameLoop.NS_PER_TICK;
@@ -350,7 +545,7 @@ public class Player {
         float iz = this.prevZ + (this.curZ - this.prevZ) * alpha;
         this.camera.setPosition(ix, iy, iz);
 
-        if (this.hasBlockBorder) { 
+        if (this.hasBlockBorder) {
             GL11.glLineWidth(4.0f);
             BlockBorderRenderer.draw(
                 this.oldBlockBorderX,
@@ -361,7 +556,7 @@ public class Player {
         }
     }
 
-    // un seul thread dédié
+    // un seul thread dédié aux actions du joueur (casser/poser)
     private static ExecutorService chunkModifyThread = Executors.newSingleThreadExecutor(r -> {
         Thread t = new Thread(r, "Player Action Thread");
         t.setDaemon(true);
@@ -369,23 +564,21 @@ public class Player {
     });
 
     /**
-     * Retourne la camera de la scène
-     * @return Camera
+     * Retourne la caméra du joueur.
      */
     public Camera getCamera(){
         return this.camera;
     }
 
     /**
-     * Retourne la position du joueur 
-     * @return
+     * Retourne la position du joueur.
      */
     public Vector3f getPosition(){
         return this.position;
     }
 
     /**
-     * Définis la position du joueur
+     * Définit la position du joueur.
      * @param x float
      * @param y float
      * @param z float

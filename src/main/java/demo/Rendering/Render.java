@@ -12,6 +12,7 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL13;
 
 import demo.Annotations.OpenGLThread;
+import demo.Events.KeyboardInput;
 import demo.Game.GameLoop;
 import demo.Geometry.Chunk;
 import demo.Geometry.SubChunk;
@@ -22,6 +23,7 @@ import demo.Managers.BuffersManager;
 import demo.Managers.ChunksManager;
 import demo.Managers.InputManager;
 import demo.Managers.LightManager;
+import demo.Managers.LiquidManager;
 import demo.Managers.ShadersManager;
 import demo.Managers.FrameBufferManager;
 import demo.Managers.TextureManager;
@@ -56,12 +58,12 @@ public class Render {
     private static final Matrix4f projection = new Matrix4f();
 
     private static final String[] TEXTURE_FILES  = 
-    {"null", "grass_block_top", "grass_block_side", "dirt", "stone", "stone_brick_wall", "cobblestone", "light_block", "bedrock", "sand", "gravel","glass",
-     "oak_log_top_bottom", "oak_log_side", "oak_leaves", "oak_planks"
+    {"null", "grass_block_top", "grass_block_side", "dirt", "stone", "stone_brick_wall", "cobblestone", "light_block", "bedrock", "sand", "gravel", "glass",
+     "oak_log_top_bottom", "oak_log_side", "oak_leaves", "oak_planks", "water", "torch_block_side", "torch_block_top"
     };
     private static final String[] BLOCKS_TO_LOAD = 
-    {"null", "air", "grass", "dirt", "stone", "stone_brick_wall", "cobblestone", "light_block", "bedrock", "sand", "gravel","glass",
-     "oak_log", "oak_planks", "oak_leaves"
+    {"null", "air", "grass", "dirt", "stone", "stone_brick_wall", "cobblestone", "light_block", "bedrock", "sand", "gravel", "glass",
+     "oak_log", "oak_planks", "oak_leaves", "water", "torch"
     };
 
     // pour du debug, à modif car à chier
@@ -144,14 +146,10 @@ public class Render {
         }
 
         LightManager.flushDirtySubChunks();
+        LiquidManager.flushDirtySubChunks();
+        FrustumCulling.recalculateMatrix();        
         InputManager.runOpenGL();
         PlayersManager.player.playerLoopRender();
-
-        ShadersManager.runProjection(Render.calculateProjection(45.0f, (float) Window.width / Window.height, 0.1f, 5000.f));
-        ShadersManager.runView(PlayersManager.player.getCamera().getViewMatrixBuffer());
-        FrustumCulling.recalculateMatrix();
-
-        ShadersManager.runTime((float) GLFW.glfwGetTime());
 
         // === PASSE 1 : dessiner la scène 3D dans le FBO ===
         FrameBufferManager.bindForWriting();
@@ -174,7 +172,16 @@ public class Render {
         GL13.glActiveTexture(GL13.GL_TEXTURE0);
         GL11.glBindTexture(GL11.GL_TEXTURE_2D, FrameBufferManager.getColorTexture());
         ShadersManager.runScreenTex(0);
+        ShadersManager.runSaturationAmountPostProcess(1.5f);
+
+        // force FILL le temps de dessiner le quad, peu importe l'état wireframe voulu
+        GL11.glPolygonMode(GL11.GL_FRONT_AND_BACK, GL11.GL_FILL);
+
         FrameBufferManager.drawQuad();
+
+        if (KeyboardInput.isWireFrameMode) {
+            GL11.glPolygonMode(GL11.GL_FRONT_AND_BACK, GL11.GL_LINE);
+        }
 
         GL11.glEnable(GL11.GL_CULL_FACE);
         GL11.glEnable(GL11.GL_DEPTH_TEST);
@@ -266,18 +273,25 @@ public class Render {
         ShadersManager.createShader();   
         ShadersManager.createBlockBorderShader();
         ShadersManager.createPostProcessShader();
+        ShadersManager.createLiquidShader();
 
-        ShadersManager.getUniformLocations();    
-
-        ShadersManager.useShader();    
+        ShadersManager.getUniformLocations();      
         
         int renderDistanceBlocks = WorldManager.RENDER_DISTANCE * 16;
         float fogEnd = renderDistanceBlocks * 0.9f;
         float fogStart = fogEnd * 0.2f;
 
+        ShadersManager.useLiquidShader();
+        ShadersManager.runFogStartLiquid(fogStart);
+        ShadersManager.runFogEndLiquid(fogEnd);
+        ShadersManager.runSkyColorLiquid(Color4f.SKY.red, Color4f.SKY.green, Color4f.SKY.blue);
+        ShadersManager.runBlockLightColorLiquid(1.0f, 0.75f, 0.5f);
+
+        ShadersManager.useShader();
         ShadersManager.runFogStart(fogStart);
         ShadersManager.runFogEnd(fogEnd);
         ShadersManager.runSkyColor(Color4f.SKY.red, Color4f.SKY.green, Color4f.SKY.blue);
+        ShadersManager.runBlockLightColor(1.0f, 0.75f, 0.5f);
 
         FrameBufferManager.create(width, height);
     }

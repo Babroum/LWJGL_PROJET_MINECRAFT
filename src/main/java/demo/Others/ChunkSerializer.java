@@ -80,9 +80,4 @@ public class ChunkSerializer {
     private static Path getPath(int cx, int cz){
         return Paths.get(ChunkSerializer.SAVE_DIR + cx + "_" + cz + ".chunk");
     }
-
-    private static boolean exists(int cx, int cz){
-        Path path = ChunkSerializer.getPath(cx, cz);
-        return Files.exists(path);
-    }
 }

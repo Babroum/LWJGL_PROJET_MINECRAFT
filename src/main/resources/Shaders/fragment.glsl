@@ -11,12 +11,14 @@ in float AO;
 in float skyLight;
 in float blockLight;
 in float fogDistance; 
+flat in int liquid;
 
 out vec4 FragColor;
 
 uniform vec3 skyColor;
 uniform float fogStart;
 uniform float fogEnd;
+uniform vec3 blockLightColor;
 
 uniform sampler2DArray tex; // la texture correspondante à l'id
 
@@ -52,6 +54,16 @@ void main()
     float sl = lightCurve(normalizedSkyLight);
     float bl = lightCurve(normalizedBlockLight);
 
+    // on prend l'intensité la plus forte globalement
+    float lightIntensity = max(sl, bl);
+
+    // et on choisit la couleur en fonction de qui dominait
+    vec3 lightTint = mix(blockLightColor, vec3(1.0), step(bl, sl));
+    // step(bl, sl) = 1.0 si sl >= bl (soleil domine -> blanc neutre)
+    //              = 0.0 si bl > sl  (bloc domine -> couleur chaude)
+
+    vec3 lightColor = lightTint * lightIntensity;
+
     // calcule la taille texture par rapport au coordonnées uv et la texture
     vec4 texColor = texture(tex, vec3(fract(uv), float(texId))); 
 
@@ -60,7 +72,7 @@ void main()
     }
     
     float fogFactor = clamp((fogEnd - fogDistance) / (fogEnd - fogStart), 0.0, 1.0);
-    vec3 litColor = texColor.rgb * max(bl, sl) * aoFactor * dirFactor;
+    vec3 litColor = texColor.rgb * lightColor * aoFactor * dirFactor;
     vec3 finalColor = mix(skyColor, litColor, fogFactor);
     FragColor = vec4(finalColor, texColor.a);
 }

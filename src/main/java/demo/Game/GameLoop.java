@@ -4,6 +4,7 @@ import org.joml.Vector3f;
 
 import demo.Managers.InputManager;
 import demo.Managers.LightManager;
+import demo.Managers.LiquidManager;
 import demo.Managers.PlayersManager;
 import demo.Managers.WorldManager;
 
@@ -79,6 +80,8 @@ public class GameLoop {
      */
     public static void run(float delta){
         LightManager.processLightBFS();
+        LiquidManager.processLiquidBFS();
+        
         InputManager.runLogic(delta);
         PlayersManager.playersLoop(delta);
 

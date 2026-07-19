@@ -20,4 +20,6 @@ public class Blocks {
     public static BlockDefinition OAK_LOG;
     public static BlockDefinition OAK_PLANKS;
     public static BlockDefinition OAK_LEAVES;
+    public static BlockDefinition WATER;
+    public static BlockDefinition TORCH;
 }

@@ -20,7 +20,7 @@ public class WorldManager {
 
     private static final int MAX_CHUNKS_PER_TICK = 4;
 
-    public static final int RENDER_DISTANCE = 10;
+    public static final int RENDER_DISTANCE = 3;
     public static final int UNLOAD_DISTANCE = RENDER_DISTANCE + 2;
 
     public static final int ZONE_NEAR = RENDER_DISTANCE / 4; // 25% de la render distance
@@ -166,6 +166,16 @@ public class WorldManager {
                                     generator.get().generateTree(x, y + 1, z, chunk);
                                 }
                             }
+                            /*
+                            if (chunk.getBlock(x, y, z) == Blocks.SAND) {
+                                // si il y a du sable alors on place de l'eau au dessus jusqu'a la limite océan                            
+                                for (int i = y + 1; i <= WorldGenerator.SEA_LEVEL; i++){
+                                    SubChunk currentSub = chunk.getSubChunkAt(i);
+                                    int localY = i % WorldGenerator.CHUNK_SIZE;
+                                    int idx = x + localY * WorldGenerator.CHUNK_SIZE + z * WorldGenerator.CHUNK_HEIGHT;
+                                    currentSub.blocks[idx] = (byte) Blocks.WATER.id;
+                                }
+                            }*/
                         }
                     }
                 }

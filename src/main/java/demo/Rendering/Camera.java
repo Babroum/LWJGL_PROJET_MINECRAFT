@@ -6,6 +6,8 @@ import java.lang.Math;
 import org.joml.*;
 import org.lwjgl.BufferUtils;
 
+import demo.Geometry.Chunk;
+import demo.Geometry.SubChunk;
 import demo.Managers.ChunksManager;
 import demo.Others.BlockDefinition;
 import demo.Others.Blocks;
@@ -129,8 +131,18 @@ public class Camera {
             
             try {
                 BlockDefinition block = ChunksManager.getBlock(bx, by, bz);
-                // dès qu'on trouve un bloc on retourne sa position entière exacte
-                if (block != Blocks.AIR){
+                Chunk chunk = ChunksManager.getChunkAt(bx, bz);
+                SubChunk sub = chunk.getSubChunkAt(by);
+                int liquidLevel = 0;
+                if (block == Blocks.WATER){
+                    int lx = ChunksManager.floorMod(bx, SubChunk.CHUNKSIZEXZ);
+                    int ly = ChunksManager.floorMod(by, SubChunk.CHUNKSIZEXZ);
+                    int lz = ChunksManager.floorMod(bz, SubChunk.CHUNKSIZEXZ);
+                    liquidLevel = sub.getLiquidLevel(lx, ly, lz);
+                }
+
+                // dès qu'on trouve un bloc/une source d'eau on retourne sa position entière exacte
+                if (block != Blocks.AIR && liquidLevel == block.liquidLevel){
                     int placeX = bx - (lastAxis == 0 ? stepX : 0);
                     int placeY = by - (lastAxis == 1 ? stepY : 0);
                     int placeZ = bz - (lastAxis == 2 ? stepZ : 0);

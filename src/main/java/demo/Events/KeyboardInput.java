@@ -102,11 +102,15 @@ public class KeyboardInput {
                     break;
 
                 case GLFW.GLFW_KEY_2:
-                    PlayersManager.player.blockInHand = Blocks.LIGHT_BLOCK;
+                    PlayersManager.player.blockInHand = Blocks.WATER;
                     break;
                 
                 case GLFW.GLFW_KEY_3:
                     PlayersManager.player.blockInHand = Blocks.GLASS;
+                    break;
+                
+                case GLFW.GLFW_KEY_4:
+                    PlayersManager.player.blockInHand = Blocks.TORCH;
                     break;
 
                 default:

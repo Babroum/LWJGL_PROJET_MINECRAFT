@@ -14,6 +14,7 @@ public class TextureManager {
     private static int textureArrayId;
     private static final Map<String, Integer> nameToIndex = new HashMap<>();
     private static int texUniformLocation = -2; // -2 = pas encore recherché ; -1 = recherché mais introuvable
+    private static int texUniformLocationLiquid = -2;
 
     /**
      * Initialise les textures données en paramètre
@@ -61,7 +62,7 @@ public class TextureManager {
     }
 
     /**
-     * Applique les textures
+     * Bind la texture pour le shader principal (opaque/glass)
      */
     public static void bind() {
         GL30.glActiveTexture(GL30.GL_TEXTURE0);
@@ -72,6 +73,20 @@ public class TextureManager {
         }
         if (texUniformLocation != -1) {
             GL30.glUniform1i(texUniformLocation, 0);
+        }
+    }
+    
+    /**
+     * Bind la texture pour le shader liquide
+     */
+    public static void bindLiquid() {
+        GL30.glActiveTexture(GL30.GL_TEXTURE0);
+        GL11.glBindTexture(GL30.GL_TEXTURE_2D_ARRAY, textureArrayId);
+        if (texUniformLocationLiquid == -2) {
+            texUniformLocationLiquid = GL30.glGetUniformLocation(ShadersManager.getProgramLiquidId(), "tex");
+        }
+        if (texUniformLocationLiquid != -1) {
+            GL30.glUniform1i(texUniformLocationLiquid, 0);
         }
     }
 

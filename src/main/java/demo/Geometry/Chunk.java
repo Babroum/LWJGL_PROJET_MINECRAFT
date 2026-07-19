@@ -352,18 +352,27 @@ public class Chunk extends Node3D{
     @Override
     public void drawNode(Matrix4f parentModel){
         for (SubChunk sub : subChunks){
-            if (sub.mesh.getVAO() == 0 && sub.transparentMesh.getVAO() == 0 && sub.glassMesh.getVAO() == 0) continue;
+            if (sub.mesh.getVAO() == 0 && sub.transparentMesh.getVAO() == 0) continue;
             if (!FrustumCulling.testAABB(this.minX, sub.y, this.minZ, this.maxX, sub.y + 16, this.maxZ)) continue;
             sub.drawNode(parentModel);
         }
     }
 
-    public void drawNodeTransparent(Matrix4f parentModel){
-        if (FrustumCulling.testAABB(this.minX, this.minY, this.minZ, this.maxX, this.maxY, this.maxZ)){
-            for (SubChunk sub : subChunks){
-                if (sub.transparentMesh.getVAO() == 0) continue;
-                sub.drawNodeTransparent(parentModel);
-            }
-        }
+    @OpenGLThread
+    public void drawNodeGlass(Matrix4f parentModel){        
+        for (SubChunk sub : subChunks){
+            if (sub.glassMesh.getVAO() == 0) continue;
+            if (!FrustumCulling.testAABB(this.minX, sub.y, this.minZ, this.maxX, sub.y + 16, this.maxZ)) continue;
+            sub.drawNodeGlass(parentModel);
+        }        
+    }
+
+    @OpenGLThread
+    public void drawNodeLiquid(Matrix4f parentModel){
+        for (SubChunk sub : subChunks){
+            if (sub.liquidMesh.getVAO() == 0) continue;
+            if (!FrustumCulling.testAABB(this.minX, sub.y, this.minZ, this.maxX, sub.y + 16, this.maxZ)) continue;
+            sub.drawNodeLiquid(parentModel);
+        }        
     }
 }

@@ -20,8 +20,12 @@ public abstract class FrameBufferManager {
         GL11.glBindTexture(GL11.GL_TEXTURE_2D, colorTexture);
         GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGB, width, height, 0,
                 GL11.GL_RGB, GL11.GL_UNSIGNED_BYTE, (ByteBuffer) null);
+
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR);
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
+        GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_S, GL20.GL_CLAMP_TO_EDGE);
+        GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_T, GL20.GL_CLAMP_TO_EDGE);
+
         GL30.glFramebufferTexture2D(GL30.GL_FRAMEBUFFER, GL30.GL_COLOR_ATTACHMENT0,
                 GL11.GL_TEXTURE_2D, colorTexture, 0);
 
@@ -38,6 +42,44 @@ public abstract class FrameBufferManager {
         GL30.glBindFramebuffer(GL30.GL_FRAMEBUFFER, 0);
 
         setupQuad();
+    }
+
+    @OpenGLThread
+    public static void resize(int width, int height) {
+        // supprime l'ancien FBO et ses ressources
+        GL30.glDeleteFramebuffers(fbo);
+        GL11.glDeleteTextures(colorTexture);
+        GL30.glDeleteRenderbuffers(depthRenderBuffer);
+
+        // recrée tout à la nouvelle taille (réutilise la logique de create, sans refaire le quad)
+        fbo = GL30.glGenFramebuffers();
+        GL30.glBindFramebuffer(GL30.GL_FRAMEBUFFER, fbo);
+
+        colorTexture = GL11.glGenTextures();
+        GL11.glBindTexture(GL11.GL_TEXTURE_2D, colorTexture);
+        GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGB, width, height, 0,
+                GL11.GL_RGB, GL11.GL_UNSIGNED_BYTE, (ByteBuffer) null);
+                
+        GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR);
+        GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
+        GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_S, GL20.GL_CLAMP_TO_EDGE);
+        GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_T, GL20.GL_CLAMP_TO_EDGE);
+
+        GL30.glFramebufferTexture2D(GL30.GL_FRAMEBUFFER, GL30.GL_COLOR_ATTACHMENT0,
+                GL11.GL_TEXTURE_2D, colorTexture, 0);
+
+        depthRenderBuffer = GL30.glGenRenderbuffers();
+        GL30.glBindRenderbuffer(GL30.GL_RENDERBUFFER, depthRenderBuffer);
+        GL30.glRenderbufferStorage(GL30.GL_RENDERBUFFER, GL11.GL_DEPTH_COMPONENT, width, height);
+        GL30.glFramebufferRenderbuffer(GL30.GL_FRAMEBUFFER, GL30.GL_DEPTH_ATTACHMENT,
+                GL30.GL_RENDERBUFFER, depthRenderBuffer);
+
+        if (GL30.glCheckFramebufferStatus(GL30.GL_FRAMEBUFFER) != GL30.GL_FRAMEBUFFER_COMPLETE) {
+            throw new RuntimeException("FramebufferManagerError : FBO incomplet après resize !");
+        }
+
+        GL30.glBindFramebuffer(GL30.GL_FRAMEBUFFER, 0);
+        // pas besoin de refaire setupQuad() : le quad plein écran (-1 à 1) ne dépend pas de la résolution
     }
 
     @OpenGLThread

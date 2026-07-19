@@ -17,9 +17,11 @@ public abstract class ShadersManager {
     private static int programId;
     private static int programBlockBorderId;
     private static int programTextId;
-
     private static int programPostProcessId;
+    private static int programLiquidId;
+
     private static int locationScreenTex;
+    private static int locationSaturation;
 
     private static int locationProj, locationView, locationModel;
     private static int locationProjBlockBorder, locationViewBlockBorder, locationBlockPosBlockBorder;
@@ -27,10 +29,56 @@ public abstract class ShadersManager {
     private static int locationFogStart;
     private static int locationFogEnd;
     private static int locationSkyColor;
+    private static int locationBlockLightColor;
     private static int locationTime;
+
+    private static int locationProjLiquid; 
+    private static int locationViewLiquid;
+    private static int locationModelLiquid;
+    private static int locationTimeLiquid;
+    private static int locationSkyColorLiquid;
+    private static int locationFogStartLiquid;
+    private static int locationFogEndLiquid;
+    private static int locationBlockLightColorLiquid;
 
     private static final Matrix4f textOrthoMatrix = new Matrix4f();
     private static int lastWidth = 0, lastHeight = 0;
+
+    /**
+     * Initialise le shader des liquides
+     */
+    @OpenGLThread
+    public static void createLiquidShader(){
+        String vertexShader;
+        String fragmentShader;
+        try{
+            vertexShader = FileLoader.loadShaderFromClasspathS("/Shaders/vertex_liquid.glsl");
+            fragmentShader = FileLoader.loadShaderFromClasspathS("/Shaders/fragment_liquid.glsl");
+        }catch(IOException e){
+            e.printStackTrace();
+            return;
+        }
+
+        int[] ids = ShadersManager.create(vertexShader, fragmentShader);
+        int vsId = ids[0];
+        int fgId = ids[1];
+
+        ShadersManager.programLiquidId = GL20.glCreateProgram();
+        GL20.glAttachShader(ShadersManager.programLiquidId, vsId);
+        GL20.glAttachShader(ShadersManager.programLiquidId, fgId);
+
+        GL20.glLinkProgram(ShadersManager.programLiquidId);
+        int success = GL20.glGetProgrami(ShadersManager.programLiquidId, GL20.GL_LINK_STATUS);
+        if (success == GL20.GL_FALSE){
+            throw new RuntimeException("ShaderManagerError : "+GL20.glGetProgramInfoLog(ShadersManager.programLiquidId));
+        }
+
+        GL20.glDetachShader(ShadersManager.programLiquidId, vsId);
+        GL20.glDeleteShader(vsId);
+
+        GL20.glDetachShader(ShadersManager.programLiquidId, fgId);
+        GL20.glDeleteShader(fgId);
+    }
 
     /**
      * Initialise le shader de post-process (FBO)
@@ -66,8 +114,6 @@ public abstract class ShadersManager {
 
         GL20.glDetachShader(ShadersManager.programPostProcessId, fgId);
         GL20.glDeleteShader(fgId);
-
-        locationScreenTex = GL20.glGetUniformLocation(programPostProcessId, "screenTex");
     }
 
     /**
@@ -106,6 +152,46 @@ public abstract class ShadersManager {
         GL20.glDeleteShader(vsId);
 
         GL20.glDetachShader(ShadersManager.programTextId, fgId);
+        GL20.glDeleteShader(fgId);
+    }
+
+    /**
+     * Initialise les shaders pour les bordures de bloc
+     * @throws ShaderManagerError
+    */
+    @OpenGLThread
+    public static void createBlockBorderShader(){
+        String vertexShader;
+        String fragmentShader;
+        try{
+            vertexShader = FileLoader.loadShaderFromClasspathS("/Shaders/vertex_block_border.glsl");
+            fragmentShader = FileLoader.loadShaderFromClasspathS("/Shaders/fragment_block_border.glsl");
+        }catch(IOException e){
+            e.printStackTrace();
+            return;
+        }
+
+        int[] ids = ShadersManager.create(vertexShader, fragmentShader);
+        int vsId = ids[0];
+        int fgId = ids[1];
+        
+        // attacher les shader compilés au programme
+        ShadersManager.programBlockBorderId = GL20.glCreateProgram();
+        GL20.glAttachShader(ShadersManager.programBlockBorderId, vsId);
+        GL20.glAttachShader(ShadersManager.programBlockBorderId, fgId);
+
+        // vérifie que les sorties du vertex shader corresponde aux entrées du fragment shader
+        GL20.glLinkProgram(ShadersManager.programBlockBorderId);
+        int success = GL20.glGetProgrami(ShadersManager.programBlockBorderId, GL20.GL_LINK_STATUS);
+        if (success == GL20.GL_FALSE){
+            throw new RuntimeException("ShaderManagerError : "+GL20.glGetProgramInfoLog(ShadersManager.programBlockBorderId));
+        }
+
+        // une fois les vertex liés on détache et supprime les shaders
+        GL20.glDetachShader(ShadersManager.programBlockBorderId, vsId);
+        GL20.glDeleteShader(vsId);
+
+        GL20.glDetachShader(ShadersManager.programBlockBorderId, fgId);
         GL20.glDeleteShader(fgId);
     }
 
@@ -149,45 +235,6 @@ public abstract class ShadersManager {
         GL20.glDeleteShader(fgId);
     }
 
-    /**
-     * Initialise les shaders pour les bordures de bloc
-     * @throws ShaderManagerError
-     */
-    @OpenGLThread
-    public static void createBlockBorderShader(){
-        String vertexShader;
-        String fragmentShader;
-        try{
-            vertexShader = FileLoader.loadShaderFromClasspathS("/Shaders/vertex_block_border.glsl");
-            fragmentShader = FileLoader.loadShaderFromClasspathS("/Shaders/fragment_block_border.glsl");
-        }catch(IOException e){
-            e.printStackTrace();
-            return;
-        }
-
-        int[] ids = ShadersManager.create(vertexShader, fragmentShader);
-        int vsId = ids[0];
-        int fgId = ids[1];
-        
-        // attacher les shader compilés au programme
-        ShadersManager.programBlockBorderId = GL20.glCreateProgram();
-        GL20.glAttachShader(ShadersManager.programBlockBorderId, vsId);
-        GL20.glAttachShader(ShadersManager.programBlockBorderId, fgId);
-
-        // vérifie que les sorties du vertex shader corresponde aux entrées du fragment shader
-        GL20.glLinkProgram(ShadersManager.programBlockBorderId);
-        int success = GL20.glGetProgrami(ShadersManager.programBlockBorderId, GL20.GL_LINK_STATUS);
-        if (success == GL20.GL_FALSE){
-            throw new RuntimeException("ShaderManagerError : "+GL20.glGetProgramInfoLog(ShadersManager.programBlockBorderId));
-        }
-
-        // une fois les vertex liés on détache et supprime les shaders
-        GL20.glDetachShader(ShadersManager.programBlockBorderId, vsId);
-        GL20.glDeleteShader(vsId);
-
-        GL20.glDetachShader(ShadersManager.programBlockBorderId, fgId);
-        GL20.glDeleteShader(fgId);
-    }
 
     /**
      * Initialise les shaders
@@ -219,24 +266,40 @@ public abstract class ShadersManager {
         return new int[]{vsId, fgId};
     }
 
-    // Appelle cette méthode une seule fois après avoir créé les shaders
+    // Appeller une seule fois après avoir créé les shaders
     public static void getUniformLocations() {
-        locationProj = GL20.glGetUniformLocation(programId, "projection");
-        locationView = GL20.glGetUniformLocation(programId, "view");
-        locationModel = GL20.glGetUniformLocation(programId, "model");
-        
-        locationProjBlockBorder = GL20.glGetUniformLocation(programBlockBorderId, "projection");
-        locationViewBlockBorder = GL20.glGetUniformLocation(programBlockBorderId, "view");
-        locationBlockPosBlockBorder = GL20.glGetUniformLocation(programBlockBorderId, "blockPos");
+        locationProj                  = GL20.glGetUniformLocation(programId, "projection");
+        locationView                  = GL20.glGetUniformLocation(programId, "view");
+        locationModel                 = GL20.glGetUniformLocation(programId, "model");
+        locationSkyColor              = GL20.glGetUniformLocation(programId, "skyColor");
+        locationFogStart              = GL20.glGetUniformLocation(programId, "fogStart");
+        locationFogEnd                = GL20.glGetUniformLocation(programId, "fogEnd");
+        locationBlockLightColor       = GL20.glGetUniformLocation(programId, "blockLightColor");
+        locationTime                  = GL20.glGetUniformLocation(programId, "time");
 
-        locationOrtho = GL20.glGetUniformLocation(programTextId, "ortho");
-        locationTextColor = GL20.glGetUniformLocation(programTextId, "color");
+        locationProjBlockBorder       = GL20.glGetUniformLocation(programBlockBorderId, "projection");
+        locationViewBlockBorder       = GL20.glGetUniformLocation(programBlockBorderId, "view");
+        locationBlockPosBlockBorder   = GL20.glGetUniformLocation(programBlockBorderId, "blockPos");
 
-        locationFogStart = GL20.glGetUniformLocation(programId, "fogStart");
-        locationFogEnd   = GL20.glGetUniformLocation(programId, "fogEnd");
-        locationSkyColor = GL20.glGetUniformLocation(programId, "skyColor");
+        locationOrtho                 = GL20.glGetUniformLocation(programTextId, "ortho");
+        locationTextColor             = GL20.glGetUniformLocation(programTextId, "color");
 
-        locationTime = GL20.glGetUniformLocation(programId, "time");
+        locationSaturation            = GL20.glGetUniformLocation(programPostProcessId, "saturationAmount");
+        locationScreenTex             = GL20.glGetUniformLocation(programPostProcessId, "screenTex");
+
+        locationProjLiquid            = GL20.glGetUniformLocation(programLiquidId, "projection");
+        locationViewLiquid            = GL20.glGetUniformLocation(programLiquidId, "view");
+        locationModelLiquid           = GL20.glGetUniformLocation(programLiquidId, "model");
+        locationSkyColorLiquid        = GL20.glGetUniformLocation(programLiquidId, "skyColor");
+        locationFogStartLiquid        = GL20.glGetUniformLocation(programLiquidId, "fogStart");
+        locationFogEndLiquid          = GL20.glGetUniformLocation(programLiquidId, "fogEnd");
+        locationBlockLightColorLiquid = GL20.glGetUniformLocation(programLiquidId, "blockLightColor");
+        locationTimeLiquid            = GL20.glGetUniformLocation(programLiquidId, "time");
+    }   
+
+    @OpenGLThread
+    public static void useLiquidShader(){
+        GL20.glUseProgram(ShadersManager.programLiquidId);
     }
 
     @OpenGLThread
@@ -265,6 +328,11 @@ public abstract class ShadersManager {
     }
 
     @OpenGLThread
+    public static void runTimeLiquid(float time){
+        GL20.glUniform1f(ShadersManager.locationTimeLiquid, time);
+    }
+
+    @OpenGLThread
     public static void runScreenTex(int textureUnit){
         GL20.glUniform1i(ShadersManager.locationScreenTex, textureUnit);
     }
@@ -279,12 +347,58 @@ public abstract class ShadersManager {
     }
 
     /**
+     * Envoie la distance de début du fog au shader
+     * @param fogStart float
+     */
+    @OpenGLThread
+    public static void runFogStartLiquid(float fogStart){
+        GL20.glUniform1f(ShadersManager.locationFogStartLiquid, fogStart);
+    }
+
+
+    /**
      * Envoie la distance de fin du fog au shader
      * @param fogEnd float
      */
     @OpenGLThread
     public static void runFogEnd(float fogEnd){
         GL20.glUniform1f(ShadersManager.locationFogEnd, fogEnd);
+    }
+
+    /**
+     * Envoie la distance de fin du fog au shader
+     * @param fogEnd float
+     */
+    @OpenGLThread
+    public static void runFogEndLiquid(float fogEnd){
+        GL20.glUniform1f(ShadersManager.locationFogEndLiquid, fogEnd);
+    }
+
+    /**
+     * Envoie la couleur du ciel/fog au shader
+     * @param r float
+     * @param g float
+     * @param b float
+     */
+    @OpenGLThread
+    public static void runBlockLightColor(float r, float g, float b){
+        GL20.glUniform3f(ShadersManager.locationBlockLightColor, r, g, b);
+    }
+    /**
+     * Envoie la couleur du ciel/fog au shader
+     * @param r float
+     * @param g float
+     * @param b float
+     */
+    @OpenGLThread
+    public static void runBlockLightColorLiquid(float r, float g, float b){
+        GL20.glUniform3f(ShadersManager.locationBlockLightColorLiquid, r, g, b);
+    }
+
+
+    @OpenGLThread
+    public static void runSaturationAmountPostProcess(float saturationAmount){
+        GL20.glUniform1f(ShadersManager.locationSaturation, saturationAmount);
     }
 
     /**
@@ -299,6 +413,17 @@ public abstract class ShadersManager {
     }
 
     /**
+     * Envoie la couleur du ciel/fog au shader
+     * @param r float
+     * @param g float
+     * @param b float
+     */
+    @OpenGLThread
+    public static void runSkyColorLiquid(float r, float g, float b){
+        GL20.glUniform3f(ShadersManager.locationSkyColorLiquid, r, g, b);
+    }
+
+    /**
      * Envoie la projection au shader
      * @param proj FloatBuffer
      */
@@ -309,6 +434,16 @@ public abstract class ShadersManager {
     }
 
     /**
+     * Envoie la projection au shader
+     * @param proj FloatBuffer
+     */
+    @OpenGLThread 
+    public static void runProjectionLiquid(FloatBuffer proj){
+        proj.rewind();      
+        GL20.glUniformMatrix4fv(ShadersManager.locationProjLiquid, false, proj);  
+    }
+
+    /**
      * Envoie la viewMatrix de la caméra au shader
      * @param view FloatBuffer
      */
@@ -316,6 +451,36 @@ public abstract class ShadersManager {
     public static void runView(FloatBuffer view){
         view.rewind();
         GL20.glUniformMatrix4fv(ShadersManager.locationView, false, view);
+    }
+
+    /**
+     * Envoie la viewMatrix de la caméra au shader
+     * @param view FloatBuffer
+     */
+    @OpenGLThread 
+    public static void runViewLiquid(FloatBuffer view){
+        view.rewind();
+        GL20.glUniformMatrix4fv(ShadersManager.locationViewLiquid, false, view);
+    }
+
+    /**
+     * Envoie le model des cubes au shader
+     * @param model FloatBuffer
+     */
+    @OpenGLThread
+    public static void runModel(FloatBuffer model){
+        model.rewind();
+        GL20.glUniformMatrix4fv(ShadersManager.locationModel, false, model);
+    }
+
+    /**
+     * Envoie le model des cubes au shader
+     * @param model FloatBuffer
+     */
+    @OpenGLThread
+    public static void runModelLiquid(FloatBuffer model){
+        model.rewind();
+        GL20.glUniformMatrix4fv(ShadersManager.locationModelLiquid, false, model);
     }
 
     /**
@@ -350,16 +515,6 @@ public abstract class ShadersManager {
     }
 
     /**
-     * Envoie le model des cubes au shader
-     * @param model FloatBuffer
-     */
-    @OpenGLThread
-    public static void runModel(FloatBuffer model){
-        model.rewind();
-        GL20.glUniformMatrix4fv(ShadersManager.locationModel, false, model);
-    }
-
-    /**
      * Envoie la matrice orthonormé au shader de texte
      * @param buffer FloatBuffer
      * @param width int
@@ -390,6 +545,11 @@ public abstract class ShadersManager {
     }
 
     @OpenGLThread
+    public static void closeProgramLiquidId(){
+        GL20.glDeleteProgram(ShadersManager.programLiquidId);
+    }
+
+    @OpenGLThread
     public static void closeProgramPostProcessId(){
         GL20.glDeleteProgram(ShadersManager.programPostProcessId);
     }
@@ -407,6 +567,11 @@ public abstract class ShadersManager {
     @OpenGLThread
     public static void closeProgramTextId(){
         GL20.glDeleteProgram(ShadersManager.programTextId);
+    }
+
+    @OpenGLThread
+    public static int getProgramLiquidId(){
+        return ShadersManager.programLiquidId;
     }
 
     @OpenGLThread

@@ -12,25 +12,29 @@ public class Quad {
     public int z;       
     public int width; // largeur sur X
     public int height; // hauteur sur Y
+    public int depth; // profondeur sur Z
     public int direction;
-    public BlockDefinition type = Blocks.GRASS;
+    public BlockDefinition type = Blocks.NULL;
     public int ao0, ao1, ao2, ao3; // coins A, B, C, D
     public int skyLight, blockLight;
+    public int textureId;
 
-    public Quad(int x, int y, int z, int width, int height, int direction,
-                int ao0, int ao1, int ao2, int ao3,
-                int skyLight, int blockLight){
-        this.x = x;
-        this.y = y;
-        this.z = z;
-        this.width = width;
-        this.height = height;
-        this.direction = direction;
-        this.ao0 = ao0;
-        this.ao1 = ao1;
-        this.ao2 = ao2;
-        this.ao3 = ao3;
-        this.skyLight = skyLight;
-        this.blockLight = blockLight;
+    public Quad(int x, int y, int z, int width, int height, int depth,
+                int direction, int ao0, int ao1, int ao2, int ao3, 
+                int skyLight, int blockLight, int textureId){
+        this.x           = x;
+        this.y           = y;
+        this.z           = z;
+        this.width       = width;
+        this.height      = height;
+        this.depth       = depth;
+        this.direction   = direction;
+        this.ao0         = ao0;
+        this.ao1         = ao1;
+        this.ao2         = ao2;
+        this.ao3         = ao3;
+        this.skyLight    = skyLight;
+        this.blockLight  = blockLight;
+        this.textureId   = textureId;
     }
 }

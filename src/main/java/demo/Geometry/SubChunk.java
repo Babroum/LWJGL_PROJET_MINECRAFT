@@ -6,6 +6,7 @@ import java.util.BitSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.HashSet;
 
 import org.joml.Matrix4f;
@@ -16,6 +17,7 @@ import demo.Events.KeyboardInput;
 import demo.Managers.BlocksManager;
 import demo.Managers.ChunksManager;
 import demo.Managers.LightManager;
+import demo.Managers.LiquidManager;
 import demo.Managers.ShadersManager;
 import demo.Meshing.SubChunkMesh;
 import demo.Others.BlockDefinition;
@@ -41,10 +43,17 @@ public class SubChunk extends Node3D{
     // donne au mesh le subChunk au quel il appartient
     public SubChunkMesh mesh = new SubChunkMesh();
     public SubChunkMesh transparentMesh = new SubChunkMesh();    
-    public SubChunkMesh glassMesh = new SubChunkMesh();   // ancien transparentMesh renommé
+    public SubChunkMesh glassMesh = new SubChunkMesh();
+    public SubChunkMesh liquidMesh = new SubChunkMesh();
 
     public byte[] blocks; // id des blocs (MAX 256 blocs différent car 8bits)
-    public byte[] lightMap; // contient la lumière du ciel et celle du bloc 4bits et 4bits
+
+    /*
+    [ 0000  0000  0000  0     000  0000  0000  0000 ]
+      sky   block liqud liqud
+      light light level src ?
+     */
+    public AtomicIntegerArray blocksData;
     
     // garantit que le lire + écrire se fait en une seule instruction CPU indivisible
     public AtomicBoolean dirty = new AtomicBoolean(false);
@@ -69,34 +78,6 @@ public class SubChunk extends Node3D{
         int[] eastAxis  = new int[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ];
         int[] upAxis    = new int[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ];
         int[] downAxis  = new int[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ];
-
-        int[] northMask = new int[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ];
-        int[] southMask = new int[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ];
-        int[] westMask  = new int[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ];
-        int[] eastMask  = new int[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ];
-        int[] upMask    = new int[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ];
-        int[] downMask  = new int[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ];
-
-        byte[] northAoMask = new byte[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEHEIGHT];
-        byte[] southAoMask = new byte[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEHEIGHT];
-        byte[] westAoMask  = new byte[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEHEIGHT];
-        byte[] eastAoMask  = new byte[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEHEIGHT];
-        byte[] upAoMask    = new byte[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEHEIGHT];
-        byte[] downAoMask  = new byte[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEHEIGHT];
-
-        byte[] northSkyLightMask = new byte[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEHEIGHT];
-        byte[] southSkyLightMask = new byte[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEHEIGHT];
-        byte[] westSkyLightMask  = new byte[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEHEIGHT];
-        byte[] eastSkyLightMask  = new byte[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEHEIGHT];
-        byte[] upSkyLightMask    = new byte[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEHEIGHT];
-        byte[] downSkyLightMask  = new byte[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEHEIGHT];
-
-        byte[] northBlockLightMask = new byte[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEHEIGHT];
-        byte[] southBlockLightMask = new byte[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEHEIGHT];
-        byte[] westBlockLightMask  = new byte[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEHEIGHT];
-        byte[] eastBlockLightMask  = new byte[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEHEIGHT];
-        byte[] upBlockLightMask    = new byte[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEHEIGHT];
-        byte[] downBlockLightMask  = new byte[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEHEIGHT];
     }
 
     // obligé sinon les threads qui construisent les chunks pour modifié les infos
@@ -105,14 +86,72 @@ public class SubChunk extends Node3D{
     private static final ThreadLocal<FaceData> OPAQUE_FACE_DATA_LOCAL      = ThreadLocal.withInitial(() -> new FaceData());
     private static final ThreadLocal<FaceData> TRANSPARENT_FACE_DATA_LOCAL = ThreadLocal.withInitial(() -> new FaceData());
     private static final ThreadLocal<FaceData> GLASS_FACE_DATA_LOCAL       = ThreadLocal.withInitial(() -> new FaceData());
+    private static final ThreadLocal<FaceData> LIQUID_FACE_DATA_LOCAL      = ThreadLocal.withInitial(() -> new FaceData());
 
     @ChunkThread
     public SubChunk(Chunk parent){
         this.parent = parent;
+        this.blocksData = new AtomicIntegerArray(SubChunk.MAXBLOCK); // thread safe
         this.blocks = new byte[SubChunk.MAXBLOCK];   
-        this.lightMap = new byte[SubChunk.MAXBLOCK];  
+
         // définit la taille du buffer et du tableau de vertex  
         this.mesh.setupSubChunkBuffers(this.solidBitSet.cardinality());   
+    }
+
+    /**
+     * Retourne le niveau de liquide dans le bloc.
+     * @param x Coordonnées en x (locale) 0-15.
+     * @param y Coordonnées en y (locale) 0-15.
+     * @param z Coordonnées en z (locale) 0-15.
+     * @return le liquide (0-15)
+     */
+    public int getLiquidLevel(int x, int y, int z){         
+        int index = x + y * SubChunk.CHUNKSIZEXZ + z * SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ;
+
+        if (x >= 0 && x < CHUNKSIZEXZ && y >= 0 && y < CHUNKSIZEXZ && z >= 0 && z < CHUNKSIZEXZ)
+            { return (this.blocksData.get(index) >>> 20) & 0xF; }
+        if (y >= CHUNKSIZEXZ && this.upNeighbor != null)
+            { return this.upNeighbor.getLiquidLevel(x, y - CHUNKSIZEXZ, z); }
+        if (y < 0 && this.downNeighbor != null)
+            { return this.downNeighbor.getLiquidLevel(x, y + CHUNKSIZEXZ, z); }
+        if (x >= CHUNKSIZEXZ && this.westNeighbor != null)
+            { return this.westNeighbor.getLiquidLevel(x - CHUNKSIZEXZ, y, z); }
+        if (x < 0 && this.eastNeighbor != null)
+            { return this.eastNeighbor.getLiquidLevel(x + CHUNKSIZEXZ, y, z); }
+        if (z >= CHUNKSIZEXZ && this.northNeighbor != null)
+            { return this.northNeighbor.getLiquidLevel(x, y, z - CHUNKSIZEXZ); }
+        if (z < 0 && this.southNeighbor != null)
+            { return this.southNeighbor.getLiquidLevel(x, y, z + CHUNKSIZEXZ); }
+        return 0;
+    }
+
+    /**
+     * Définis le nouveau niveau de liquide dans le bloc.
+     * @param x Coordonnées en x (locale) 0-15
+     * @param y Coordonnées en y (locale) 0-15
+     * @param z Coordonnées en z (locale) 0-15
+     * @param newLiquidLevel Nouvelle valeur de liquide (0-15)
+     */
+    public void setLiquidLevel(int x, int y, int z, int newLiquidLevel){
+        if (newLiquidLevel < 0 || newLiquidLevel > 15) throw new RuntimeException("Le liquide doit être comprise entre 0 et 255");
+        int index = x + y * SubChunk.CHUNKSIZEXZ + z * SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ;
+
+        if (x >= 0 && x < CHUNKSIZEXZ && y >= 0 && y < CHUNKSIZEXZ && z >= 0 && z < CHUNKSIZEXZ){
+            this.blocksData.getAndUpdate(index, old -> (old & 0xFF0FFFFF) | ((newLiquidLevel & 0xF) << 20));
+            return; 
+        }
+        if (y >= CHUNKSIZEXZ && this.upNeighbor != null)
+            { this.upNeighbor.setLiquidLevel(x, y - CHUNKSIZEXZ, z, newLiquidLevel); return; }
+        if (y < 0 && this.downNeighbor != null)
+            { this.downNeighbor.setLiquidLevel(x, y + CHUNKSIZEXZ, z, newLiquidLevel); return; }
+        if (x >= CHUNKSIZEXZ && this.westNeighbor != null)
+            { this.westNeighbor.setLiquidLevel(x - CHUNKSIZEXZ, y, z, newLiquidLevel); return; }
+        if (x < 0 && this.eastNeighbor != null)
+            { this.eastNeighbor.setLiquidLevel(x + CHUNKSIZEXZ, y, z, newLiquidLevel); return; }
+        if (z >= CHUNKSIZEXZ && this.northNeighbor != null)
+            { this.northNeighbor.setLiquidLevel(x, y, z - CHUNKSIZEXZ, newLiquidLevel); return; }
+        if (z < 0 && this.southNeighbor != null)
+            { this.southNeighbor.setLiquidLevel(x, y, z + CHUNKSIZEXZ, newLiquidLevel); return; }
     }
 
     /**
@@ -126,7 +165,7 @@ public class SubChunk extends Node3D{
         int index = x + y * SubChunk.CHUNKSIZEXZ + z * SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ;
 
         if (x >= 0 && x < CHUNKSIZEXZ && y >= 0 && y < CHUNKSIZEXZ && z >= 0 && z < CHUNKSIZEXZ)
-            { return (lightMap[index] & 0xF0) >>> 4; }
+            { return (this.blocksData.get(index) >>> 28) & 0xF; } // 32-F(4) = 28
         if (y >= CHUNKSIZEXZ && this.upNeighbor != null)
             { return this.upNeighbor.getBlockSkyLight(x, y - CHUNKSIZEXZ, z); }
         if (y < 0 && this.downNeighbor != null)
@@ -153,7 +192,7 @@ public class SubChunk extends Node3D{
         int index = x + y * SubChunk.CHUNKSIZEXZ + z * SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ;
 
         if (x >= 0 && x < CHUNKSIZEXZ && y >= 0 && y < CHUNKSIZEXZ && z >= 0 && z < CHUNKSIZEXZ)
-            { return this.lightMap[index] & 0x0F; }
+            { return (this.blocksData.get(index) >>> 24) & 0xF; }
         if (y >= CHUNKSIZEXZ && this.upNeighbor != null)
             { return this.upNeighbor.getBlockLight(x, y - CHUNKSIZEXZ, z); }
         if (y < 0 && this.downNeighbor != null)
@@ -177,13 +216,11 @@ public class SubChunk extends Node3D{
      * @param newLight Nouvelle valeur de lumière
      */
     public void setBlockSkyLight(int x, int y, int z, int newLight){
-        //System.out.println("WRITE " + newLight + " at " + x + "," + y + "," + z);
         if (newLight < 0 || newLight > 15) throw new RuntimeException("La lumière doit être comprise entre 0 et 15");
         int index = x + y * SubChunk.CHUNKSIZEXZ + z * SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ;
 
         if (x >= 0 && x < CHUNKSIZEXZ && y >= 0 && y < CHUNKSIZEXZ && z >= 0 && z < CHUNKSIZEXZ){
-            byte oldLight = this.lightMap[index];
-            this.lightMap[index] = (byte)((oldLight & 0x0F) | (((byte)newLight & 0x0F) << 4));
+            this.blocksData.getAndUpdate(index, old -> (old & 0x0FFFFFFF) | ((newLight & 0xF) << 28));
             return; 
         }
         if (y >= CHUNKSIZEXZ && this.upNeighbor != null)
@@ -212,8 +249,7 @@ public class SubChunk extends Node3D{
         int index = x + y * SubChunk.CHUNKSIZEXZ + z * SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ; 
 
         if (x >= 0 && x < CHUNKSIZEXZ && y >= 0 && y < CHUNKSIZEXZ && z >= 0 && z < CHUNKSIZEXZ){
-            byte oldLight = this.lightMap[index];
-            this.lightMap[index] = (byte)((oldLight & 0xF0) | ((byte)newLight & 0x0F));
+            this.blocksData.getAndUpdate(index, old -> (old & 0xF0FFFFFF) | ((newLight & 0xF) << 24));
             return; 
         } // garde les 4 bits à gauche et met les 4 bits à droite avec les nouvelles valeurs
         if (y >= CHUNKSIZEXZ && this.upNeighbor != null)
@@ -234,8 +270,8 @@ public class SubChunk extends Node3D{
      * Vide la light map du subChunk
      */
     public void clearSubChunkLight(){
-        for (int i = 0; i < this.lightMap.length; i++){
-            this.lightMap[i] = 0;
+        for (int i = 0; i < this.blocksData.length(); i++){
+            this.blocksData.getAndUpdate(i, data -> data & 0x00FFFFFF);
         }
     }
 
@@ -264,6 +300,7 @@ public class SubChunk extends Node3D{
         FaceData opaqueFaceData      = OPAQUE_FACE_DATA_LOCAL.get();
         FaceData glassFaceData       = GLASS_FACE_DATA_LOCAL.get();
         FaceData transparentFaceData = TRANSPARENT_FACE_DATA_LOCAL.get();
+        FaceData liquidFaceData      = LIQUID_FACE_DATA_LOCAL.get();
 
         // Collecte les types uniques
         this.blockTypes.clear();
@@ -272,41 +309,38 @@ public class SubChunk extends Node3D{
         }
 
         // Vérifie si on a du verre et/ou des blocs transparents non-verre
-        boolean hasGlass       = this.blockTypes.contains((byte)Blocks.GLASS.id);
+
+        boolean hasGlass = this.blockTypes.contains((byte)Blocks.GLASS.id);  
+        boolean hasLiquid = this.blockTypes.contains((byte)Blocks.WATER.id);
         boolean hasTransparent = this.blockTypes.stream()
-            .anyMatch(b -> BlocksManager.get(b).transparent && b != (byte)Blocks.GLASS.id);
+            .anyMatch(b -> BlocksManager.get(b).transparent && b != (byte)Blocks.GLASS.id && b != (byte)Blocks.WATER.id);
 
         // Face culling opaque (toujours calculé)
-        this.calculateSubChunkFaceCulling(opaqueFaceData, MODE_OPAQUE);
+        this.calculateSubChunkFaceCulling(opaqueFaceData, MODE_OPAQUE, quads);
+        this.uploadSubChunkMesh(quads);
 
+        
         // Face culling verre : culling verre-verre
         if (hasGlass){
-            this.calculateSubChunkFaceCulling(glassFaceData, MODE_GLASS);
+            this.calculateSubChunkFaceCulling(glassFaceData, MODE_GLASS, quads);
+            this.uploadSubChunkGlassMesh(quads);
         }
 
         // Face culling transparent (feuilles etc.) : pas de culling entre eux
         if (hasTransparent){
-            this.calculateSubChunkFaceCulling(transparentFaceData, MODE_TRANSPARENT);
+            this.calculateSubChunkFaceCulling(transparentFaceData, MODE_TRANSPARENT, quads);            
+            this.uploadSubChunkTransparentMesh(quads);            
         }
 
-        for (byte blockType : this.blockTypes){
-            boolean isTransparent = BlocksManager.get(blockType).transparent;
-
-            if (!isTransparent){
-                this.calculateSubChunkBinaryGreedyMeshing(blockType, opaqueFaceData, quads);
-                this.uploadSubChunkMesh(blockType, quads);
-            } else if (blockType == (byte)Blocks.GLASS.id){
-                this.calculateSubChunkBinaryGreedyMeshing(blockType, glassFaceData, quads);
-                this.uploadSubChunkGlassMesh(blockType, quads);
-            } else {
-                this.calculateSubChunkBinaryGreedyMeshing(blockType, transparentFaceData, quads);
-                this.uploadSubChunkTransparentMesh(blockType, quads);
-            }
+        if (hasLiquid){
+            this.calculateSubChunkFaceCulling(liquidFaceData, MODE_TRANSPARENT, quads);
+            this.uploadSubChunkLiquidMesh(quads);
         }
 
         this.mesh.fillSubChunkVertexBufferWithArray();
         this.transparentMesh.fillSubChunkVertexBufferWithArray();
         this.glassMesh.fillSubChunkVertexBufferWithArray();
+        this.liquidMesh.fillSubChunkVertexBufferWithArray();
         this.blockTypes.clear();
     }
 
@@ -352,6 +386,9 @@ public class SubChunk extends Node3D{
         if (this.glassMesh.getVertexCount() > 0) {
             this.glassMesh.createSubChunkVBOVAO();
         }
+        if (this.liquidMesh.getVertexCount() > 0) {
+            this.liquidMesh.createSubChunkVBOVAO();
+        }
     }
 
     /**
@@ -364,10 +401,12 @@ public class SubChunk extends Node3D{
         this.mesh.cleanup();
         this.transparentMesh.cleanup();
         this.glassMesh.cleanup();
+        this.liquidMesh.cleanup();
 
         this.mesh.deleteSubChunkVBOVAO();
         this.transparentMesh.deleteSubChunkVBOVAO();
         this.glassMesh.deleteSubChunkVBOVAO();
+        this.liquidMesh.deleteSubChunkVBOVAO();
         this.cleanup();
     }
 
@@ -386,6 +425,13 @@ public class SubChunk extends Node3D{
             z < 0 || z >= SubChunk.CHUNKSIZEXZ
         ){throw new RuntimeException("Coordonées dans le subChunk invalide");}
         int index = x + y * SubChunk.CHUNKSIZEXZ + z * SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ;
+
+        // si l'ancien block était de l'eau on supprime cette eau et ça propagation
+        if (BlocksManager.get(this.blocks[index]) == Blocks.WATER){
+            this.setLiquidLevel(x, y, z,0);
+            this.blocksData.getAndUpdate(index, data -> (data & ~(0x1 << 12)) | ((0 & 0x1) << 12));
+            LiquidManager.removeLiquid(this.parent, x, this.y + y, z, (byte)type.liquidLevel);
+        }   
         this.blocks[index] = (byte) type.id;
 
         if (type.luminance > 0){
@@ -414,7 +460,12 @@ public class SubChunk extends Node3D{
                     LightManager.addBlockLight(this.parent, nx, ny, nz, (byte)type.luminance);
                 }
             }
-        }         
+        }      
+        if (type.liquidLevel > 0){
+            this.setLiquidLevel(x, y, z, type.liquidLevel);
+            this.blocksData.getAndUpdate(index, data -> (data & ~(0x1 << 12)) | ((1 & 0x1) << 12)); // le bloc est une source donc on l'indique dans la data
+            LiquidManager.addLiquid(this.parent, x, this.y + y, z, (byte)type.liquidLevel);
+        }   
         this.parent.updateHeightMapAtWhenAdd(x, this.y + y, z);           
 
         markDirty(this);
@@ -445,7 +496,6 @@ public class SubChunk extends Node3D{
         BlockDefinition type = BlocksManager.get(this.blocks[index]);
 
         if (type.luminance > 0){
-            // set le bloc source à luminance
             this.setBlockLight(x, y, z, 0);
             
             int[][] neighbors = {{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1}};
@@ -454,8 +504,8 @@ public class SubChunk extends Node3D{
                 int ny = this.y + y + d[1];
                 int nz = z + d[2];
                 
-                int gnx = this.parent.x + nx; // coordonnée globale X
-                int gnz = this.parent.z + nz; // coordonnée globale Z
+                int gnx = this.parent.x + nx;
+                int gnz = this.parent.z + nz;
                 
                 Chunk targetChunk = ChunksManager.getChunkAt(gnx, gnz);
                 if (targetChunk == null) continue;
@@ -470,8 +520,40 @@ public class SubChunk extends Node3D{
                     LightManager.removeBlockLight(this.parent, nx, ny, nz, (byte)type.luminance);
                 }
             }
-        }            
-        this.blocks[index] = (byte) Blocks.AIR.id;            
+        }    
+
+        // si c'est une source de liquide, nettoyer son état liquide en plus
+        if (((this.blocksData.get(index) >>> 12) & 0x1) == 1){
+            this.setLiquidLevel(x, y, z, 0);
+            this.blocksData.getAndUpdate(index, data -> (data & ~(0x1 << 12)) | ((0 & 0x1) << 12));
+            LiquidManager.removeLiquid(this.parent, x, this.y + y, z, (byte)type.liquidLevel);
+        }
+
+        this.blocks[index] = (byte) Blocks.AIR.id;  
+        // relance la propagation du liquide voisin qui pourrait maintenant couler dans le trou créé
+        int[][] liquidTriggerNeighbors = {{0,1,0},{1,0,0},{-1,0,0},{0,0,1},{0,0,-1}};
+        for (int[] d : liquidTriggerNeighbors) {
+            int nx = x + d[0];
+            int ny = this.y + y + d[1];
+            int nz = z + d[2];
+
+            int gnx = this.parent.x + nx;
+            int gnz = this.parent.z + nz;
+
+            Chunk targetChunk = ChunksManager.getChunkAt(gnx, gnz);
+            if (targetChunk == null) continue;
+            SubChunk targetSub = targetChunk.getSubChunkAt(ny);
+            if (targetSub == null) continue;
+
+            int lnx = ChunksManager.floorMod(gnx, SubChunk.CHUNKSIZEXZ);
+            int lny = ChunksManager.floorMod(ny, SubChunk.CHUNKSIZEXZ);
+            int lnz = ChunksManager.floorMod(gnz, SubChunk.CHUNKSIZEXZ);
+
+            int neighborLiquidLevel = targetSub.getLiquidLevel(lnx, lny, lnz);
+            if (neighborLiquidLevel > 0) {
+                LiquidManager.addLiquid(this.parent, nx, ny, nz, (byte) neighborLiquidLevel);
+            }
+        }          
         this.parent.updateHeightMapAtWhenBreak(x, this.y + y, z);
 
         markDirty(this);
@@ -480,7 +562,7 @@ public class SubChunk extends Node3D{
         if (x == 0)                         markDirty(this.getNeighborEast());
         if (z == SubChunk.CHUNKSIZEXZ - 1) markDirty(this.getNeighborNorth());
         if (z == 0)                         markDirty(this.getNeighborSouth());
-        if (y == SubChunk.CHUNKSIZEXZ - 1) markDirty(this.getNeighborUp());     
+        if (y == SubChunk.CHUNKSIZEXZ - 1) markDirty(this.getNeighborUp());
         if (y == 0)                         markDirty(this.getNeighborDown());
     }
 
@@ -497,19 +579,19 @@ public class SubChunk extends Node3D{
     @ChunkThread
     public void rebuildSubChunk(){
 
-        this.linkNeighbors();
-        this.fillSubChunkBitSet();
+        this.linkNeighbors();        
         // synchronized(this) fait attendre le second thread au lieu de skipper, donc aucun rebuild n'est perdu
         synchronized(this) {
+            this.fillSubChunkBitSet();
             this.mesh.setupSubChunkBuffers(this.solidBitSet.cardinality());
             this.transparentMesh.setupSubChunkBuffers(this.transparentBitSet.cardinality());
             this.glassMesh.setupSubChunkBuffers(this.transparentBitSet.cardinality());
+            this.liquidMesh.setupSubChunkBuffers(this.transparentBitSet.cardinality());
             this.generateSubChunkMesh();
         }
         
         // met le thread en pause si l'array est plein, le thread se relance automatiquement au moment où OpenGLThread poll un chunk
-        //Render.dirtySubChunks.offer(this);
-        if (this.mesh.getVertexCount() > 0 || this.transparentMesh.getVertexCount() > 0 || this.glassMesh.getVertexCount() > 0) {
+        if (this.mesh.getVertexCount() > 0 || this.transparentMesh.getVertexCount() > 0 || this.glassMesh.getVertexCount() > 0 || this.liquidMesh.getVertexCount() > 0) {
             try { Render.dirtySubChunks.put(this); } catch(InterruptedException e) { Thread.currentThread().interrupt(); }
         }
     }
@@ -518,42 +600,39 @@ public class SubChunk extends Node3D{
      * Envoie le mesh à dessiné
      */
     @ChunkThread
-    private void uploadSubChunkMesh(byte blockType, List<Quad> quads){
-
-        for(Quad quad : quads){
-            BlockDefinition type = BlocksManager.get(blockType);
-            if(type == Blocks.NULL) continue;
-            int textureId =  type.getTextureLayer(quad.direction);
-            this.mesh.addQuadVertexToArray(quad, textureId);
+    private void uploadSubChunkMesh(List<Quad> quads){
+        for(Quad quad : quads){            
+            this.mesh.addQuadVertexToArray(quad, quad.textureId);
         }        
     }
 
     @ChunkThread
-    private void uploadSubChunkTransparentMesh(byte blockType, List<Quad> quads){
+    private void uploadSubChunkTransparentMesh(List<Quad> quads){
         for(Quad quad : quads){
-            BlockDefinition type = BlocksManager.get(blockType);
-            if(type == Blocks.NULL) continue;
-            int textureId = type.getTextureLayer(quad.direction);
-            this.transparentMesh.addQuadVertexToArray(quad, textureId);
+            this.transparentMesh.addQuadVertexToArray(quad, quad.textureId);
         }        
     }
 
     @ChunkThread
-    private void uploadSubChunkGlassMesh(byte blockType, List<Quad> quads){
+    private void uploadSubChunkGlassMesh(List<Quad> quads){
         for(Quad quad : quads){
-            BlockDefinition type = BlocksManager.get(blockType);
-            if(type == Blocks.NULL) continue;
-            int textureId = type.getTextureLayer(quad.direction);
-            this.glassMesh.addQuadVertexToArray(quad, textureId);
+            this.glassMesh.addQuadVertexToArray(quad, quad.textureId);
         }        
     }
 
+    @ChunkThread
+    private void uploadSubChunkLiquidMesh(List<Quad> quads){
+        for(Quad quad : quads){
+            this.liquidMesh.addQuadVertexToArray(quad, quad.textureId);
+        }        
+    }
     /**
      * Comme son nom l'indique
      * Calcule aussi avec les faces des chunks voisins
      */
     @ChunkThread
-    private void calculateSubChunkFaceCulling(FaceData faceData, int mode){
+    private void calculateSubChunkFaceCulling(FaceData faceData, int mode, List<Quad> quads){        
+        quads.clear(); 
         Arrays.fill(faceData.northAxis, 0); Arrays.fill(faceData.southAxis, 0);        
         Arrays.fill(faceData.westAxis,  0); Arrays.fill(faceData.eastAxis,  0);
         Arrays.fill(faceData.upAxis,    0); Arrays.fill(faceData.downAxis,  0);
@@ -668,10 +747,17 @@ public class SubChunk extends Node3D{
                 }
             }
         }
+        
+        this.createQuad(faceData.northAxis, 0, quads);
+        this.createQuad(faceData.southAxis, 1, quads);
+        this.createQuad(faceData.westAxis,  2, quads);
+        this.createQuad(faceData.eastAxis,  3, quads);
+        this.createQuad(faceData.upAxis,    4, quads);
+        this.createQuad(faceData.downAxis,  5, quads);
     }
 
     // Calcule si le bloc courant doit être inclus dans la ligne selon le mode
-    // -> nouvelle syntaxe qui permet d'évité le break ici il est implicite
+    // "->" nouvelle syntaxe qui permet d'évité le break ici il est implicite
     private boolean computeValue(int bitSetIndex, int mode) {
         boolean solid  = solidBitSet.get(bitSetIndex);
         boolean transp = transparentBitSet.get(bitSetIndex);
@@ -696,254 +782,123 @@ public class SubChunk extends Node3D{
         };
     }
 
-    /**
-     * Peut pas faire plus simple comme nom
-     */
-    private void calculateSubChunkBinaryGreedyMeshing(byte blockType, FaceData faceData, List<Quad> quads){
-        quads.clear();        
-        Arrays.fill(faceData.northMask, 0); Arrays.fill(faceData.southMask, 0);
-        Arrays.fill(faceData.westMask,  0); Arrays.fill(faceData.eastMask,  0);
-        Arrays.fill(faceData.upMask,    0); Arrays.fill(faceData.downMask,  0);
-        
-        Arrays.fill(faceData.northAoMask, (byte)0); Arrays.fill(faceData.southAoMask, (byte)0);
-        Arrays.fill(faceData.westAoMask,  (byte)0); Arrays.fill(faceData.eastAoMask,  (byte)0);
-        Arrays.fill(faceData.upAoMask,    (byte)0); Arrays.fill(faceData.downAoMask,  (byte)0);
-
-        Arrays.fill(faceData.northSkyLightMask, (byte)0); Arrays.fill(faceData.southSkyLightMask, (byte)0);
-        Arrays.fill(faceData.westSkyLightMask,  (byte)0); Arrays.fill(faceData.eastSkyLightMask,  (byte)0);
-        Arrays.fill(faceData.upSkyLightMask,    (byte)0); Arrays.fill(faceData.downSkyLightMask,  (byte)0);
-        
-        Arrays.fill(faceData.northBlockLightMask, (byte)0); Arrays.fill(faceData.southBlockLightMask, (byte)0);
-        Arrays.fill(faceData.westBlockLightMask,  (byte)0); Arrays.fill(faceData.eastBlockLightMask,  (byte)0);
-        Arrays.fill(faceData.upBlockLightMask,    (byte)0); Arrays.fill(faceData.downBlockLightMask,  (byte)0);
-        
-        // rempli les masques avec les infos du face culling
-        for (int y = 0; y < SubChunk.CHUNKSIZEXZ; y++){
-            for (int x = 0; x < SubChunk.CHUNKSIZEXZ; x++){
-                for (int z = 0; z < SubChunk.CHUNKSIZEXZ; z++){                    
-                    int ligne = y + z * SubChunk.CHUNKSIZEXZ;
-
-                    int blockIndex = x + y * SubChunk.CHUNKSIZEXZ + z * SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ;
-                    if(this.blocks[blockIndex] != blockType) continue;
-
-                    // En gros je récup tous les bits d'un int d'Axis, que je met en 1er position des int de mask a chaque boucle
-                    int northBit = (faceData.northAxis[y + x * SubChunk.CHUNKSIZEXZ] >>> (31 - z)) & 1; // décalle de 31 bits + z vers la droite puis récupère le 1er bit
-                    faceData.northMask[ligne] |= (northBit << (31 - x));
-                    // si c'est un bloc solide alors on calcule/applique la lumière dessus
-                    if(northBit == 1){
-                        byte ao0 = computeAO(x-1, y, z+1,   x, y-1, z+1,   x-1, y-1, z+1);
-                        byte ao1 = computeAO(x+1, y, z+1,   x, y-1, z+1,   x+1, y-1, z+1);
-                        byte ao2 = computeAO(x-1, y, z+1,   x, y+1, z+1,   x-1, y+1, z+1);
-                        byte ao3 = computeAO(x+1, y, z+1,   x, y+1, z+1,   x+1, y+1, z+1);
-                        faceData.northAoMask[ligne * SubChunk.CHUNKSIZEXZ + x] = (byte)(ao0|(ao1<<2)|(ao2<<4)|(ao3<<6));
-                              
-                        faceData.northSkyLightMask[ligne * SubChunk.CHUNKSIZEXZ + x] = (byte)this.getBlockSkyLight(x, y, z+1);
-                        faceData.northBlockLightMask[ligne * SubChunk.CHUNKSIZEXZ + x] = (byte)this.getBlockLight(x, y, z+1);                        
-                    }
-                    
-                    int southBit = (faceData.southAxis[y + x * SubChunk.CHUNKSIZEXZ] >> (31 - z)) & 1; // décalle de 31 bits - z vers la droite puis récupère le 1er bit*
-                    faceData.southMask[ligne] |= (southBit << (31 - x));
-                    if(southBit == 1){
-                        byte ao0 = computeAO(x-1, y, z-1,   x, y-1, z-1,   x-1, y-1, z-1);
-                        byte ao1 = computeAO(x+1, y, z-1,   x, y-1, z-1,   x+1, y-1, z-1);
-                        byte ao2 = computeAO(x-1, y, z-1,   x, y+1, z-1,   x-1, y+1, z-1);
-                        byte ao3 = computeAO(x+1, y, z-1,   x, y+1, z-1,   x+1, y+1, z-1);
-                        faceData.southAoMask[ligne * SubChunk.CHUNKSIZEXZ + x] = (byte)(ao0|(ao1<<2)|(ao2<<4)|(ao3<<6));
-                        
-                        faceData.southSkyLightMask[ligne * SubChunk.CHUNKSIZEXZ + x] = (byte)this.getBlockSkyLight(x, y, z-1);
-                        faceData.southBlockLightMask[ligne * SubChunk.CHUNKSIZEXZ + x] = (byte)this.getBlockLight(x, y, z-1);
-                    }                    
-                }                
-            }            
-        }
-        for (int y = 0; y < SubChunk.CHUNKSIZEXZ; y++){
-            for (int z = 0; z < SubChunk.CHUNKSIZEXZ; z++){                
-                for (int x = 0; x < SubChunk.CHUNKSIZEXZ; x++){                    
-                    int ligne = y + x * SubChunk.CHUNKSIZEXZ;
-
-                    // filtre par type
-                    int blockIndex = x + y * SubChunk.CHUNKSIZEXZ + z * SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ;
-                    if(this.blocks[blockIndex] != blockType) continue;
-
-                    int westBit = (faceData.westAxis[y + z * SubChunk.CHUNKSIZEXZ] >>> (31 - x)) & 1;
-                    faceData.westMask[ligne] |= (westBit << (31 - z));  
-                    if(westBit == 1){
-                        byte ao0 = computeAO(x+1, y, z-1,   x+1, y-1, z,   x+1, y-1, z-1);
-                        byte ao1 = computeAO(x+1, y, z+1,   x+1, y-1, z,   x+1, y-1, z+1);
-                        byte ao2 = computeAO(x+1, y, z-1,   x+1, y+1, z,   x+1, y+1, z-1);
-                        byte ao3 = computeAO(x+1, y, z+1,   x+1, y+1, z,   x+1, y+1, z+1);
-                        faceData.westAoMask[ligne * SubChunk.CHUNKSIZEXZ + z] = (byte)(ao0|(ao1<<2)|(ao2<<4)|(ao3<<6));
-                        
-                        faceData.westSkyLightMask[ligne * SubChunk.CHUNKSIZEXZ + z] = (byte)this.getBlockSkyLight(x+1, y, z);
-                        faceData.westBlockLightMask[ligne * SubChunk.CHUNKSIZEXZ + z] = (byte)this.getBlockLight(x+1, y, z);
-                    }
-
-                    int eastBit = (faceData.eastAxis[y + z * SubChunk.CHUNKSIZEXZ] >> (31 - x)) & 1;
-                    faceData.eastMask[ligne] |= (eastBit << (31 - z));
-                    if(eastBit == 1){
-                        byte ao0 = computeAO(x-1, y, z-1,   x-1, y-1, z,   x-1, y-1, z-1);
-                        byte ao1 = computeAO(x-1, y, z+1,   x-1, y-1, z,   x-1, y-1, z+1);
-                        byte ao2 = computeAO(x-1, y, z-1,   x-1, y+1, z,   x-1, y+1, z-1);
-                        byte ao3 = computeAO(x-1, y, z+1,   x-1, y+1, z,   x-1, y+1, z+1);                        
-                        faceData.eastAoMask[ligne * SubChunk.CHUNKSIZEXZ + z] = (byte)(ao0|(ao1<<2)|(ao2<<4)|(ao3<<6));
-                                              
-                        faceData.eastSkyLightMask[ligne * SubChunk.CHUNKSIZEXZ + z] = (byte)this.getBlockSkyLight(x-1, y, z);
-                        faceData.eastBlockLightMask[ligne * SubChunk.CHUNKSIZEXZ + z] = (byte)this.getBlockLight(x-1, y, z);
-                    }
-                }
-            }
-        }    
-                  
-        for (int y = 0; y < SubChunk.CHUNKSIZEXZ; y++){
-            for (int z = 0; z < SubChunk.CHUNKSIZEXZ; z++){
-                for (int x = 0; x < SubChunk.CHUNKSIZEXZ; x++){
-                    int ligne = z + y * SubChunk.CHUNKSIZEXZ;
-
-                    int blockIndex = x + y * SubChunk.CHUNKSIZEXZ + z * SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ;
-                    if(this.blocks[blockIndex] != blockType) continue;
-
-                    int upBit = (faceData.upAxis[z + x * SubChunk.CHUNKSIZEXZ] >>> (31 - y)) & 1;
-                    faceData.upMask[ligne] |= (upBit << (31 - x));
-                    if(upBit == 1){
-                        byte ao0 = computeAO(x-1, y+1, z,   x, y+1, z-1,   x-1, y+1, z-1);
-                        byte ao1 = computeAO(x+1, y+1, z,   x, y+1, z-1,   x+1, y+1, z-1);
-                        byte ao2 = computeAO(x-1, y+1, z,   x, y+1, z+1,   x-1, y+1, z+1);
-                        byte ao3 = computeAO(x+1, y+1, z,   x, y+1, z+1,   x+1, y+1, z+1);
-                        faceData.upAoMask[ligne * SubChunk.CHUNKSIZEXZ + x] = (byte)(ao0|(ao1<<2)|(ao2<<4)|(ao3<<6));
-                        
-                        faceData.upSkyLightMask[ligne * SubChunk.CHUNKSIZEXZ + x] = (byte)this.getBlockSkyLight(x, y+1, z);
-                        faceData.upBlockLightMask[ligne * SubChunk.CHUNKSIZEXZ + x] = (byte)this.getBlockLight(x, y+1, z);
-                    }
-
-                    int downBit = (faceData.downAxis[z + x * SubChunk.CHUNKSIZEXZ] >>> (31 - y)) & 1;
-                    faceData.downMask[ligne] |= (downBit << (31 - x));
-                    if(downBit == 1){
-                        byte ao0 = computeAO(x-1, y-1, z,   x, y-1, z-1,   x-1, y-1, z-1);
-                        byte ao1 = computeAO(x+1, y-1, z,   x, y-1, z-1,   x+1, y-1, z-1);
-                        byte ao2 = computeAO(x-1, y-1, z,   x, y-1, z+1,   x-1, y-1, z+1);
-                        byte ao3 = computeAO(x+1, y-1, z,   x, y-1, z+1,   x+1, y-1, z+1);
-                        faceData.downAoMask[ligne * SubChunk.CHUNKSIZEXZ + x] = (byte)(ao0|(ao1<<2)|(ao2<<4)|(ao3<<6));
-                        
-
-                        faceData.downSkyLightMask[ligne * SubChunk.CHUNKSIZEXZ + x] = (byte)this.getBlockSkyLight(x, y-1, z);
-                        faceData.downBlockLightMask[ligne * SubChunk.CHUNKSIZEXZ + x] = (byte)this.getBlockLight(x, y-1, z);
-                    }
-                }
-            }        
-        }
-
-        this.greedyMeshingPerFace(faceData.northMask, faceData.northAoMask, faceData.northSkyLightMask, faceData.northBlockLightMask, 0, quads);
-        this.greedyMeshingPerFace(faceData.southMask, faceData.southAoMask, faceData.southSkyLightMask, faceData.southBlockLightMask, 1, quads);
-        this.greedyMeshingPerFace(faceData.westMask,  faceData.westAoMask,  faceData.westSkyLightMask,  faceData.westBlockLightMask,  2, quads);
-        this.greedyMeshingPerFace(faceData.eastMask,  faceData.eastAoMask,  faceData.eastSkyLightMask,  faceData.eastBlockLightMask,  3, quads);
-        this.greedyMeshingPerFace(faceData.upMask,    faceData.upAoMask,    faceData.upSkyLightMask,    faceData.upBlockLightMask,    4, quads);
-        this.greedyMeshingPerFace(faceData.downMask,  faceData.downAoMask,  faceData.downSkyLightMask,  faceData.downBlockLightMask,  5, quads);
-    }
-
-    // fait le greedy pour chaque face
-    private void greedyMeshingPerFace(int[] faceMask, byte[] faceAoMask, byte[] faceSkyLightMask, byte[] faceBlockLightMask, int dir, List<Quad> quads){        
-        for(int ligne = 0; ligne < faceMask.length; ligne++){
-            int i = 0; // indice en largeur byte car dépasse pas 15
-            while(i < SubChunk.CHUNKSIZEXZ){              
-                if (faceMask[ligne] == 0) break; // si il n'y a pas de face           
-                int j = 1; // indice en longueur/hauteur
-
-                int[] coord = new int[3]; // point de départ, fin quad en x, fin quad en y
-                while((i < SubChunk.CHUNKSIZEXZ) && ((faceMask[ligne] >>> (31 - i)) & 1) != 1){ // tant que l'on a pas trouvé la 1er face pleine
-                    i++;
-                }
-
-                // condition de fusion en largeur
-                coord[0] = i;// x commence à i
-                while((i < SubChunk.CHUNKSIZEXZ) && ((faceMask[ligne] >>> (31 - i)) & 1) != 0
-                    && faceAoMask[ligne * SubChunk.CHUNKSIZEXZ + i]         == faceAoMask[ligne * SubChunk.CHUNKSIZEXZ + coord[0]]
-                    && faceSkyLightMask[ligne * SubChunk.CHUNKSIZEXZ + i]   == faceSkyLightMask[ligne * SubChunk.CHUNKSIZEXZ + coord[0]]
-                    && faceBlockLightMask[ligne * SubChunk.CHUNKSIZEXZ + i] == faceBlockLightMask[ligne * SubChunk.CHUNKSIZEXZ + coord[0]]){
-                    i++;
-                }
-
-                coord[1] = i;// x se termine à i
-                 
-                if (coord[0] >= coord[1]){
-                    i++;
-                    continue;
-                }
-
-                // exemple x=2 x=5 (5 - (2 - 1)) = 4 largeur
-                //        1 << 4 = 00010000
-                //  (1 << 4) - 1 = 00001111
-                int width = coord[1] - coord[0];
-                int mask = ((1 << width) - 1) << (32 - coord[1]);
-                faceMask[ligne] = faceMask[ligne] & ~mask;
-                
-                // parcourt en hauteur 
-                // si la ligne en dessous a les même bits entre les 2 x à 1 alors on la récup 
-                int sliceStart = (ligne / SubChunk.CHUNKSIZEXZ) * SubChunk.CHUNKSIZEXZ;
-                while((ligne + j < sliceStart + SubChunk.CHUNKSIZEXZ)
-                    && (ligne + j < faceMask.length) 
-                    && (faceMask[ligne + j] & mask) == mask){
-
-                    // condition de fusion en hauteur
-                    boolean match = true;
-                    for(int k = coord[0]; k < coord[1]; k++){
-                        if(faceAoMask[(ligne+j) * SubChunk.CHUNKSIZEXZ + k]         != faceAoMask[ligne * SubChunk.CHUNKSIZEXZ + k] // même valeur d'AO
-                        || faceSkyLightMask[(ligne+j) * SubChunk.CHUNKSIZEXZ + k]   != faceSkyLightMask[ligne * SubChunk.CHUNKSIZEXZ + k] // même valeur de lumière du ciel
-                        || faceBlockLightMask[(ligne+j) * SubChunk.CHUNKSIZEXZ + k] != faceBlockLightMask[ligne * SubChunk.CHUNKSIZEXZ + k]){ // même valeur de lumière du bloc
-                            match = false;
-                            break;
+    // créer les quads de chaque face
+    private void createQuad(int[] faceMask, int dir, List<Quad> quads){
+        switch (dir) {
+            case 0: case 1:
+                for (int y = 0; y < SubChunk.CHUNKSIZEXZ; y++){
+                    for (int x = 0; x < SubChunk.CHUNKSIZEXZ; x++){
+                        int index = y + x * SubChunk.CHUNKSIZEXZ;
+                        for (int z = 0; z < SubChunk.CHUNKSIZEXZ; z++){
+                            int bit;
+                            if (dir == 0) bit = faceMask[index] >>> (31 - z) & 1;
+                            else          bit = faceMask[index] >>  (31 - z) & 1;                          
+                            
+                            if (bit == 1){
+                                BlockDefinition block = this.getBlock(x, y, z);
+                                int liquidLevel = this.getLiquidLevel(x, y, z); 
+                                if (liquidLevel == 15) liquidLevel = 16; // triche si c'est une colonne d'eau alors le bloc est plein car sinon avec 15 il manque 1 tranche d'eau 
+                                int textureId = BlocksManager.get(block.id).getTextureLayer(dir);
+                                byte ao0, ao1, ao2, ao3;
+                                int skyLight, blockLight;
+                                if (dir == 0){
+                                    ao0 = computeAO(x-1, y, z+1,   x, y-1, z+1,   x-1, y-1, z+1);
+                                    ao1 = computeAO(x+1, y, z+1,   x, y-1, z+1,   x+1, y-1, z+1);
+                                    ao2 = computeAO(x-1, y, z+1,   x, y+1, z+1,   x-1, y+1, z+1);
+                                    ao3 = computeAO(x+1, y, z+1,   x, y+1, z+1,   x+1, y+1, z+1);
+                                    skyLight = (byte)this.getBlockSkyLight(x, y, z+1);
+                                    blockLight = (byte)this.getBlockLight(x, y, z+1);     
+                                }else{
+                                    ao0 = computeAO(x-1, y, z-1,   x, y-1, z-1,   x-1, y-1, z-1);
+                                    ao1 = computeAO(x+1, y, z-1,   x, y-1, z-1,   x+1, y-1, z-1);
+                                    ao2 = computeAO(x-1, y, z-1,   x, y+1, z-1,   x-1, y+1, z-1);
+                                    ao3 = computeAO(x+1, y, z-1,   x, y+1, z-1,   x+1, y+1, z-1);                                    
+                                    skyLight = (byte)this.getBlockSkyLight(x, y, z-1);
+                                    blockLight = (byte)this.getBlockLight(x, y, z-1);
+                                }   
+                                // si il y a du liquide alors on prend en priorité la hauteur du liquide
+                                quads.add(new Quad((x * 16) + block.x, (y * 16) + block.y, (z * 16) + block.z,
+                                                   block.width, (liquidLevel > 0 ? liquidLevel : block.height), block.depth,
+                                                   dir, ao0, ao1, ao2, ao3, skyLight, blockLight, textureId));
+                            }
                         }
                     }
-                    if(!match) break;
-                    faceMask[ligne + j] = faceMask[ligne + j] & ~mask;
-                    j++;
                 }
-                // le quad descent de j
-                coord[2] = j;       
-
-                if (coord[0] < coord[1]){
-                    int qx, qy, qz;
-                    switch(dir){
-                        case 0: case 1:
-                            // masque index = y + z * CHUNKSIZEXZ, bit = X
-                            qx = coord[0];
-                            qy = ligne % SubChunk.CHUNKSIZEXZ;
-                            qz = ligne / SubChunk.CHUNKSIZEXZ;
-                            break;
-                        case 2: case 3:
-                            // masque index = y + x * CHUNKSIZEXZ, bit = Z
-                            qx = ligne / SubChunk.CHUNKSIZEXZ;
-                            qy = ligne % SubChunk.CHUNKSIZEXZ;
-                            qz = coord[0];
-                            break;
-                        case 4: case 5:
-                            // masque index = y + z * CHUNKSIZEXZ, bit = X
-                            qx = coord[0];
-                            qy = ligne / SubChunk.CHUNKSIZEXZ;  
-                            qz = ligne % SubChunk.CHUNKSIZEXZ; 
-                            break;
-                        default:
-                            qx = qy = qz = 0;
+                break;
+            case 2: case 3:
+                for (int y = 0; y < SubChunk.CHUNKSIZEXZ; y++){
+                    for (int z = 0; z < SubChunk.CHUNKSIZEXZ; z++){
+                        int index = y + z * SubChunk.CHUNKSIZEXZ;
+                        for (int x = 0; x < SubChunk.CHUNKSIZEXZ; x++){
+                            int bit;
+                            if (dir == 2) bit = faceMask[index] >>> (31 - x) & 1;
+                            else          bit = faceMask[index] >>  (31 - x) & 1;     
+                            if (bit == 1){
+                                BlockDefinition block = this.getBlock(x, y, z);
+                                int liquidLevel = this.getLiquidLevel(x, y, z); 
+                                int textureId = BlocksManager.get(block.id).getTextureLayer(dir);
+                                byte ao0, ao1, ao2, ao3;
+                                int skyLight, blockLight;
+                                if (dir == 2){
+                                    ao0 = computeAO(x+1, y, z-1,   x+1, y-1, z,   x+1, y-1, z-1);
+                                    ao1 = computeAO(x+1, y, z+1,   x+1, y-1, z,   x+1, y-1, z+1);
+                                    ao2 = computeAO(x+1, y, z-1,   x+1, y+1, z,   x+1, y+1, z-1);
+                                    ao3 = computeAO(x+1, y, z+1,   x+1, y+1, z,   x+1, y+1, z+1);                       
+                                    skyLight = (byte)this.getBlockSkyLight(x+1, y, z);
+                                    blockLight = (byte)this.getBlockLight(x+1, y, z);
+                                }else{
+                                    ao0 = computeAO(x-1, y, z-1,   x-1, y-1, z,   x-1, y-1, z-1);
+                                    ao1 = computeAO(x-1, y, z+1,   x-1, y-1, z,   x-1, y-1, z+1);
+                                    ao2 = computeAO(x-1, y, z-1,   x-1, y+1, z,   x-1, y+1, z-1);
+                                    ao3 = computeAO(x-1, y, z+1,   x-1, y+1, z,   x-1, y+1, z+1);
+                                    skyLight = (byte)this.getBlockSkyLight(x-1, y, z);
+                                    blockLight = (byte)this.getBlockLight(x-1, y, z);
+                                }
+                                quads.add(new Quad((x * 16) + block.x, (y * 16) + block.y, (z * 16) + block.z,
+                                                   block.width, (liquidLevel > 0 ? liquidLevel : block.height), block.depth,
+                                                   dir, ao0, ao1, ao2, ao3, skyLight, blockLight, textureId));
+                            }
+                        }
                     }
-
-                    int w = coord[1] - coord[0];
-                    int h = coord[2];
-                    
-                    int packedAoBottomFirst = faceAoMask[ligne                   * SubChunk.CHUNKSIZEXZ + coord[0]    ];
-                    int packedAoBottomLast  = faceAoMask[ligne                   * SubChunk.CHUNKSIZEXZ + (coord[1]-1)];
-                    int packedAoTopFirst    = faceAoMask[(ligne + h - 1)         * SubChunk.CHUNKSIZEXZ + coord[0]    ];
-                    int packedAoTopLast     = faceAoMask[(ligne + h - 1)         * SubChunk.CHUNKSIZEXZ + (coord[1]-1)];
-
-                    int ao0 = ( packedAoBottomFirst        & 0x3); // bas-gauche
-                    int ao1 = ((packedAoBottomLast  >> 2)  & 0x3); // bas-droite  <- dernier bloc
-                    int ao2 = ((packedAoTopFirst    >> 4)  & 0x3); // haut-gauche <- ligne du haut
-                    int ao3 = ((packedAoTopLast     >> 6)  & 0x3); // haut-droite <- dernier bloc, ligne du haut    
-                    
-                    int skyLight   = faceSkyLightMask  [ligne * SubChunk.CHUNKSIZEXZ + coord[0]];
-                    int blockLight = faceBlockLightMask[ligne * SubChunk.CHUNKSIZEXZ + coord[0]];
-
-                    quads.add(new Quad(qx, qy, qz, w, h, dir, ao0, ao1, ao2, ao3, skyLight, blockLight));
-                }   
-            }           
+                }              
+                break;
+            case 4: case 5:
+                for (int z = 0; z < SubChunk.CHUNKSIZEXZ; z++){
+                    for (int x = 0; x < SubChunk.CHUNKSIZEXZ; x++){
+                        int index = z + x * SubChunk.CHUNKSIZEXZ;
+                        for (int y = 0; y < SubChunk.CHUNKSIZEXZ; y++){
+                            // récupère le premier bit de l'int en avançant à chaque boucle
+                            int bit = faceMask[index] >>> (31 - y) & 1;
+                            // si bloc solide
+                            if (bit == 1){
+                                BlockDefinition block = this.getBlock(x, y, z);
+                                int liquidLevel = this.getLiquidLevel(x, y, z); 
+                                int textureId = BlocksManager.get(block.id).getTextureLayer(dir);
+                                byte ao0, ao1, ao2, ao3;
+                                int skyLight, blockLight;
+                                if (dir == 4){
+                                    ao0 = computeAO(x-1, y+1, z,   x, y+1, z-1,   x-1, y+1, z-1);
+                                    ao1 = computeAO(x+1, y+1, z,   x, y+1, z-1,   x+1, y+1, z-1);
+                                    ao2 = computeAO(x-1, y+1, z,   x, y+1, z+1,   x-1, y+1, z+1);
+                                    ao3 = computeAO(x+1, y+1, z,   x, y+1, z+1,   x+1, y+1, z+1);
+                                    skyLight = this.getBlockSkyLight(x, y+1, z);
+                                    blockLight = this.getBlockLight(x, y+1, z);
+                                }else{
+                                    ao0 = computeAO(x-1, y-1, z,   x, y-1, z-1,   x-1, y-1, z-1);
+                                    ao1 = computeAO(x+1, y-1, z,   x, y-1, z-1,   x+1, y-1, z-1);
+                                    ao2 = computeAO(x-1, y-1, z,   x, y-1, z+1,   x-1, y-1, z+1);
+                                    ao3 = computeAO(x+1, y-1, z,   x, y-1, z+1,   x+1, y-1, z+1);
+                                    skyLight = this.getBlockSkyLight(x, y-1, z);
+                                    blockLight = this.getBlockLight(x, y-1, z);
+                                }                               
+                                quads.add(new Quad((x * 16) + block.x, (y * 16) + block.y, (z * 16) + block.z,
+                                                   block.width, (liquidLevel > 0 ? liquidLevel : block.height), block.depth,
+                                                   dir, ao0, ao1, ao2, ao3, skyLight, blockLight, textureId));
+                            }
+                        }
+                    }
+                }
+                break;
         }
     }
 
@@ -1135,15 +1090,24 @@ public class SubChunk extends Node3D{
         this.model.get(this.buffer);
         ShadersManager.runModel(this.buffer);
         this.mesh.drawSubChunkMesh();
-        this.transparentMesh.drawSubChunkMesh(); // même passe, pas de blend
+        this.transparentMesh.drawSubChunkMesh(); // même passe, pas de blend              
     }
 
     @OpenGLThread
-    public void drawNodeTransparent(Matrix4f parentModel){
+    public void drawNodeGlass(Matrix4f parentModel){
         if (this.buffer == null) return;
         parentModel.translate(this.x, this.y, this.z, this.model);
         this.model.get(this.buffer);
         ShadersManager.runModel(this.buffer);
-        this.glassMesh.drawSubChunkMesh();
+        this.glassMesh.drawSubChunkMesh();       
+    }
+
+    @OpenGLThread
+    public void drawNodeLiquid(Matrix4f parentModel){
+        if (this.buffer == null) return;
+        parentModel.translate(this.x, this.y, this.z, this.model);
+        this.model.get(this.buffer);
+        ShadersManager.runModelLiquid(this.buffer);   
+        this.liquidMesh.drawSubChunkMeshLiquid();  
     }
 }
