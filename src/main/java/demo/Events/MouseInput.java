@@ -8,7 +8,7 @@ import demo.Rendering.Window;
 
 /**
  * Définis les listeners GLFW
- * <br>Et détecte les mouvements de souris (quitte l'écran, position, clique)
+ * Et détecte les mouvements de souris (quitte l'écran, position, clique)
  */
 public class MouseInput {
     

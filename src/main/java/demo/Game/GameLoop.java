@@ -1,8 +1,12 @@
 package demo.Game;
 
+import org.joml.Vector3f;
+
 import demo.Managers.InputManager;
 import demo.Managers.LightManager;
+import demo.Managers.LiquidManager;
 import demo.Managers.PlayersManager;
+import demo.Managers.WorldManager;
 
 /**
  * Gère tout les évènements du jeu, hors rendu
@@ -16,6 +20,10 @@ public class GameLoop {
     public static volatile long lastTickTime = 0L;
     public static final long NS_PER_TICK = (1_000_000_000L / TPS); // en nanosecondes
 
+    /**
+     * Démarre le thread de la gameloop
+     * La gameloop est dirigé par un nombre de tick par seconde
+     */
     public static void startGameThread() {
         running = true;
         gameThread = new Thread(() -> {
@@ -41,7 +49,7 @@ public class GameLoop {
                     catch (InterruptedException e) { Thread.currentThread().interrupt(); break; }
                 }
             }
-        }, "GameLoop-Thread");
+        }, "GameLoop Thread");
         gameThread.setDaemon(true);
         gameThread.start();
     }
@@ -72,8 +80,13 @@ public class GameLoop {
      */
     public static void run(float delta){
         LightManager.processLightBFS();
+        LiquidManager.processLiquidBFS();
+        
         InputManager.runLogic(delta);
         PlayersManager.playersLoop(delta);
+
+        Vector3f pos = PlayersManager.player.getPosition();
+        WorldManager.tick(pos.x, pos.z);
     }
 
     /**

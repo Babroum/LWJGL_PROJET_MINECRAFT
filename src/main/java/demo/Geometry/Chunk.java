@@ -1,5 +1,7 @@
 package demo.Geometry;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.joml.Matrix4f;
 
 import demo.Annotations.ChunkThread;
@@ -28,6 +30,10 @@ public class Chunk extends Node3D{
     private int[] colY      = new int[256];
     private byte[] colLight = new byte[256];
 
+    public volatile boolean isReady = false;
+
+    public AtomicInteger pendingMeshCount = new AtomicInteger(0);
+
     /**
      * Height map qui contient la hauteur du bloc (x, z) le plus proche du ciel
      */
@@ -35,8 +41,8 @@ public class Chunk extends Node3D{
     
     /**
      * Initialise les subChunks du chunks.
-     * @param chunkX Coordonnées en x (locale) 0-15
-     * @param chunkZ Coordonnées en Z  (locale)
+     * @param chunkX Coordonnées en x (locale)
+     * @param chunkZ Coordonnées en z (locale)
      */
     @ChunkThread
     public Chunk(int chunkX, int chunkZ){
@@ -241,6 +247,31 @@ public class Chunk extends Node3D{
     }
 
     /**
+     * Retourne tous les blocs dans le chunk.
+     * @return Retourne un table de byte contenant tout les ids des blocs du chunk
+     */
+    public byte[] getAllSubChunkBlocks(){
+        byte[] allBlocks = new byte[SubChunk.MAXBLOCK * Chunk.SUBCHUNKCOUNT];
+        int index = 0;
+        for(SubChunk sub : this.subChunks){
+            byte[] blocks = sub.getAllBlocks();
+            System.arraycopy(blocks, 0, allBlocks, index, blocks.length);
+            index += blocks.length;
+        }
+        return allBlocks;
+    }
+    /**
+     * Définis tous les bloc dans le chunk
+     * @param allBlocks les 65536 blocs à redistribué
+     */
+    public void setAllSubChunkBlocks(byte[] allBlocks){
+        for(int i = 0; i < this.subChunks.length; i++){
+            int offset = i * SubChunk.MAXBLOCK;
+            System.arraycopy(allBlocks, offset, this.subChunks[i].blocks, 0, SubChunk.MAXBLOCK);
+        }
+    }
+
+    /**
      * Définis la position du chunk
      * @param chunkX position du chunk en X coordonnées locales
      * @param chunkZ position du chunk en Z coordonnées locales
@@ -327,12 +358,21 @@ public class Chunk extends Node3D{
         }
     }
 
-    public void drawNodeTransparent(Matrix4f parentModel){
-        if (FrustumCulling.testAABB(this.minX, this.minY, this.minZ, this.maxX, this.maxY, this.maxZ)){
-            for (SubChunk sub : subChunks){
-                if (sub.transparentMesh.getVAO() == 0) continue;
-                sub.drawNodeTransparent(parentModel);
-            }
-        }
+    @OpenGLThread
+    public void drawNodeGlass(Matrix4f parentModel){        
+        for (SubChunk sub : subChunks){
+            if (sub.glassMesh.getVAO() == 0) continue;
+            if (!FrustumCulling.testAABB(this.minX, sub.y, this.minZ, this.maxX, sub.y + 16, this.maxZ)) continue;
+            sub.drawNodeGlass(parentModel);
+        }        
+    }
+
+    @OpenGLThread
+    public void drawNodeLiquid(Matrix4f parentModel){
+        for (SubChunk sub : subChunks){
+            if (sub.liquidMesh.getVAO() == 0) continue;
+            if (!FrustumCulling.testAABB(this.minX, sub.y, this.minZ, this.maxX, sub.y + 16, this.maxZ)) continue;
+            sub.drawNodeLiquid(parentModel);
+        }        
     }
 }

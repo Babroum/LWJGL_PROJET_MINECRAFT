@@ -1,19 +1,13 @@
 package demo.Managers;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.*;
-
-import org.joml.Math;
 
 import demo.Annotations.ChunkThread;
 import demo.Annotations.OpenGLThread;
 import demo.Geometry.Chunk;
 import demo.Geometry.SubChunk;
-import demo.Geometry.WorldGenerator;
 import demo.Others.BlockDefinition;
-import demo.Rendering.Render;
 
 public class ChunksManager {
 
@@ -23,27 +17,6 @@ public class ChunksManager {
     // C'est comme un dictionnaire, clé valeur
     // String remplacé par Long, optimisation
     private static ConcurrentHashMap <Long, Chunk> chunks = new ConcurrentHashMap<>();
-
-    // Un ExecutorService c'est un pool de N threads qui restent en vie et se partagent le travail.
-    private static final ExecutorService pool = buildPool();
-
-    private static ExecutorService buildPool() {
-        int cores   = Runtime.getRuntime().availableProcessors();
-        int workers = Math.max(1, cores - 2);  // -2 pour laisser les threads OpenGL et game logic respirer
-        // queue proportionnelle aux workers : assez pour les garder occupés
-        // sans accumuler des milliers de tâches en mémoire simultanément
-        int queueDepth = workers * 4;
-
-        return new ThreadPoolExecutor(
-            workers, // nombre minimum de threads
-            workers, // nombre maximum de threads
-            0L, // les threads ne meurent jamais (comme c'est un pool fixe)
-            TimeUnit.MILLISECONDS,
-            new ArrayBlockingQueue<>(queueDepth),
-            r -> { Thread t = new Thread(r); t.setDaemon(true); t.setName("ChunkWorker"); return t; },
-            new ThreadPoolExecutor.CallerRunsPolicy() // si queue pleine, le thread appelant exécute lui-même, par exemple le thread de rendu va executé au lieu de faire attendre la tache ici
-        );
-    }
 
     // construit la clé pour le HashMap
     private static long chunkKey(int x, int z) {
@@ -65,7 +38,7 @@ public class ChunksManager {
         }
     }
 
-        /**
+    /**
      * Créer un nouveau chunk à la position donné
      * @param x int
      * @param z int
@@ -79,95 +52,6 @@ public class ChunksManager {
         Chunk chunk = new Chunk(x, z);
         ChunksManager.chunks.put(coord, chunk);
         return chunk;
-    }
-
-    /**
-     * Génère les chunks (maillages)
-     * @param generator un seed
-     */
-    public static void generateChunks(ThreadLocal<WorldGenerator> generator) {
-        // les threads travaille chacun de leur côté mais pour chaque chunk on attend avant de passer à l'étape suivante
-
-        // chaque chunk est généré indépendamment, aucune dépendance inter-chunks
-        // Future — c'est un ticket de résultat en attente.
-        // le ? permet de dire que la tache ne retourne rien (void), on attend pas un résultat mais on s'en sert juste pour attendre la fin
-        
-        List<Future<?>> futures = new ArrayList<>();
-        for (Chunk chunk : chunks.values()) {
-            // submit permet au pool de mettre en file d'attente la tâche puis thread worker la prend dès qu'il est libre
-            // passe la commande au resto d'un plat
-            futures.add(pool.submit(() -> { // pool.submit() retourne un Future
-                int cx = ChunksManager.floorDiv(chunk.x, SubChunk.CHUNKSIZEXZ);
-                int cz = ChunksManager.floorDiv(chunk.z, SubChunk.CHUNKSIZEXZ);
-                generator.get().generateChunk(chunk, cx, cz); // ThreadLocal → thread-safe
-                BenchmarkManager.getInstance().recordChunkGenerated();
-            }));
-        }
-        // Attend que TOUS les chunks soient générés avant de passer à finalizeChunks
-        for (Future<?> f : futures) {
-            // get() présente le ticket de la commande au comptoire du resto
-            // Le plat est prêt -> on le récupères immédiatement
-            // Le plat cuit encore -> on attends qu'il soit prêt, bloqué là
-            try { f.get(); } catch (Exception e) { Thread.currentThread().interrupt(); }
-
-            // après le get on est sur que c'est finit
-        }
-    }
-
-    /**
-     * Finis la génération en connectant les voisins et calculant les faces à caché entre voisins
-     */
-    public static void finalizeChunks() {        
-        // les 3 passes restent séquentielles entre elles,
-        // mais les chunks sont traités en parallèle à l'intérieur de chaque passe
-        List<Future<?>> futures = new ArrayList<>();
-
-        // Passe 1 : linkNeighbors — lit/écrit uniquement les refs du chunk courant → parallel safe
-        for (Chunk chunk : chunks.values()){
-            futures.add(pool.submit(() -> { for (SubChunk sub : chunk.subChunks) sub.linkNeighbors(); }));
-        }
-        for (Future<?> f : futures) try { f.get(); } catch (Exception e) {}
-        futures.clear(); 
-
-        // Passe 2 : initHeightMap
-        for (Chunk chunk : chunks.values()){
-            futures.add(pool.submit(() -> chunk.initHeightMap()));
-        }
-        for (Future<?> f : futures) try { f.get(); } catch (Exception e) {}
-        futures.clear(); 
-
-        // Passe 3 : finalizeChunk (maillage + upload GPU)
-        for (Chunk chunk : chunks.values()){
-            futures.add(pool.submit(() -> finalizeChunk(chunk)));
-        }
-        for (Future<?> f : futures) {
-            try { f.get(); } catch (Exception e) {}
-        }
-    }
-
-    /**
-     * Finalise la construction du chunk
-     * @param chunk Chunk
-     */
-    @ChunkThread
-    public static void finalizeChunk(Chunk chunk){
-        for (SubChunk sub : chunk.subChunks){
-            sub.fillSubChunkBitSet();
-        }
-        // générer le mesh avec un BitSet correct
-        for(SubChunk sub : chunk.subChunks){
-            synchronized(sub) {
-                sub.mesh.setupSubChunkBuffers(sub.solidBitSet.cardinality()); // recrée vertexArrayPack avant de générer            
-                sub.transparentMesh.setupSubChunkBuffers(sub.transparentBitSet.cardinality());
-                sub.generateSubChunkMesh();
-            }
-            // met le thread en pause si l'array est plein, le thread se relance automatiquement au moment ou OpenGLThread poll un chunk
-            if (sub.mesh.getVertexCount() > 0 || sub.transparentMesh.getVertexCount() > 0) {   // n'envoie pas les subchunks vides au GPU
-                try { Render.dirtySubChunks.put(sub); } catch(InterruptedException e) { Thread.currentThread().interrupt(); }
-            }
-        }
-        try { Render.chunkQueue.put(chunk); } catch(InterruptedException e) { Thread.currentThread().interrupt(); }
-                 
     }
 
     /**
@@ -205,9 +89,8 @@ public class ChunksManager {
         int localZ = ChunksManager.floorDiv(z, SubChunk.CHUNKSIZEXZ);
 
         long coord = chunkKey(localX, localZ);
-        if (!ChunksManager.chunks.containsKey(coord)){
-            throw new RuntimeException("Le chunk x: " + localX + " z: "+ localZ + " n'existe pas");
-        }    
+        if (!ChunksManager.chunks.containsKey(coord)) return; // silencieux au lieu de throw
+
         // Récupère le chunk
         Chunk chunk = ChunksManager.chunks.get(coord);
         // Supprime les VBO VAO de chaque chunk, le garbage collector fait le reste tout seul
@@ -245,6 +128,13 @@ public class ChunksManager {
         int localZ = ChunksManager.floorMod(z, SubChunk.CHUNKSIZEXZ);
 
         return chunk.getBlock(localX, y, localZ);
+    }
+
+    // prend un RANGE, pas un point
+    public static boolean isCollidingBlockAt(BlockDefinition block, float minLx, float maxLx, float minLy, float maxLy, float minLz, float maxLz){
+        return (maxLx >= block.x && minLx <= block.x + block.width) &&
+               (maxLy >= block.y && minLy <= block.y + block.height) &&
+               (maxLz >= block.z && minLz <= block.z + block.depth);
     }
 
     /**

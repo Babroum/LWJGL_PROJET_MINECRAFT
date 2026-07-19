@@ -8,17 +8,26 @@ import demo.Annotations.OpenGLThread;
 public class Color4f {
 
     // Couleur simple préfètes
+    /** Blanc */
     public static final Color4f WHITE = new Color4f(255);
+    /** Noir */
     public static final Color4f BLACK = new Color4f(0);
 
+    /** Rouge */
     public static final Color4f RED = new Color4f(255,0,0);
+    /** Vert */
     public static final Color4f GREEN = new Color4f(0,255,0);
+    /** Bleu */
     public static final Color4f BLUE = new Color4f(0,0,255);
     
+    /** Cyan */
     public static final Color4f CYAN = new Color4f(0,255,255);
+    /** Violet */
     public static final Color4f PURPLE = new Color4f(255,0,255);
+    /** Jaune */
     public static final Color4f YELLOW = new Color4f(255,255,0);
 
+    /** Couleur Ciel */
     public static final Color4f SKY = new Color4f(207,236,247);
 
     /**
@@ -44,7 +53,7 @@ public class Color4f {
      * @param g vert
      * @param b bleu
      * @param a alpha
-     * @throws IncorrectColorValue
+     * @throws RuntimeException
      */
     public Color4f(float r, float g, float b, float a) throws RuntimeException{
         if ((r < 0 || r > 255) ||
@@ -63,7 +72,7 @@ public class Color4f {
      * @param r float
      * @param g float
      * @param b float
-     * @throws IncorrectColorValue
+     * @throws RuntimeException
      */
     public Color4f(float r, float g, float b) throws RuntimeException{
         this(r, g, b, 100);
@@ -72,7 +81,7 @@ public class Color4f {
      * Définis une couleur par intensité de gris et un niveau d'opacité
      * @param gray float
      * @param a float
-     * @throws IncorrectColorValue
+     * @throws RuntimeException
      */
     public Color4f(float gray, float a) throws RuntimeException{
         this(gray, gray, gray, a);
@@ -80,7 +89,7 @@ public class Color4f {
     /**
      * Définis une couleur opaque par intensité de gris
      * @param gray float
-     * @throws IncorrectColorValue
+     * @throws RuntimeException
      */
     public Color4f(float gray) throws RuntimeException{
         this(gray, gray, gray,100);

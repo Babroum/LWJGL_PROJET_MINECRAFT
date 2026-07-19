@@ -1,0 +1,250 @@
+package demo.Managers;
+
+import java.util.Set;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Future;
+import java.util.Random;
+
+import demo.Geometry.WorldGenerator;
+import demo.Geometry.SubChunk;
+import demo.Geometry.Chunk;
+import demo.Rendering.Render;
+import demo.Others.Blocks;
+import demo.Others.ChunkGenerationPool;
+import demo.Others.ChunkSerializer;
+
+public class WorldManager {
+
+    private static final int MAX_CHUNKS_PER_TICK = 4;
+
+    public static final int RENDER_DISTANCE = 3;
+    public static final int UNLOAD_DISTANCE = RENDER_DISTANCE + 2;
+
+    public static final int ZONE_NEAR = RENDER_DISTANCE / 4; // 25% de la render distance
+    public static final int ZONE_MID  = RENDER_DISTANCE / 2; // 50% de la render distance
+    public static final int ZONE_FAR  = RENDER_DISTANCE;     // 100%
+
+    // position du joueur en coordonnées chunk (pas monde) pas (0,0) car sinon la ya rien car le joueur spawn en 0,0
+    private static int lastPlayerChunkX = Integer.MIN_VALUE;
+    private static int lastPlayerChunkZ = Integer.MIN_VALUE;
+
+    // chunks en cours de génération (évite les doublons)
+    private static final Set<Long> generatingChunks = ConcurrentHashMap.newKeySet();
+    private static final Set<Long> unloadingChunks = ConcurrentHashMap.newKeySet();
+
+    private static ThreadLocal<WorldGenerator> generator = ThreadLocal.withInitial(
+        () -> new WorldGenerator(4649686131987684165L)
+    );
+
+    /**
+     * Appelé chaque tick depuis GameLoop.run()
+     */
+    public static void tick(float playerX, float playerZ) {
+        int playerChunkX = ChunksManager.floorDiv((int) playerX, SubChunk.CHUNKSIZEXZ);
+        int playerChunkZ = ChunksManager.floorDiv((int) playerZ, SubChunk.CHUNKSIZEXZ);
+
+        boolean playerMoved = playerChunkX != lastPlayerChunkX || playerChunkZ != lastPlayerChunkZ;
+        if (playerMoved) {
+            // si le joueur à bougé alors on décharge
+            lastPlayerChunkX = playerChunkX;
+            lastPlayerChunkZ = playerChunkZ;
+            scheduleChunkUnloads(playerChunkX, playerChunkZ);
+        }
+
+        // ici les mesh des chunks sont créer chaque tick avec un budget
+        int budget = 16;
+        while (budget-- > 0){
+            SubChunk subToMesh = Render.subChunkMeshQueue.poll();
+            if (subToMesh == null) break;
+            ChunkGenerationPool.submit(() -> {
+                subToMesh.fillSubChunkBitSet();
+                synchronized (subToMesh) {
+                    subToMesh.mesh.setupSubChunkBuffers(subToMesh.solidBitSet.cardinality());
+                    subToMesh.transparentMesh.setupSubChunkBuffers(subToMesh.transparentBitSet.cardinality());
+                    subToMesh.generateSubChunkMesh();
+                }
+                // si il y a au moins une vertice dans le subchunk
+                if (subToMesh.mesh.getVertexCount() > 0 || subToMesh.transparentMesh.getVertexCount() > 0) {
+                    try { Render.dirtySubChunks.put(subToMesh); } catch (InterruptedException e) {}
+                }
+                // si tout les subchunks sont chargés alors on ajoute le chunk à la scène
+                if (subToMesh.parent.pendingMeshCount.decrementAndGet() == 0) {
+                    try { Render.chunkQueue.put(subToMesh.parent); } catch (InterruptedException e) {}
+                }
+            });
+        }
+
+        // toujours appelé, même si le joueur n'a pas bougé
+        // car il reste peut-être des chunks à soumettre du tick précédent
+        scheduleChunkLoads(playerChunkX, playerChunkZ);
+    }
+
+    /**
+     * Charge les chunks manquants en spirale (les plus proches en premier)
+     */
+    private static void scheduleChunkLoads(int centerX, int centerZ) {
+        List<int[]> toLoad = new ArrayList<>();
+
+        // détermine la zone autour du joueur, et charge en spirale
+        for (int dx = -RENDER_DISTANCE; dx <= RENDER_DISTANCE; dx++) {
+            for (int dz = -RENDER_DISTANCE; dz <= RENDER_DISTANCE; dz++) {
+                if (dx * dx + dz * dz > RENDER_DISTANCE * RENDER_DISTANCE) continue;
+
+                int cx = centerX + dx;
+                int cz = centerZ + dz;
+
+                // est ce que le chunk est déjà chargé ou en cours
+                if (ChunksManager.getChunkAt(cx * 16, cz * 16) != null) continue;
+                long key = chunkKey(cx, cz);
+                if (generatingChunks.contains(key)) continue;
+
+                toLoad.add(new int[]{cx, cz, dx * dx + dz * dz}); // distance² pour trier
+            }
+        }
+
+        // trie par distance croissante : on génère les plus proches en premier
+        toLoad.sort(Comparator.comparingInt(a -> a[2]));
+
+        // Phase 1 : générer le terrain en parallèle
+        List<Future<?>> futures = new ArrayList<>();
+        List<Chunk> generatedChunks = new java.util.concurrent.CopyOnWriteArrayList<>();
+
+        int submitted = 0;
+        for (int[] coord : toLoad) {
+            if (submitted >= MAX_CHUNKS_PER_TICK) break;
+
+            int cx = coord[0], cz = coord[1];
+            long key = chunkKey(cx, cz);
+            generatingChunks.add(key);
+
+            futures.add(ChunkGenerationPool.submitFuture(() -> {
+                try {
+                    Chunk chunk = ChunksManager.createChunk(cx, cz);
+                    byte[] saved = ChunkSerializer.load(cx, cz);
+                    if (saved != null) {
+                        chunk.setAllSubChunkBlocks(saved);
+                    } else {
+                        generator.get().generateChunk(chunk, cx, cz);
+                    }
+                    for (SubChunk sub : chunk.subChunks) sub.linkNeighbors();
+                    relinkNeighborChunks(chunk);
+                    chunk.initHeightMap();
+                    for (SubChunk sub : chunk.subChunks) sub.fillSubChunkBitSet();
+                    generatedChunks.add(chunk);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    generatingChunks.remove(key);
+                }
+            }));
+            submitted++;
+        }
+
+        //
+        // Un seul thread attend les futures et lance la phase 2
+        ChunkGenerationPool.submit(() -> {
+            for (Future<?> f : futures) {
+                try { f.get(); } catch (Exception e) {}
+            }
+            // Tous les chunks de la phase 1 sont prêts, on peut placer les arbres
+            for (Chunk chunk : generatedChunks) {
+                boolean isFromSave = ChunkSerializer.load(
+                    ChunksManager.floorDiv(chunk.x, 16),
+                    ChunksManager.floorDiv(chunk.z, 16)
+                ) != null;
+
+                if (!isFromSave) {
+                    Random random = new Random();
+                    for (int x = 0; x < SubChunk.CHUNKSIZEXZ; x++) {
+                        for (int z = 0; z < SubChunk.CHUNKSIZEXZ; z++) {
+                            int y = chunk.heightMap[z + x * SubChunk.CHUNKSIZEXZ];
+                            if (chunk.getBlock(x, y, z) == Blocks.GRASS) {
+                                if (random.nextInt(50) == 0) {
+                                    generator.get().generateTree(x, y + 1, z, chunk);
+                                }
+                            }
+                            /*
+                            if (chunk.getBlock(x, y, z) == Blocks.SAND) {
+                                // si il y a du sable alors on place de l'eau au dessus jusqu'a la limite océan                            
+                                for (int i = y + 1; i <= WorldGenerator.SEA_LEVEL; i++){
+                                    SubChunk currentSub = chunk.getSubChunkAt(i);
+                                    int localY = i % WorldGenerator.CHUNK_SIZE;
+                                    int idx = x + localY * WorldGenerator.CHUNK_SIZE + z * WorldGenerator.CHUNK_HEIGHT;
+                                    currentSub.blocks[idx] = (byte) Blocks.WATER.id;
+                                }
+                            }*/
+                        }
+                    }
+                }
+
+                chunk.pendingMeshCount.set(chunk.subChunks.length);
+                for (SubChunk sub : chunk.subChunks) {
+                    Render.subChunkMeshQueue.add(sub);
+                }
+                chunk.isReady = true;
+            }
+        });
+    }
+
+    /**
+     * Marque les chunks trop loin pour suppression (sur OpenGL thread via queue)
+     */
+    private static void scheduleChunkUnloads(int centerX, int centerZ) {
+        for (Chunk chunk : ChunksManager.getAllChunks()) {
+            if (!chunk.isReady) continue; 
+
+            int cx = ChunksManager.floorDiv(chunk.x, SubChunk.CHUNKSIZEXZ);
+            int cz = ChunksManager.floorDiv(chunk.z, SubChunk.CHUNKSIZEXZ);
+            int dx = cx - centerX;
+            int dz = cz - centerZ;
+            if (dx * dx + dz * dz > UNLOAD_DISTANCE * UNLOAD_DISTANCE) {
+                long key = chunkKey(cx, cz);
+                if (unloadingChunks.add(key)) { // add retourne false si déjà présent
+                    Render.chunksToUnload.offer(chunk);
+                }
+            }
+        }
+    }
+
+    // dans WorldManager
+    public static void onChunkUnloaded(Chunk chunk) {
+        int cx = ChunksManager.floorDiv(chunk.x, SubChunk.CHUNKSIZEXZ);
+        int cz = ChunksManager.floorDiv(chunk.z, SubChunk.CHUNKSIZEXZ);
+        unloadingChunks.remove(chunkKey(cx, cz));
+    }
+
+    /**
+     * A MODIFIER VALEUR
+     * Retourne la zone LOD d'un chunk (pour usage futur)
+     * 1 = NEAR, 2 = MID, 4 = FAR
+     */
+    public static int getZone(int chunkX, int chunkZ) {
+        int dx = chunkX - lastPlayerChunkX;
+        int dz = chunkZ - lastPlayerChunkZ;
+        int dist2 = dx * dx + dz * dz;
+        if (dist2 <= ZONE_NEAR * ZONE_NEAR) return 1;
+        if (dist2 <= ZONE_MID  * ZONE_MID)  return 2;
+        return 4;
+    }
+
+    private static long chunkKey(int x, int z) {
+        return ((long) x << 32) | (z & 0xFFFFFFFFL);
+    }
+
+    private static void relinkNeighborChunks(Chunk newChunk) {
+        int[][] directions = {{16, 0}, {-16, 0}, {0, 16}, {0, -16}};
+        for (int[] d : directions) {
+            Chunk neighbor = ChunksManager.getChunkAt(newChunk.x + d[0], newChunk.z + d[1]);
+            if (neighbor == null) continue;
+            for (SubChunk sub : neighbor.subChunks) {
+                sub.linkNeighbors();
+                if (sub.dirty.compareAndSet(false, true)) {
+                    LightManager.addDirtySubChunk(sub);
+                }
+            }
+        }
+    }
+}

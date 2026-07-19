@@ -1,7 +1,10 @@
 package demo.Geometry;
 
+import demo.Managers.ChunksManager;
+import demo.Others.BlockDefinition;
 import demo.Others.Blocks;
 import demo.Others.FastNoiseLite;
+import java.util.Random;
 
 /**
  * Génère procéduralement le terrain du monde voxel.
@@ -56,16 +59,16 @@ public class WorldGenerator {
     private final FastNoiseLite depthNoise;
 
     /** Hauteur de référence en blocs autour de laquelle oscille la surface. */
-    private static final int BASE_HEIGHT = 68;
+    public static final int BASE_HEIGHT = 68;
 
     /** Niveau de la mer. En dessous -> sable, au dessus -> herbe. */
-    private static final int SEA_LEVEL = 64;
+    public static final int SEA_LEVEL = 64;
 
     /** Taille horizontale d'un chunk en blocs. */
-    private static final int CHUNK_SIZE   = SubChunk.CHUNKSIZEXZ;
+    public static final int CHUNK_SIZE   = SubChunk.CHUNKSIZEXZ;
 
     /** Hauteur totale d'un chunk en blocs (sous-chunks × hauteur par sous-chunk). */
-    private static final int CHUNK_HEIGHT = SubChunk.CHUNKSIZEHEIGHT;
+    public static final int CHUNK_HEIGHT = SubChunk.CHUNKSIZEHEIGHT;
 
     //  Grille basse résolution
 
@@ -84,6 +87,8 @@ public class WorldGenerator {
     /** Pas de la grille en Y en blocs. Plus petit = moins d'artefacts d'interpolation verticale. */
     private static final int STEP_Y  = 8;
 
+    private final long worldSeed;
+
     /**
      * Initialise tous les générateurs de bruit avec des graines décalées
      * pour éviter toute corrélation entre eux.
@@ -91,6 +96,7 @@ public class WorldGenerator {
      * @param seed graine de base du monde
      */
     public WorldGenerator(long seed) {
+        this.worldSeed = seed;
 
         // minLimitNoise
         this.minLimitNoise = new FastNoiseLite((int)(seed)); // graine de base
@@ -333,7 +339,6 @@ public class WorldGenerator {
      * @param chunk le chunk à modifier
      */
     private void applySurfaceLayers(Chunk chunk) {
-        
 
         for (int bx = 0; bx < WorldGenerator.CHUNK_SIZE; bx++) {
             for (int bz = 0; bz < WorldGenerator.CHUNK_SIZE; bz++) {
@@ -354,7 +359,7 @@ public class WorldGenerator {
                         currentSubIndex = by;
                         currentSub = chunk.getSubChunkAt(by);
                     }
-                    int localY        = by % WorldGenerator.CHUNK_SIZE;
+                    int localY = by % WorldGenerator.CHUNK_SIZE;
                     int idx = bx + localY * WorldGenerator.CHUNK_SIZE + bz * WorldGenerator.CHUNK_HEIGHT;
 
                     // Y=0 -> bedrock : toujours présent, fin de colonne
@@ -362,9 +367,9 @@ public class WorldGenerator {
                         currentSub.blocks[idx] = (byte) Blocks.BEDROCK.id;
                         continue;
                     }
-
-                    // Bloc air avant la surface -> on continue vers le bas
+                    
                     if (currentSub.blocks[idx] == (byte) Blocks.AIR.id && !surfacePlaced) {
+                        // Bloc air avant la surface -> on continue vers le bas
                         dirtDepth = -1;
                         continue;
                     }
@@ -374,11 +379,12 @@ public class WorldGenerator {
                         surfacePlaced = true;
                         dirtDepth = 3; // 3 blocs de dirt sous la surface
 
-                        if (by >= WorldGenerator.SEA_LEVEL)
-                            currentSub.blocks[idx] = (byte) Blocks.GRASS.id;
-                        else
-                            currentSub.blocks[idx] = (byte) Blocks.SAND.id;
-
+                        if (by >= WorldGenerator.SEA_LEVEL){
+                            currentSub.blocks[idx] = (byte) Blocks.GRASS.id;                            
+                        }
+                        else{
+                            currentSub.blocks[idx] = (byte) Blocks.SAND.id;                            
+                        }
                     } else if (dirtDepth > 0) {
                         currentSub.blocks[idx] = (byte) Blocks.DIRT.id;
                         dirtDepth--;
@@ -387,5 +393,96 @@ public class WorldGenerator {
                 }
             }
         }
+    }
+
+    /**
+     * Génère un arbre en chêne (oak), si la place est disponible
+     * @param x Coordonnées en x (local) chunk
+     * @param y Coordonnées en y (global) chunk
+     * @param z Coordonnées en z (local) chunk
+     */
+    public void generateTree(int x, int y, int z, Chunk chunk) {
+        Random random = new Random(this.worldSeed);
+        long seedX = random.nextLong() / 2 * 2 + 1;
+        long seedZ = random.nextLong() / 2 * 2 + 1;
+        random.setSeed((long)chunk.x * seedX + (long)chunk.z * seedZ ^ this.worldSeed ^ x ^ z);
+        
+        int trunkHeight = 4 + random.nextInt(3); // 4-6
+        int treeHeight  = trunkHeight + 2; // 6-8
+        int leavesStart = trunkHeight - 2; // feuilles commencent 2 blocs avant le sommet du tronc
+        int leavesRadius = 2;
+
+        if (y + treeHeight >= WorldGenerator.CHUNK_HEIGHT) return;
+
+        // --- vérification ---
+        for (int i = 0; i <= treeHeight; i++) {
+            if (i >= leavesStart) {
+                // rayon réduit au sommet pour la forme pointue
+                int radius = (i >= treeHeight - 1) ? 1 : leavesRadius;
+                for (int rx = -radius; rx <= radius; rx++) {
+                    for (int rz = -radius; rz <= radius; rz++) {
+                        // supprimer les coins pour arrondir
+                        if (Math.abs(rx) == radius && Math.abs(rz) == radius
+                            && random.nextInt(3) != 0) continue;
+
+                        Chunk target = getTargetChunk(chunk, x + rx, z + rz);
+                        if (target == null) return;
+                        int lx = ChunksManager.floorMod(chunk.x + x + rx, SubChunk.CHUNKSIZEXZ);
+                        int lz = ChunksManager.floorMod(chunk.z + z + rz, SubChunk.CHUNKSIZEXZ);
+                        int ly = (y + i) % SubChunk.CHUNKSIZEXZ;
+                        SubChunk sub = target.getSubChunkAt(y + i);
+                        if (sub == null) return;
+                        BlockDefinition b = sub.getBlock(lx, ly, lz);
+                        if (b != Blocks.OAK_LEAVES && b != Blocks.AIR) return;
+                    }
+                }
+            }
+            if (i <= trunkHeight) {
+                int ly = (y + i) % SubChunk.CHUNKSIZEXZ;
+                SubChunk sub = chunk.getSubChunkAt(y + i);
+                if (sub == null) return;
+                if (sub.getBlock(x, ly, z) != Blocks.AIR) return;
+            }
+        }
+
+        // --- placement ---
+        for (int i = 0; i <= treeHeight; i++) {
+            if (i >= leavesStart) {
+                int radius = (i >= treeHeight - 1) ? 1 : leavesRadius;
+                for (int rx = -radius; rx <= radius; rx++) {
+                    for (int rz = -radius; rz <= radius; rz++) {
+                        if (Math.abs(rx) == radius && Math.abs(rz) == radius
+                            && random.nextInt(3) != 0) continue;
+
+                        Chunk target = getTargetChunk(chunk, x + rx, z + rz);
+                        if (target == null) continue; // continue et pas return ici
+                        int lx = ChunksManager.floorMod(chunk.x + x + rx, SubChunk.CHUNKSIZEXZ);
+                        int lz = ChunksManager.floorMod(chunk.z + z + rz, SubChunk.CHUNKSIZEXZ);
+                        int ly = (y + i) % SubChunk.CHUNKSIZEXZ;
+                        SubChunk sub = target.getSubChunkAt(y + i);
+                        if (sub == null) continue;
+                        int idx = lx + ly * SubChunk.CHUNKSIZEXZ + lz * SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ;
+                        if (sub.blocks[idx] == (byte) Blocks.AIR.id) {
+                            sub.blocks[idx] = (byte) Blocks.OAK_LEAVES.id;
+                        }
+                    }
+                }
+            }
+            if (i <= trunkHeight) {
+                int ly = (y + i) % SubChunk.CHUNKSIZEXZ;
+                SubChunk sub = chunk.getSubChunkAt(y + i);
+                if (sub == null) continue;
+                int idx = x + ly * SubChunk.CHUNKSIZEXZ + z * SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ;
+                sub.blocks[idx] = (byte) Blocks.OAK_LOG.id;
+            }
+        }
+    }
+
+    // retourne le chunk qui contient la position (chunk.x + localX, chunk.z + localZ)
+    // localX et localZ sont des offsets relatifs à l'origine du chunk
+    private static Chunk getTargetChunk(Chunk origin, int localX, int localZ) {
+        int globalX = origin.x + localX;
+        int globalZ = origin.z + localZ;
+        return ChunksManager.getChunkAt(globalX, globalZ);
     }
 }

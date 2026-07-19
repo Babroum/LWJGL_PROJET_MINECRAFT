@@ -3,6 +3,7 @@ package demo.Meshing;
 /**
  * Une face décrivant un ensemble de 4 Sommets d'une maille.
  */
+@Deprecated
 public class Face {
     
     /**

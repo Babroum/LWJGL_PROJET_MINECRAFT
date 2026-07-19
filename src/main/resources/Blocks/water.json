@@ -1,0 +1,14 @@
+{
+  "id": 14,
+  "name": "water",
+  "opacity": 0,
+  "luminance": 0,
+  "liquidLevel" : 8,
+  "transparent": true,
+  "width": 16,
+  "height": 16,
+  "depth": 16,
+  "textures": {
+    "all": "water"
+  }
+}

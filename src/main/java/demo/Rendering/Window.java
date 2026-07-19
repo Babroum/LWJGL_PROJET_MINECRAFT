@@ -17,6 +17,7 @@ import demo.Managers.AudioManager;
 import demo.Managers.BenchmarkManager;
 import demo.Managers.ShadersManager;
 import demo.Managers.ChunksManager;
+import demo.Managers.FrameBufferManager;
 import demo.Managers.InputManager;
 
 /**
@@ -115,6 +116,7 @@ public class Window {
                 Window.height = height; // pour modifier la hauteur de la fenêtre dans la classe
                 Window.width =  width; // pour modifier la largeur de la fenêtre dans la classe
                 GL11.glViewport(0, 0, width, height); // Redimensionne le glViewPort
+                FrameBufferManager.resize(width, height);
             }
         });  
 
@@ -133,6 +135,8 @@ public class Window {
         ShadersManager.closeProgramId();
         ShadersManager.closeProgramTextId();
         ShadersManager.closeProgramBlockBorderId();
+        ShadersManager.closeProgramPostProcessId();
+        ShadersManager.closeProgramLiquidId();
 
         BenchmarkManager.getInstance().stop(); 
         GameLoop.quit();

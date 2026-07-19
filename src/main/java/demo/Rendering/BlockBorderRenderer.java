@@ -15,7 +15,9 @@ public class BlockBorderRenderer {
     private static int vao = 0;
     private static int vbo = 0;
 
-    // Appelé UNE SEULE FOIS au démarrage
+    /**
+     * Initialise le mesh du contour de bloc
+     */
     public static void init(){
         int[] lines = {
             0, 0, 0,   1, 0, 0,
@@ -48,7 +50,12 @@ public class BlockBorderRenderer {
         MemoryUtil.memFree(buffer);
     }
 
-    // Appelé à chaque frame si un bloc est regardé
+    /**
+     * Dessine le mesh au coordonnées données
+     * @param worldX Coordonnées en x (globale)
+     * @param worldY Coordonnées en y (globale)
+     * @param worldZ Coordonnées en z (globale)
+     */
     public static void draw(int worldX, int worldY, int worldZ){
         if (vao == 0) return;
 
@@ -68,7 +75,9 @@ public class BlockBorderRenderer {
         ShadersManager.useShader();
     }
 
-    // Appelé à la fermeture du jeu
+    /**
+    * Vide le buffer
+    */
     public static void cleanup(){
         BuffersManager.deleteVBOVAO(new int[]{vbo, vao});
     }

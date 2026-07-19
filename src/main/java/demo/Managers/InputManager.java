@@ -1,7 +1,6 @@
 package demo.Managers;
 
 import org.joml.Vector2f;
-import org.lwjgl.opengl.GL11;
 import org.lwjgl.glfw.GLFW;
 
 import demo.Annotations.OpenGLThread;
@@ -30,14 +29,6 @@ public class InputManager {
     public static void runOpenGL() {
         MouseInput.input(); // capture le delta souris via GLFW
         KeyboardInput.pollMovementKeys();
-
-        if (KeyboardInput.isWireFrameMode) {
-            GL11.glDisable(GL11.GL_CULL_FACE);
-            GL11.glPolygonMode(GL11.GL_FRONT_AND_BACK, GL11.GL_LINE);
-        } else {
-            GL11.glEnable(GL11.GL_CULL_FACE);
-            GL11.glPolygonMode(GL11.GL_FRONT_AND_BACK, GL11.GL_FILL);
-        }
 
         // rotation caméra avec la souris
         boolean focused = GLFW.glfwGetWindowAttrib(Window.getWindow(), GLFW.GLFW_FOCUSED) == 1;

@@ -30,3 +30,6 @@ benchmark_report.html
 # Autre
 *.zip
 *.rar
+
+# Dossier de sauvegarde des chunks
+saves/

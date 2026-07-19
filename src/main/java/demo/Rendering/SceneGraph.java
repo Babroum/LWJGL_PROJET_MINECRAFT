@@ -1,6 +1,9 @@
 package demo.Rendering;
 
+import java.nio.FloatBuffer;
+
 import org.joml.Matrix4f;
+import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL11;
 
 import demo.Annotations.OpenGLThread;
@@ -8,6 +11,8 @@ import demo.Geometry.Chunk;
 import demo.Geometry.Node3D;
 import demo.Geometry.SubChunk;
 import demo.Managers.ChunksManager;
+import demo.Managers.PlayersManager;
+import demo.Managers.ShadersManager;
 import demo.Types.Color4f;
 
 /**
@@ -79,6 +84,14 @@ public class SceneGraph {
     }
 
     /**
+     * Retire un chunk de la scène
+     * @param chunk Chunk retiré
+     */
+    public void removeChunk(Chunk chunk) {
+        root.removeChild(chunk);
+    }
+
+    /**
      * Dessine la scène en appelant le nœud principale
      */
     @OpenGLThread
@@ -86,19 +99,40 @@ public class SceneGraph {
         Matrix4f mat = new Matrix4f();
         // Couleur du background de la scène
         GL11.glClearColor(this.backGroundColor.red, this.backGroundColor.green, this.backGroundColor.blue, 1f);
+
+        FloatBuffer projBuffer = Render.calculateProjection(45.0f, (float) Window.width / Window.height, 0.1f, 5000.f);
+        FloatBuffer viewBuffer = PlayersManager.player.getCamera().getViewMatrixBuffer();
+        float time = (float) GLFW.glfwGetTime();
         
+        ShadersManager.useShader();  
+        ShadersManager.runProjection(projBuffer);
+        ShadersManager.runView(viewBuffer);
+        ShadersManager.runTime(time);
         // Passe 1 opaque
         GL11.glDepthMask(true);
         GL11.glDisable(GL11.GL_BLEND);
         this.root.drawNode(mat.identity());
 
-        // Passe 2 transparent
+        // Passe 2 glass (verre uniquement)
         GL11.glDepthMask(false);
         GL11.glEnable(GL11.GL_BLEND);
         GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
         for (Chunk chunk : ChunksManager.getAllChunks()){
-            chunk.drawNodeTransparent(mat.identity());
+            chunk.drawNodeGlass(mat.identity());
         }
+
+        ShadersManager.useLiquidShader();
+        ShadersManager.runProjectionLiquid(projBuffer);
+        ShadersManager.runViewLiquid(viewBuffer);
+        ShadersManager.runTimeLiquid(time);
+        // Passe 3 liquid
+        GL11.glDepthMask(false);
+        GL11.glEnable(GL11.GL_BLEND);
+        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+        for (Chunk chunk : ChunksManager.getAllChunks()){
+            chunk.drawNodeLiquid(mat.identity());
+        }
+        
         GL11.glDepthMask(true);
         GL11.glDisable(GL11.GL_BLEND);
     }

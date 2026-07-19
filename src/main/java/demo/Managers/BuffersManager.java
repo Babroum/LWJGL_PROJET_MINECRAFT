@@ -72,11 +72,14 @@ public class BuffersManager {
         vboSizeBytes += (long) vertex.capacity() * Integer.BYTES;
 
         // 3. Dire au VAO comment lire le VBO
-        GL30.glVertexAttribIPointer(0, 1, GL20.GL_INT, 2 * Integer.BYTES, 0);
+        GL30.glVertexAttribIPointer(0, 1, GL20.GL_INT, 3 * Integer.BYTES, 0);
         GL20.glEnableVertexAttribArray(0);
 
-        GL30.glVertexAttribIPointer(1, 1, GL20.GL_INT, 2 * Integer.BYTES, Integer.BYTES);
+        GL30.glVertexAttribIPointer(1, 1, GL20.GL_INT, 3 * Integer.BYTES, Integer.BYTES);
         GL20.glEnableVertexAttribArray(1);
+
+        GL30.glVertexAttribIPointer(2, 1, GL20.GL_INT, 3 * Integer.BYTES, 2 * Integer.BYTES);
+        GL20.glEnableVertexAttribArray(2);
 
         // 4. Unbind
         GL15.glBindBuffer(GL20.GL_ARRAY_BUFFER, 0);

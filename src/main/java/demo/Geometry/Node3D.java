@@ -65,6 +65,16 @@ public class Node3D {
         this.nbChildren++;
     }
 
+    public void removeChild(Node3D node) {
+        for (int i = 0; i < nbChildren; i++) {
+            if (children[i] == node) {
+                children[i] = children[--nbChildren]; // swap avec le dernier
+                children[nbChildren] = null;
+                return;
+            }
+        }
+    }
+
     /**
      * Dessine le nœud actuel et tous ses enfants.
      * @param parentModel Matrix4f, si un nœud parent est bougé les enfants vont le suivre
@@ -112,9 +122,9 @@ public class Node3D {
     }
 
     public void cleanup(){
-    if (this.buffer != null){
-        MemoryUtil.memFree(this.buffer);
-        this.buffer = null;
+        if (this.buffer != null){
+            MemoryUtil.memFree(this.buffer);
+            this.buffer = null;
+        }
     }
-}
 }
