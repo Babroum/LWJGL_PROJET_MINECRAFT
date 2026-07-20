@@ -15,7 +15,7 @@
     <lwjgl.version>3.4.0</lwjgl.version>
     <joml.version>1.10.8</joml.version>
     <joml-primitives.version>1.10.0</joml-primitives.version>
-    <!-- lwjgl.natives est défini par les profiles ci-dessous -->
+    <launcher.jvmArgs>-XX:+UseZGC -XX:+ZUncommit -XX:ZUncommitDelay=5 -Xms64m -Xmx1024m</launcher.jvmArgs>
   </properties>
 
   <!-- Détection automatique de l'OS -->
@@ -122,22 +122,54 @@
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
         <version>3.1.0</version>
+
         <configuration>
-          <executable>java</executable>
-          <arguments>
-            <argument>-XX:+UseZGC</argument> <!-- active le ZGC, un garbage collector moderne conçu pour avoir des pauses ultra-courtes -->
-            <argument>-XX:+ZUncommit</argument>        <!-- rend la mémoire à l'OS automatiquement -->
-            <argument>-XX:ZUncommitDelay=5</argument>  <!-- délai en secondes avant de rendre (défaut 300s) -->
-            <argument>-Xms64m</argument> <!-- la JVM démarre avec X Mo de heap réservé -->
-            <argument>-Xmx1024m</argument><!-- la heap ne peut jamais dépasser X Mo -->
-            <!-- <argument>-Xlog:gc*:stdout:time,uptime</argument>  a mettre pour afficher les logs mémoires-->
-            <argument>-Djava.library.path=${project.build.directory}/natives</argument> <!-- dit à la JVM où trouver les fichiers natifs LWJGL (les .dll sur Windows, .so sur Linux) -->
-            <argument>-cp</argument>
-            <classpath/>
-            <argument>demo.App</argument>
-            <argument>${project.basedir}/src/main/resources</argument>            
-          </arguments>
+            <executable>java</executable>
+            <arguments>
+                <argument>-XX:+UseZGC</argument>
+                <argument>-XX:+ZUncommit</argument>
+                <argument>-XX:ZUncommitDelay=5</argument>
+                <argument>-Xms64m</argument>
+                <argument>-Xmx1024m</argument>
+                <argument>-Djava.library.path=${project.build.directory}/natives</argument>
+                <argument>-cp</argument>
+                <classpath/>
+                <argument>demo.App</argument>
+                <argument>${project.basedir}/src/main/resources</argument>
+            </arguments>
         </configuration>
+
+        <executions>
+            <execution>
+                <id>archive-zip</id>
+                <phase>package</phase>
+                <goals><goal>exec</goal></goals>
+                <configuration>
+                    <executable>git</executable>
+                    <arguments combine.self="override">
+                        <argument>archive</argument>
+                        <argument>--format=zip</argument>
+                        <argument>--output=${project.build.directory}/${project.artifactId}-${project.version}.zip</argument>
+                        <argument>HEAD</argument>
+                    </arguments>
+                </configuration>
+            </execution>
+
+            <execution>
+                <id>archive-targz</id>
+                <phase>package</phase>
+                <goals><goal>exec</goal></goals>
+                <configuration>
+                    <executable>git</executable>
+                    <arguments combine.self="override">
+                        <argument>archive</argument>
+                        <argument>--format=tar.gz</argument>
+                        <argument>--output=${project.build.directory}/${project.artifactId}-${project.version}.tar.gz</argument>
+                        <argument>HEAD</argument>
+                    </arguments>
+                </configuration>
+            </execution>
+        </executions>
       </plugin>
 
       <plugin>
@@ -207,6 +239,31 @@
             <phase>package</phase>
             <goals><goal>single</goal></goals>
           </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-resources-plugin</artifactId>
+        <version>3.3.1</version>
+        <executions>
+            <execution>
+                <id>generate-launcher</id>
+                <phase>package</phase>
+                <goals><goal>copy-resources</goal></goals>
+                <configuration>
+                    <outputDirectory>${project.build.directory}</outputDirectory>
+                    <resources>
+                        <resource>
+                            <directory>src/launcher</directory>
+                            <filtering>true</filtering>
+                            <includes>
+                                <include>run.bat</include>
+                            </includes>
+                        </resource>
+                    </resources>
+                </configuration>
+            </execution>
         </executions>
       </plugin>
     </plugins>
