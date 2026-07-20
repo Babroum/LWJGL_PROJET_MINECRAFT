@@ -22,7 +22,6 @@ public class MouseInput {
     /**
      * Définis les listeners de GLFW
      * <br>Et stocke la postion de la souris 
-     * @param windowRef long
      */
     @OpenGLThread
     public MouseInput(){

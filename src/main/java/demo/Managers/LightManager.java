@@ -12,33 +12,76 @@ import demo.Geometry.Chunk;
 import demo.Geometry.SubChunk;
 import demo.Others.ChunkGenerationPool;
 
+/**
+ * Gère la propagation et la suppression de la lumière (ciel et blocs) dans le monde via un BFS
+ * multi-files, ainsi que la liste des sous-chunks à reconstruire suite à un changement de lumière.
+ */
 public class LightManager {
 
     // utilise des sets pour vérifié si une lumière est dans la queue, car O(1) sur un set meilleur que O(n) sur une queue
+    /**
+     * Ensemble des lumières du ciel déjà en file d'ajout, pour éviter les doublons.
+     */
     private static final Set<Long> skyLightQueuedSet          = ConcurrentHashMap.newKeySet();
+    /**
+     * Ensemble des lumières de bloc déjà en file d'ajout, pour éviter les doublons.
+     */
     private static final Set<Long> blockLightQueuedSet        = ConcurrentHashMap.newKeySet();
+    /**
+     * Ensemble des lumières du ciel déjà en file de suppression, pour éviter les doublons.
+     */
     private static final Set<Long> removalSkyLightQueuedSet   = ConcurrentHashMap.newKeySet();
+    /**
+     * Ensemble des lumières de bloc déjà en file de suppression, pour éviter les doublons.
+     */
     private static final Set<Long> removalBlockLightQueuedSet = ConcurrentHashMap.newKeySet();
 
+    /**
+     * File d'attente des lumières du ciel à propager (BFS).
+     */
     private static final Deque<Long> skyLightQueue            = new ConcurrentLinkedDeque<>();
+    /**
+     * File d'attente des lumières de bloc à propager (BFS).
+     */
     private static final Deque<Long> blockLightQueue          = new ConcurrentLinkedDeque<>();
+    /**
+     * File d'attente des lumières du ciel à supprimer (BFS de suppression).
+     */
     private static final Deque<Long> removalSkyLightQueue     = new ConcurrentLinkedDeque<>();
+    /**
+     * File d'attente des lumières de bloc à supprimer (BFS de suppression).
+     */
     private static final Deque<Long> removalBlockLightQueue   = new ConcurrentLinkedDeque<>(); 
 
+    /**
+     * File des sous-chunks marqués "dirty" suite à un changement de lumière, à reconstruire sur le thread OpenGL.
+     */
     private static final Queue<SubChunk> dirtySubChunks       = new ConcurrentLinkedQueue<>();
 
+    /**
+     * Décalage appliqué aux coordonnées x/z avant encodage pour garder des valeurs positives sur 26 bits.
+     */
     private static final long OFFSET = 1L << 25; // 33 554 432
+    /**
+     * Masque pour extraire 26 bits (coordonnées x/z encodées).
+     */
     private static final long MASK26 = 0x3FFFFFFL;
 
+    /**
+     * Les 6 directions voisines (est, ouest, haut, bas, nord, sud) utilisées pour la propagation BFS.
+     */
     private static final int[][] LIGHT_NEIGHBORS = {
         {1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1}
     };
 
+    /** Constructeur implicite vide */
+    public LightManager(){}
+
     /**
      * Encode (x,y,z,light) en un Long pour les files BFS. <br>
-     * @param x Coordonnées en x (globale)
-     * @param y Coordonnées en y (globale)
-     * @param z Coordonnées en z (globale)
+     * @param gx Coordonnées en x (globale)
+     * @param gy Coordonnées en y (globale)
+     * @param gz Coordonnées en z (globale)
      * @param light Intensité de lumière
      * @return Retourne les 4 paramètres encodés dans un long
      */
@@ -274,6 +317,10 @@ public class LightManager {
         }
     }
     
+    /**
+     * Traite toutes les files de propagation et de suppression de lumière en attente (BFS pur).
+     * Peut tourner sur n'importe quel thread (pas nécessairement OpenGL).
+     */
     // BFS pur : peut tourner sur n'importe quel thread (pas OpenGL)
     public static void processLightBFS() {
         Long packed;
@@ -296,6 +343,10 @@ public class LightManager {
         }
     }
 
+    /**
+     * Reconstruit (rebuild) tous les sous-chunks marqués "dirty" suite à un changement de lumière.
+     * A appeler uniquement depuis la render loop OpenGL ; soumet chaque reconstruction au pool de threads.
+     */
     // Rebuild mesh : OpenGL uniquement, appelé depuis la render loop
     @OpenGLThread
     public static void flushDirtySubChunks() {
@@ -315,6 +366,9 @@ public class LightManager {
         dirtySubChunks.add(sub);
     }
     
+    /**
+     * Vide toutes les files et ensembles de propagation/suppression de lumière ainsi que la liste des sous-chunks dirty.
+     */
     public static void clearAll() {
         skyLightQueuedSet.clear();
         blockLightQueuedSet.clear();

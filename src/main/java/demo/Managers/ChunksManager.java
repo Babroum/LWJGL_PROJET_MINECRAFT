@@ -9,15 +9,33 @@ import demo.Geometry.Chunk;
 import demo.Geometry.SubChunk;
 import demo.Others.BlockDefinition;
 
+/**
+ * Gère la collection de tous les chunks chargés (création, accès, suppression).
+ */
 public class ChunksManager {
 
+    /**
+     * Niveau de lumière du ciel maximal (non utilisé pour la propagation actuelle, valeur de référence).
+     */
     public static final byte SKY_LIGHT = (byte) 10;
 
 
     // C'est comme un dictionnaire, clé valeur
     // String remplacé par Long, optimisation
+    /**
+     * Table de tous les chunks chargés, indexée par une clé encodant leurs coordonnées (x, z).
+     */
     private static ConcurrentHashMap <Long, Chunk> chunks = new ConcurrentHashMap<>();
 
+    /** Constructeur implicite vide */
+    public ChunksManager(){}
+
+    /**
+     * Construit la clé unique du HashMap à partir des coordonnées d'un chunk.
+     * @param x coordonnée x du chunk (en unités de chunk)
+     * @param z coordonnée z du chunk (en unités de chunk)
+     * @return la clé encodée
+     */
     // construit la clé pour le HashMap
     private static long chunkKey(int x, int z) {
         return ((long) x << 32) | (z & 0xFFFFFFFFL);
@@ -43,6 +61,7 @@ public class ChunksManager {
      * @param x int
      * @param z int
      * @return Chunk
+     * @throws RuntimeException si un chunk existe déjà à cette position
      */
     @ChunkThread
     public static Chunk createChunk(int x, int z){
@@ -130,6 +149,17 @@ public class ChunksManager {
         return chunk.getBlock(localX, y, localZ);
     }
 
+    /**
+     * Détermine si une boîte de collision (AABB) donnée en paramètre chevauche un bloc.
+     * @param block bloc à tester
+     * @param minLx borne minimale en x de la boîte à tester
+     * @param maxLx borne maximale en x de la boîte à tester
+     * @param minLy borne minimale en y de la boîte à tester
+     * @param maxLy borne maximale en y de la boîte à tester
+     * @param minLz borne minimale en z de la boîte à tester
+     * @param maxLz borne maximale en z de la boîte à tester
+     * @return true si la boîte chevauche le bloc
+     */
     // prend un RANGE, pas un point
     public static boolean isCollidingBlockAt(BlockDefinition block, float minLx, float maxLx, float minLy, float maxLy, float minLz, float maxLz){
         return (maxLx >= block.x && minLx <= block.x + block.width) &&
@@ -139,9 +169,9 @@ public class ChunksManager {
 
     /**
      * Calcule le modulo avec toujours un résultat positif 
-     * @param x
-     * @param mod
-     * @return int
+     * @param x valeur à moduler
+     * @param mod modulo
+     * @return int, toujours compris entre 0 (inclus) et mod (exclus)
      */
     public static int floorMod(int x, int mod) {
         return ((x % mod) + mod) % mod;
@@ -150,9 +180,9 @@ public class ChunksManager {
     /**
      * Division entière qui fait toujours FLOOR (même pour les négatifs)
      * Exemple : floorDiv(-5, 16) = -1
-     * @param a
-     * @param b
-     * @return
+     * @param a dividende
+     * @param b diviseur
+     * @return le quotient arrondi vers le bas (floor)
      */
     public static int floorDiv(int a, int b) {
         int q = a / b;

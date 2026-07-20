@@ -9,6 +9,9 @@ import org.lwjgl.glfw.GLFWWindowCloseCallbackI;
 // Permet de fermer proprement la fenêtre
 public class WindowCloseEventManager implements GLFWWindowCloseCallbackI{
     
+    /** Constructeur implicite vide */
+    public WindowCloseEventManager(){}
+    
     /**
      * Appeler au moment qu’une fenêtre est sur le point de se fermer
      * @param window long

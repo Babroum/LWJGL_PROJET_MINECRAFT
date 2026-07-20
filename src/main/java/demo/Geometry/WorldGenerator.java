@@ -21,13 +21,13 @@ import java.util.Random;
  * | BASE_HEIGHT                        | 68      | Terrain plus haut dans le monde             |
  * | SEA_LEVEL                          | 64      | Plus de surface inondée                     |
  * | depth * 3.5                        | 3.5     | Collines plus hautes / creux plus profonds  |
- * | falloff > 0 (* 0.75)               | 0.75    | Sommets plus pointus                        |
- * | falloff < 0 (* 0.35)               | 0.35    | Base des collines plus large                |
+ * | falloff &gt; 0 (* 0.75)             | 0.75    | Sommets plus pointus                        |
+ * | falloff &lt; 0 (* 0.35)             | 0.35    | Base des collines plus large                |
  * | selectorNoise.frequency (0.002f)   | 0.002f  | Zones de biomes plus petites                |
  * | mountainSel seuil (0.55)           | 0.55    | Montagnes plus rares                        |
  * | mountain t2*t2 * 22.0              | 22.0    | Montagnes plus hautes                       |
  * | depthNoise.frequency (0.028f)      | 0.028f  | Rivières plus étroites et sinueuses         |
- * | caveNoise seuil abs() < 0.08       | 0.08    | Grottes plus larges                         |
+ * | caveNoise seuil abs() &lt; 0.08     | 0.08    | Grottes plus larges                         |
  */
 public class WorldGenerator {
 
@@ -87,6 +87,9 @@ public class WorldGenerator {
     /** Pas de la grille en Y en blocs. Plus petit = moins d'artefacts d'interpolation verticale. */
     private static final int STEP_Y  = 8;
 
+    /**
+     * Graine de base du monde, utilisée pour dériver les graines des générateurs de bruit et de la génération d'arbres.
+     */
     private final long worldSeed;
 
     /**
@@ -143,7 +146,7 @@ public class WorldGenerator {
 
     /**
      * Calcule la densité d'un point 3D du monde.
-     * Densité > 0 = bloc solide, <= 0 = air.
+     * Densité &gt; 0 = bloc solide, &lt;= 0 = air.
      *
      * @param worldX coordonnée X absolue
      * @param worldY coordonnée Y absolue (altitude)
@@ -303,6 +306,17 @@ public class WorldGenerator {
         applySurfaceLayers(chunk);
     }
 
+    /**
+     * Interpole trilinéairement la densité d'un bloc à partir des 8 coins de sa cellule de grille.
+     * @param grid tableau de densités pré-calculées aux nœuds de la grille basse résolution
+     * @param cx indice de cellule en X (coin inférieur)
+     * @param cy indice de cellule en Y (coin inférieur)
+     * @param cz indice de cellule en Z (coin inférieur)
+     * @param tx position normalisée [0.0 ; 1.0[ du bloc dans la cellule sur l'axe X
+     * @param ty position normalisée [0.0 ; 1.0[ du bloc dans la cellule sur l'axe Y
+     * @param tz position normalisée [0.0 ; 1.0[ du bloc dans la cellule sur l'axe Z
+     * @return la densité interpolée du bloc
+     */
     private float trilinear(float[] grid, int cx, int cy, int cz, float tx, float ty, float tz){
         // Les 8 coins de la cellule 
         float c000 = grid[ cx    * GRID_Y * GRID_Z +  cy    * GRID_Z +  cz   ]; // coin (0,0,0)
@@ -400,6 +414,7 @@ public class WorldGenerator {
      * @param x Coordonnées en x (local) chunk
      * @param y Coordonnées en y (global) chunk
      * @param z Coordonnées en z (local) chunk
+     * @param chunk le chunk dans lequel générer l'arbre
      */
     public void generateTree(int x, int y, int z, Chunk chunk) {
         Random random = new Random(this.worldSeed);
@@ -478,8 +493,13 @@ public class WorldGenerator {
         }
     }
 
-    // retourne le chunk qui contient la position (chunk.x + localX, chunk.z + localZ)
-    // localX et localZ sont des offsets relatifs à l'origine du chunk
+    /**
+     * Retourne le chunk qui contient la position (chunk.x + localX, chunk.z + localZ).
+     * @param origin chunk d'origine servant de référence
+     * @param localX décalage en x par rapport à l'origine du chunk
+     * @param localZ décalage en z par rapport à l'origine du chunk
+     * @return le chunk trouvé, ou null s'il n'est pas chargé
+     */
     private static Chunk getTargetChunk(Chunk origin, int localX, int localZ) {
         int globalX = origin.x + localX;
         int globalZ = origin.z + localZ;

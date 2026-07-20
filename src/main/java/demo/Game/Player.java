@@ -46,14 +46,21 @@ public class Player {
      */
     private static final float EPSILON = 0.001f;
 
+    /** Caméra attachée au joueur. */
     private Camera camera = new Camera();
 
+    /** Position du joueur dans le monde, indépendante de la caméra. */
     public Vector3f position;
+    /** Hauteur du joueur. */
     private float playerHeight = 1.5f; // hauteur du joueur
+    /** Largeur (rayon) du joueur. */
     private float playerRadius = 0.3f; // largeur du joueur
 
+    /** Indique si le joueur est actuellement en chute/saut. */
     private boolean isFalling = false;
+    /** Vitesse verticale actuelle (chute/saut). */
     private float velocityY = 0f; // vitesse de chute/saut
+    /** Constante de gravité appliquée à la vitesse verticale. */
     private final float gravity = -9.81f; // constante de gravité
 
     /**
@@ -62,21 +69,42 @@ public class Player {
      */
     private float lastGroundSurfaceY = 0f;
 
+    /** Coordonnée x du dernier bloc visé (pour l'affichage du contour). */
     private volatile int oldBlockBorderX;
+    /** Coordonnée y du dernier bloc visé (pour l'affichage du contour). */
     private volatile int oldBlockBorderY;
+    /** Coordonnée z du dernier bloc visé (pour l'affichage du contour). */
     private volatile int oldBlockBorderZ;
+    /** Indique si un contour de bloc doit être affiché. */
     private volatile boolean hasBlockBorder = false;
 
+    /** Temps restant avant de pouvoir casser un nouveau bloc. */
     private float breakCooldown = 0f;
+    /** Temps restant avant de pouvoir poser un nouveau bloc. */
     private float placeCooldown = 0f;
+    /** Délai en millisecondes pour casser/poser un bloc. */
     private float breakPlaceDelay = 200f; // délai en millisecondes pour casser/poser un bloc
 
+    /** Bloc actuellement tenu en main par le joueur, utilisé pour poser. */
     public BlockDefinition blockInHand = Blocks.COBBLESTONE; // pour test
 
     // snapshots thread-safe lues par le render thread
-    public volatile float prevX, prevY, prevZ;
-    public volatile float curX,  curY,  curZ;
+    /** Position en x au tick précédent, lue par le thread de rendu pour l'interpolation. */
+    public volatile float prevX;
+    /** Position en y au tick précédent, lue par le thread de rendu pour l'interpolation. */
+    public volatile float prevY;
+    /** Position en z au tick précédent, lue par le thread de rendu pour l'interpolation. */
+    public volatile float prevZ;
+    /** Position en x au tick courant, lue par le thread de rendu pour l'interpolation. */
+    public volatile float curX;
+    /** Position en y au tick courant, lue par le thread de rendu pour l'interpolation. */
+    public volatile float curY;
+    /** Position en z au tick courant, lue par le thread de rendu pour l'interpolation. */
+    public volatile float curZ;
 
+    /**
+     * Créer un nouveau joueur à la position (0,0,0)
+     */
     public Player(){
         this.position = new Vector3f(); // indépendant de la caméra
     }
@@ -344,6 +372,12 @@ public class Player {
     /**
      * Recherche un support sous la tranche Y donnée et retient la hauteur du sommet
      * le plus haut trouvé dans lastGroundSurfaceY.
+     * @param minX minimum en x
+     * @param maxX maximum en x
+     * @param minY minimum en y
+     * @param maxY maximum en y
+     * @param minZ minimum en z
+     * @param maxZ maximum en z
      * @return true si un support est trouvé
      */
     private boolean findGroundSurface(float minX, float maxX, float minY, float maxY, float minZ, float maxZ) {
@@ -387,6 +421,12 @@ public class Player {
     /**
      * Vérifie si une bounding box (coordonnées monde) chevauche un bloc solide.
      * Parcourt toutes les cellules touchées par la boîte, pas seulement une.
+     * @param minX minimum en x
+     * @param maxX maximum en x
+     * @param minY minimum en y
+     * @param maxY maximum en y
+     * @param minZ minimum en z
+     * @param maxZ maximum en z
      * @return true si la boîte chevauche au moins un bloc solide
      */
     private boolean isBlockAt(float minX, float maxX, float minY, float maxY, float minZ, float maxZ) {
@@ -557,6 +597,7 @@ public class Player {
     }
 
     // un seul thread dédié aux actions du joueur (casser/poser)
+    /** Thread dédié aux actions de modification de chunk du joueur (casser/poser un bloc). */
     private static ExecutorService chunkModifyThread = Executors.newSingleThreadExecutor(r -> {
         Thread t = new Thread(r, "Player Action Thread");
         t.setDaemon(true);
@@ -565,6 +606,7 @@ public class Player {
 
     /**
      * Retourne la caméra du joueur.
+     * @return Camera
      */
     public Camera getCamera(){
         return this.camera;
@@ -572,6 +614,7 @@ public class Player {
 
     /**
      * Retourne la position du joueur.
+     * @return Vector3f
      */
     public Vector3f getPosition(){
         return this.position;

@@ -34,15 +34,15 @@ public class Color4f {
      * Intensité de rouge (0 à 255)
      */
     public float red;
-    /*
+    /**
      * Intensité de vert (0 à 255)
      */
     public float green;
-    /*
+    /**
      * Intensité de bleu (0 à 255)
      */
     public float blue;
-    /*
+    /**
      * Niveau d'opacité (0 à 100)
      */
     public float alpha;
@@ -53,7 +53,7 @@ public class Color4f {
      * @param g vert
      * @param b bleu
      * @param a alpha
-     * @throws RuntimeException
+     * @throws RuntimeException si une des valeurs est hors des bornes autorisées
      */
     public Color4f(float r, float g, float b, float a) throws RuntimeException{
         if ((r < 0 || r > 255) ||
@@ -72,7 +72,7 @@ public class Color4f {
      * @param r float
      * @param g float
      * @param b float
-     * @throws RuntimeException
+     * @throws RuntimeException si une des valeurs est hors des bornes autorisées
      */
     public Color4f(float r, float g, float b) throws RuntimeException{
         this(r, g, b, 100);
@@ -81,7 +81,7 @@ public class Color4f {
      * Définis une couleur par intensité de gris et un niveau d'opacité
      * @param gray float
      * @param a float
-     * @throws RuntimeException
+     * @throws RuntimeException si une des valeurs est hors des bornes autorisées
      */
     public Color4f(float gray, float a) throws RuntimeException{
         this(gray, gray, gray, a);
@@ -89,19 +89,9 @@ public class Color4f {
     /**
      * Définis une couleur opaque par intensité de gris
      * @param gray float
-     * @throws RuntimeException
+     * @throws RuntimeException si la valeur est hors des bornes autorisées
      */
     public Color4f(float gray) throws RuntimeException{
         this(gray, gray, gray,100);
-    }
-    /**
-     * Demande à OpenGL d'utilisé cette couleur
-     */
-    @OpenGLThread
-    public void apply(){
-        // donne la couleur au shader
-        //ShadersManager.runFragmentColor(this.red, this.green, this.blue, this.alpha);
-        //GL11.glColor4f(this.red, this.green, this.blue, this.alpha);
-    }
-    
+    }    
 }

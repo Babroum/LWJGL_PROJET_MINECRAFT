@@ -4,13 +4,37 @@ import org.lwjgl.opengl.*;
 import demo.Annotations.OpenGLThread;
 import java.nio.ByteBuffer;
 
+/**
+ * Gère un framebuffer object (FBO) hors écran utilisé pour le rendu en post-process.
+ */
 public abstract class FrameBufferManager {
 
+    /**
+     * Id OpenGL du framebuffer object.
+     */
     private static int fbo;
+    /**
+     * Id OpenGL de la texture couleur attachée au framebuffer.
+     */
     private static int colorTexture;
+    /**
+     * Id OpenGL du renderbuffer de profondeur attaché au framebuffer.
+     */
     private static int depthRenderBuffer;
+    /**
+     * Id OpenGL du VAO et du VBO du quad plein écran utilisé pour dessiner la texture du framebuffer.
+     */
     private static int quadVAO, quadVBO;
 
+    /** Constructeur implicite vide */
+    public FrameBufferManager(){}
+
+    /**
+     * Crée le framebuffer, sa texture couleur, son renderbuffer de profondeur et le quad plein écran.
+     * @param width largeur du framebuffer en pixels
+     * @param height hauteur du framebuffer en pixels
+     * @throws RuntimeException si le framebuffer est incomplet
+     */
     @OpenGLThread
     public static void create(int width, int height) {
         fbo = GL30.glGenFramebuffers();
@@ -44,6 +68,13 @@ public abstract class FrameBufferManager {
         setupQuad();
     }
 
+    /**
+     * Recrée le framebuffer, sa texture couleur et son renderbuffer de profondeur à une nouvelle taille.
+     * Le quad plein écran n'est pas recréé car il ne dépend pas de la résolution.
+     * @param width nouvelle largeur en pixels
+     * @param height nouvelle hauteur en pixels
+     * @throws RuntimeException si le framebuffer est incomplet après le resize
+     */
     @OpenGLThread
     public static void resize(int width, int height) {
         // supprime l'ancien FBO et ses ressources
@@ -82,6 +113,9 @@ public abstract class FrameBufferManager {
         // pas besoin de refaire setupQuad() : le quad plein écran (-1 à 1) ne dépend pas de la résolution
     }
 
+    /**
+     * Crée le VAO/VBO du quad plein écran (coordonnées -1 à 1) utilisé pour dessiner la texture du framebuffer.
+     */
     @OpenGLThread
     private static void setupQuad() {
         float[] quadVertices = {
@@ -110,16 +144,25 @@ public abstract class FrameBufferManager {
         GL30.glBindVertexArray(0);
     }
 
+    /**
+     * Bind le framebuffer pour y dessiner (rendu hors écran).
+     */
     @OpenGLThread
     public static void bindForWriting() {
         GL30.glBindFramebuffer(GL30.GL_FRAMEBUFFER, fbo);
     }
 
+    /**
+     * Débind le framebuffer et revient au framebuffer par défaut (l'écran).
+     */
     @OpenGLThread
     public static void unbind() {
         GL30.glBindFramebuffer(GL30.GL_FRAMEBUFFER, 0);
     }
 
+    /**
+     * Dessine le quad plein écran (utilisé pour afficher la texture du framebuffer en post-process).
+     */
     @OpenGLThread
     public static void drawQuad() {
         GL30.glBindVertexArray(quadVAO);
@@ -127,11 +170,18 @@ public abstract class FrameBufferManager {
         GL30.glBindVertexArray(0);
     }
 
+    /**
+     * Retourne l'id OpenGL de la texture couleur du framebuffer.
+     * @return l'id de la texture
+     */
     @OpenGLThread
     public static int getColorTexture() {
         return colorTexture;
     }
 
+    /**
+     * Libère toutes les ressources OpenGL du framebuffer (fbo, texture, renderbuffer, quad).
+     */
     @OpenGLThread
     public static void close() {
         GL30.glDeleteFramebuffers(fbo);

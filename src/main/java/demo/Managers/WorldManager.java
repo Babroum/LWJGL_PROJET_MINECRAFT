@@ -16,31 +16,50 @@ import demo.Others.Blocks;
 import demo.Others.ChunkGenerationPool;
 import demo.Others.ChunkSerializer;
 
+/**
+ * Gère le chargement, le déchargement et le cycle de vie des chunks autour du joueur
+ */
 public class WorldManager {
 
+    /** Nombre maximum de chunks soumis à la génération par tick. */
     private static final int MAX_CHUNKS_PER_TICK = 4;
 
+    /** Distance de rendu, en chunks. */
     public static final int RENDER_DISTANCE = 3;
+    /** Distance de déchargement des chunks, en chunks. */
     public static final int UNLOAD_DISTANCE = RENDER_DISTANCE + 2;
 
+    /** Zone proche, 25% de la render distance. */
     public static final int ZONE_NEAR = RENDER_DISTANCE / 4; // 25% de la render distance
+    /** Zone intermédiaire, 50% de la render distance. */
     public static final int ZONE_MID  = RENDER_DISTANCE / 2; // 50% de la render distance
+    /** Zone lointaine, 100% de la render distance. */
     public static final int ZONE_FAR  = RENDER_DISTANCE;     // 100%
 
     // position du joueur en coordonnées chunk (pas monde) pas (0,0) car sinon la ya rien car le joueur spawn en 0,0
+    /** Dernière position du joueur en x, en coordonnées chunk. */
     private static int lastPlayerChunkX = Integer.MIN_VALUE;
+    /** Dernière position du joueur en z, en coordonnées chunk. */
     private static int lastPlayerChunkZ = Integer.MIN_VALUE;
 
     // chunks en cours de génération (évite les doublons)
+    /** Clés des chunks actuellement en cours de génération (évite les doublons). */
     private static final Set<Long> generatingChunks = ConcurrentHashMap.newKeySet();
+    /** Clés des chunks actuellement en cours de déchargement (évite les doublons). */
     private static final Set<Long> unloadingChunks = ConcurrentHashMap.newKeySet();
 
+    /** Générateur de terrain, une instance par thread. */
     private static ThreadLocal<WorldGenerator> generator = ThreadLocal.withInitial(
         () -> new WorldGenerator(4649686131987684165L)
     );
 
+    /** Constructeur implicite vide */
+    public WorldManager(){}
+
     /**
      * Appelé chaque tick depuis GameLoop.run()
+     * @param playerX float, position du joueur en x
+     * @param playerZ float, position du joueur en z
      */
     public static void tick(float playerX, float playerZ) {
         int playerChunkX = ChunksManager.floorDiv((int) playerX, SubChunk.CHUNKSIZEXZ);
@@ -84,6 +103,8 @@ public class WorldManager {
 
     /**
      * Charge les chunks manquants en spirale (les plus proches en premier)
+     * @param centerX int, position centrale en x (coordonnées chunk)
+     * @param centerZ int, position centrale en z (coordonnées chunk)
      */
     private static void scheduleChunkLoads(int centerX, int centerZ) {
         List<int[]> toLoad = new ArrayList<>();
@@ -191,6 +212,8 @@ public class WorldManager {
 
     /**
      * Marque les chunks trop loin pour suppression (sur OpenGL thread via queue)
+     * @param centerX int, position centrale en x (coordonnées chunk)
+     * @param centerZ int, position centrale en z (coordonnées chunk)
      */
     private static void scheduleChunkUnloads(int centerX, int centerZ) {
         for (Chunk chunk : ChunksManager.getAllChunks()) {
@@ -209,6 +232,10 @@ public class WorldManager {
         }
     }
 
+    /**
+     * A appeler lorsqu'un chunk vient d'être déchargé, retire sa clé de {@link #unloadingChunks}
+     * @param chunk Chunk déchargé
+     */
     // dans WorldManager
     public static void onChunkUnloaded(Chunk chunk) {
         int cx = ChunksManager.floorDiv(chunk.x, SubChunk.CHUNKSIZEXZ);
@@ -220,6 +247,9 @@ public class WorldManager {
      * A MODIFIER VALEUR
      * Retourne la zone LOD d'un chunk (pour usage futur)
      * 1 = NEAR, 2 = MID, 4 = FAR
+     * @param chunkX int, position du chunk en x
+     * @param chunkZ int, position du chunk en z
+     * @return int, 1 = NEAR, 2 = MID, 4 = FAR
      */
     public static int getZone(int chunkX, int chunkZ) {
         int dx = chunkX - lastPlayerChunkX;
@@ -230,10 +260,20 @@ public class WorldManager {
         return 4;
     }
 
+    /**
+     * Encode des coordonnées de chunk en une clé unique
+     * @param x int, coordonnée chunk en x
+     * @param z int, coordonnée chunk en z
+     * @return long, clé unique
+     */
     private static long chunkKey(int x, int z) {
         return ((long) x << 32) | (z & 0xFFFFFFFFL);
     }
 
+    /**
+     * Relie les subchunks voisins d'un nouveau chunk et les marque comme dirty pour la lumière
+     * @param newChunk Chunk nouvellement généré
+     */
     private static void relinkNeighborChunks(Chunk newChunk) {
         int[][] directions = {{16, 0}, {-16, 0}, {0, 16}, {0, -16}};
         for (int[] d : directions) {

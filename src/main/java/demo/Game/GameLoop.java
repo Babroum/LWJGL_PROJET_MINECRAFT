@@ -13,12 +13,20 @@ import demo.Managers.WorldManager;
  */
 public class GameLoop {
 
+    /** Indique si la boucle de jeu tourne actuellement. */
     private static volatile boolean running = false;
+    /** Thread dédié à la boucle de jeu. */
     private static Thread gameThread;
 
+    /** Nombre de ticks par seconde de la boucle de jeu. */
     private static final int  TPS         = 20;
+    /** Timestamp (nanosecondes) du dernier tick exécuté, utilisé pour l'interpolation au rendu. */
     public static volatile long lastTickTime = 0L;
+    /** Durée d'un tick en nanosecondes. */
     public static final long NS_PER_TICK = (1_000_000_000L / TPS); // en nanosecondes
+
+    /** Constructeur implicite vide */
+    public GameLoop(){}
 
     /**
      * Démarre le thread de la gameloop
@@ -54,6 +62,9 @@ public class GameLoop {
         gameThread.start();
     }
 
+    /**
+     * Arrête le thread de la gameloop et attend sa terminaison (max 1 seconde)
+     */
     public static void stopGameThread() {
         running = false;
         if (gameThread != null) {
@@ -77,6 +88,7 @@ public class GameLoop {
 
     /**
      * Executer pendant la boucle de jeu (20 TPS)
+     * @param delta float, temps écoulé depuis le dernier tick, en ms
      */
     public static void run(float delta){
         LightManager.processLightBFS();

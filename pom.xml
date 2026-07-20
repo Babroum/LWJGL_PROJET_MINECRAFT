@@ -150,6 +150,12 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
+        <configuration>          
+          <!-- exclure un fichier spécifique (nécessite une version > 2.10.2) -->
+          <sourceFileExcludes>
+              <sourceFileExclude>**/FastNoiseLite.java</sourceFileExclude>
+          </sourceFileExcludes>
+      </configuration>
       </plugin>
 
       <!-- Extraire les natives dans target/natives -->

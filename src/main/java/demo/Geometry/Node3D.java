@@ -43,14 +43,26 @@ public class Node3D {
      * Tableau de nœud enfant.
      */
     private Node3D[] children = null; // alloué seulement si addChild() est appelé
+    /**
+     * Matrice de transformation du nœud, réutilisée à chaque frame (zéro allocation).
+     */
     private final Matrix4f model = new Matrix4f(); // réutilisé à chaque frame, zéro allocation
+    /**
+     * Buffer natif (hors du tas Java) contenant la matrice modèle envoyée au shader.
+     */
     public FloatBuffer buffer = MemoryUtil.memAllocFloat(16);
+    /**
+     * Nombre d'enfants actuellement présents dans {@link #children}.
+     */
     private int nbChildren;
+
+    /** Constructeur implicite vide */
+    public Node3D(){}
 
     /**
      * Ajoute un nœud au tableau de nœud.
      * @param node nœud à ajouté au nœud actuel
-     * @throws ArrayFull
+     * @throws RuntimeException si le tableau d'enfants est plein
      */
     public void addChild(Node3D node){
         // Alloue le tableau seulement au premier addChild()
@@ -65,6 +77,11 @@ public class Node3D {
         this.nbChildren++;
     }
 
+    /**
+     * Retire un nœud enfant du tableau d'enfants.
+     * Ne fait rien si le nœud n'est pas trouvé.
+     * @param node nœud enfant à retirer
+     */
     public void removeChild(Node3D node) {
         for (int i = 0; i < nbChildren; i++) {
             if (children[i] == node) {
@@ -104,7 +121,7 @@ public class Node3D {
 
     /**
      * Retourne le tableau d'enfant du nœud
-     * @return
+     * @return le tableau des nœuds enfants, ou un tableau vide si aucun enfant n'a été ajouté
      */
     public Node3D[] getChildren(){
         return this.children != null ? this.children : new Node3D[0];
@@ -121,6 +138,10 @@ public class Node3D {
     public void drawSpecific(){
     }
 
+    /**
+     * Libère le buffer natif {@link #buffer} alloué hors du tas Java.
+     * A appeler quand le nœud n'est plus utilisé pour éviter les fuites mémoire.
+     */
     public void cleanup(){
         if (this.buffer != null){
             MemoryUtil.memFree(this.buffer);

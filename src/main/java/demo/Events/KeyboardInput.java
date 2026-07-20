@@ -19,21 +19,36 @@ public class KeyboardInput {
     
     // volatile car ils sont tous écrits et lus depuis des threads différents
     // volatile force le thread à toujours lire et écrire directement en RAM (pas en cache)
+    /** Indique si le mode fil de fer (wireframe) est actif. */
     public static volatile boolean isWireFrameMode;
+    /** Indique si une demande de fermeture de la fenêtre a été faite. */
     public static volatile boolean isCloseWindow;
+    /** Indique si le curseur de la souris est caché. */
     public static volatile boolean isCursorHidden = true;
+    /** Indique si la souris est verrouillée/capturée par la fenêtre. */
     public static volatile boolean isMouseLock = true;
+    /** Indique si une téléportation a été demandée. */
     public static volatile boolean isTeleportActive;
+    /** Indique si l'affichage des bordures de chunk est actif. */
     public static volatile boolean isChunkBorderShow;
+    /** Indique si une demande de saut a été faite. */
     public static volatile boolean isJumping;
+    /** Indique si l'affichage du benchmark est actif. */
     public static volatile boolean isBenchMarkShow;
 
     // états des touches de mouvement, écrits par le thread OpenGL, lus par le game thread
+    /** Etat de la touche avancer (W). */
     public static volatile boolean keyForward;
+    /** Etat de la touche reculer (S). */
     public static volatile boolean keyBack;
+    /** Etat de la touche aller à gauche (A). */
     public static volatile boolean keyLeft;
+    /** Etat de la touche aller à droite (D). */
     public static volatile boolean keyRight;
 
+    /**
+     * Créer les listeners clavier de GLFW
+     */
     @OpenGLThread
     public KeyboardInput(){
         GLFW.glfwSetKeyCallback(Window.window, KeyboardInput::keyPressedToggle);
@@ -42,6 +57,14 @@ public class KeyboardInput {
     // utiliser pour toutes les touches toggle
     // ne fait pas d'action mais modifie un boolean
     // les actions sont traitées dans le InputManager
+    /**
+     * Callback GLFW appelé à chaque appui de touche, gère les touches toggle (bascule un boolean, l'action est traitée dans l'InputManager)
+     * @param window long, référence de la fenêtre
+     * @param key int, code de la touche
+     * @param scancode int, code matériel de la touche
+     * @param action int, type d'action (press/release/repeat)
+     * @param mods int, modificateurs actifs (shift, ctrl, etc.)
+     */
     @OpenGLThread
     private static void keyPressedToggle(long window, int key, int scancode, int action, int mods) {   
         if(action == GLFW.GLFW_PRESS){

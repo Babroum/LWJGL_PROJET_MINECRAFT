@@ -2,10 +2,21 @@ package demo.Others;
 
 import java.util.concurrent.*;
 
+/**
+ * Pool de threads dédié à la génération et au maillage des chunks
+ */
 public class ChunkGenerationPool {
     // Un ExecutorService c'est un pool de N threads qui restent en vie et se partagent le travail.
+    /** Pool de threads fixe utilisé pour toutes les tâches de génération de chunk. */
     private static final ExecutorService pool = buildPool();
 
+    /** Constructeur implicite vide */
+    public ChunkGenerationPool(){}
+
+    /**
+     * Construit le pool de threads
+     * @return ExecutorService, le pool de threads configuré
+     */
     private static ExecutorService buildPool() {
         int cores   = Runtime.getRuntime().availableProcessors();
         int workers = Math.max(1, cores - 2);  // -2 pour laisser les threads OpenGL et game logic respirer

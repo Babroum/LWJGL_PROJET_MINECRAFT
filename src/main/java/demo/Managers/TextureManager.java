@@ -10,16 +10,36 @@ import java.util.Map;
 import org.lwjgl.system.MemoryUtil;
 import demo.Others.FileLoader;
 
+/**
+ * Gère le chargement et le binding du tableau de textures (texture array) des blocs
+ */
 public class TextureManager {
+    /**
+     * Id OpenGL du tableau de textures (texture array) contenant toutes les textures de blocs.
+     */
     private static int textureArrayId;
+    /**
+     * Associe le nom d'une texture à son index (couche) dans le tableau de textures.
+     */
     private static final Map<String, Integer> nameToIndex = new HashMap<>();
+    /**
+     * Emplacement uniforme "tex" du shader principal, mis en cache après la première recherche.
+     * -2 = pas encore recherché ; -1 = recherché mais introuvable.
+     */
     private static int texUniformLocation = -2; // -2 = pas encore recherché ; -1 = recherché mais introuvable
+    /**
+     * Emplacement uniforme "tex" du shader liquide, mis en cache après la première recherche.
+     * -2 = pas encore recherché ; -1 = recherché mais introuvable.
+     */
     private static int texUniformLocationLiquid = -2;
+
+    /** Constructeur implicite vide */
+    public TextureManager(){}
 
     /**
      * Initialise les textures données en paramètre
      * @param files les textures
-     * @throws Exception
+     * @throws Exception si une texture ne peut pas être chargée depuis le classpath
      */
     public static void init(String[] files) throws Exception {
         textureArrayId = GL11.glGenTextures();
@@ -42,7 +62,7 @@ public class TextureManager {
      * Charge les textures pour OpenGL
      * @param path Chemin relatif de la texture
      * @param layer Indice de la texture
-     * @throws Exception
+     * @throws Exception si le fichier de texture ne peut pas être chargé depuis le classpath
      */
     private static void loadToGL(String path, int layer) throws Exception {
         ByteBuffer imageBuffer = FileLoader.loadFileFromClasspathBB(path);
@@ -90,6 +110,11 @@ public class TextureManager {
         }
     }
 
+    /**
+     * Retourne l'index (couche) d'une texture dans le tableau de textures à partir de son nom.
+     * @param name nom de la texture
+     * @return l'index de la texture, ou 0 si le nom est introuvable
+     */
     public static int getIndex(String name) {
         return nameToIndex.getOrDefault(name, 0);
     }

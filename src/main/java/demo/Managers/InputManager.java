@@ -10,8 +10,17 @@ import demo.Game.Player;
 import demo.Rendering.Camera;
 import demo.Rendering.Window;
 
+/**
+ * Gère la capture des entrées clavier/souris et leur traitement (rotation caméra, actions joueur, etc).
+ */
 public class InputManager {
 
+    /** Constructeur implicite vide */
+    public InputManager(){}
+
+    /**
+     * Initialise les gestionnaires d'entrées clavier et souris.
+     */
     @OpenGLThread
     public static void create(){
         new MouseInput();
@@ -19,10 +28,8 @@ public class InputManager {
     }
 
     /**
-     * Fait les actions en fonction des inputs
-     * @param windowRef long
-     * @param sceneGraph SceneGraph
-     * @param deltaTime long
+     * Fait les actions en fonction des inputs (souris, clavier, curseur).
+     * A appeler depuis le thread OpenGL (Render), une fois par frame.
      */
     // Appelé depuis le thread OpenGL (Render)
     @OpenGLThread
@@ -49,6 +56,11 @@ public class InputManager {
         }
     }
 
+    /**
+     * Traite les actions issues des inputs qui doivent s'exécuter côté logique de jeu
+     * (fermeture de fenêtre, saut, téléportation, etc). A appeler depuis le GameLoop thread.
+     * @param deltaTime temps écoulé depuis le dernier tick (en secondes)
+     */
     // Appelé depuis le GameLoop thread
     public static void runLogic(float deltaTime) {
 

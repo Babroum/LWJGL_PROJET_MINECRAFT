@@ -25,69 +25,170 @@ import demo.Others.Blocks;
 import demo.Meshing.Quad;
 import demo.Rendering.Render;
 
+/**
+ * Un sous-chunk (portion de 16x16x16 blocs d'un {@link Chunk}).
+ * Contient les blocs, la lumière, le liquide et les meshes (opaque, transparent, verre, liquide)
+ * de cette portion du monde.
+ */
 public class SubChunk extends Node3D{
 
+    /**
+     * Taille horizontale (X et Z) d'un sous-chunk, en blocs.
+     */
     public static final int CHUNKSIZEXZ = 16;
+    /**
+     * Hauteur totale (en blocs) d'un chunk complet, cumulant tous ses sous-chunks.
+     */
     public static final int CHUNKSIZEHEIGHT = 256;
+    /**
+     * Nombre total de blocs contenus dans un sous-chunk (16 x 16 x 16).
+     */
     public static final int MAXBLOCK = 4096;    
 
+    /**
+     * Matrice de transformation réutilisée pour le rendu du sous-chunk.
+     */
     private final Matrix4f model = new Matrix4f();
 
+    /**
+     * Sous-chunk voisin à l'ouest (x décroissant), ou null s'il n'est pas chargé.
+     */
     private SubChunk westNeighbor;
+    /**
+     * Sous-chunk voisin à l'est (x croissant), ou null s'il n'est pas chargé.
+     */
     private SubChunk eastNeighbor;
+    /**
+     * Sous-chunk voisin au nord (z croissant), ou null s'il n'est pas chargé.
+     */
     private SubChunk northNeighbor;
+    /**
+     * Sous-chunk voisin au sud (z décroissant), ou null s'il n'est pas chargé.
+     */
     private SubChunk southNeighbor;
+    /**
+     * Sous-chunk voisin au dessus (y croissant), ou null s'il n'existe pas.
+     */
     private SubChunk upNeighbor;
+    /**
+     * Sous-chunk voisin en dessous (y décroissant), ou null s'il n'existe pas.
+     */
     private SubChunk downNeighbor;
 
+    /**
+     * Mesh des blocs opaques du sous-chunk.
+     */
     // donne au mesh le subChunk au quel il appartient
     public SubChunkMesh mesh = new SubChunkMesh();
+    /**
+     * Mesh des blocs transparents non-verre (ex: feuilles) du sous-chunk.
+     */
     public SubChunkMesh transparentMesh = new SubChunkMesh();    
+    /**
+     * Mesh des blocs de verre du sous-chunk.
+     */
     public SubChunkMesh glassMesh = new SubChunkMesh();
+    /**
+     * Mesh des blocs liquides du sous-chunk.
+     */
     public SubChunkMesh liquidMesh = new SubChunkMesh();
 
+    /**
+     * Id des blocs du sous-chunk (256 types de blocs différents maximum car stocké sur 8 bits).
+     */
     public byte[] blocks; // id des blocs (MAX 256 blocs différent car 8bits)
 
-    /*
-    [ 0000  0000  0000  0     000  0000  0000  0000 ]
-      sky   block liqud liqud
-      light light level src ?
+    /**
+     * Données compactées par bloc (lumière du ciel, lumière de bloc, niveau de liquide, source de liquide) :
+     * <pre>
+     * [ 0000  0000  0000  0     000  0000  0000  0000 ]
+     *   sky   block liqud liqud
+     *   light light level src ?
+     * </pre>
      */
     public AtomicIntegerArray blocksData;
     
-    // garantit que le lire + écrire se fait en une seule instruction CPU indivisible
+    /**
+     * Indique si le sous-chunk a été modifié et doit être reconstruit (mesh à régénérer).
+     * AtomicBoolean garantit que le lire + écrire se fait en une seule instruction CPU indivisible.
+     */
     public AtomicBoolean dirty = new AtomicBoolean(false);
 
+    /**
+     * Chunk parent auquel appartient ce sous-chunk.
+     */
     public Chunk parent;
 
-    // contient des 1 et 0 (bloc plein, bloc vide(air))
+    /**
+     * Bit à 1 si le bloc à l'index correspondant est plein (non-air), 0 si vide (air).
+     */
     public BitSet solidBitSet = new BitSet(SubChunk.MAXBLOCK); 
-    // contient des 1 et 0 (bloc plein, bloc transparent(vitre))
+    /**
+     * Bit à 1 si le bloc à l'index correspondant est transparent (ex: vitre), 0 sinon.
+     */
     public BitSet transparentBitSet = new BitSet(SubChunk.MAXBLOCK);
 
+    /**
+     * Mode de face culling : blocs opaques.
+     */
     private static final int MODE_OPAQUE      = 0;
+    /**
+     * Mode de face culling : blocs de verre.
+     */
     private static final int MODE_GLASS       = 1;
+    /**
+     * Mode de face culling : blocs transparents non-verre.
+     */
     private static final int MODE_TRANSPARENT = 2;
 
+    /**
+     * Ensemble des types de blocs uniques présents dans le sous-chunk, recalculé à chaque génération de mesh.
+     */
     private final Set<Byte> blockTypes = new HashSet<>();
 
+    /**
+     * Regroupe, pour chacune des 6 directions, le masque de bits des faces visibles du sous-chunk.
+     * Utilisé comme tampon de calcul pendant le face culling.
+     */
     private static class FaceData {
+        /** Masque des faces visibles orientées nord. */
         int[] northAxis = new int[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ];
+        /** Masque des faces visibles orientées sud. */
         int[] southAxis = new int[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ];
+        /** Masque des faces visibles orientées ouest. */
         int[] westAxis  = new int[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ];
+        /** Masque des faces visibles orientées est. */
         int[] eastAxis  = new int[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ];
+        /** Masque des faces visibles orientées haut. */
         int[] upAxis    = new int[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ];
+        /** Masque des faces visibles orientées bas. */
         int[] downAxis  = new int[SubChunk.CHUNKSIZEXZ * SubChunk.CHUNKSIZEXZ];
     }
 
     // obligé sinon les threads qui construisent les chunks pour modifié les infos
     // Thread A écrit dans northAxis[0], Thread B écrit dans northAxis[0] au même moment -> les données se corrompent mutuellement
     // c'est pour cela qu'un threadlocal, va créer une instance de FACE_DATA_LOCAL sur chaque thread
+    /**
+     * FaceData local au thread courant pour le calcul de face culling des blocs opaques (thread-safe, zéro allocation).
+     */
     private static final ThreadLocal<FaceData> OPAQUE_FACE_DATA_LOCAL      = ThreadLocal.withInitial(() -> new FaceData());
+    /**
+     * FaceData local au thread courant pour le calcul de face culling des blocs transparents (thread-safe, zéro allocation).
+     */
     private static final ThreadLocal<FaceData> TRANSPARENT_FACE_DATA_LOCAL = ThreadLocal.withInitial(() -> new FaceData());
+    /**
+     * FaceData local au thread courant pour le calcul de face culling du verre (thread-safe, zéro allocation).
+     */
     private static final ThreadLocal<FaceData> GLASS_FACE_DATA_LOCAL       = ThreadLocal.withInitial(() -> new FaceData());
+    /**
+     * FaceData local au thread courant pour le calcul de face culling des liquides (thread-safe, zéro allocation).
+     */
     private static final ThreadLocal<FaceData> LIQUID_FACE_DATA_LOCAL      = ThreadLocal.withInitial(() -> new FaceData());
 
+    /**
+     * Crée un sous-chunk vide rattaché à un chunk parent.
+     * @param parent chunk parent auquel appartient ce sous-chunk
+     */
     @ChunkThread
     public SubChunk(Chunk parent){
         this.parent = parent;
@@ -131,6 +232,7 @@ public class SubChunk extends Node3D{
      * @param y Coordonnées en y (locale) 0-15
      * @param z Coordonnées en z (locale) 0-15
      * @param newLiquidLevel Nouvelle valeur de liquide (0-15)
+     * @throws RuntimeException si newLiquidLevel n'est pas compris entre 0 et 15
      */
     public void setLiquidLevel(int x, int y, int z, int newLiquidLevel){
         if (newLiquidLevel < 0 || newLiquidLevel > 15) throw new RuntimeException("Le liquide doit être comprise entre 0 et 255");
@@ -214,6 +316,7 @@ public class SubChunk extends Node3D{
      * @param y Coordonnées en y (locale) 0-15
      * @param z Coordonnées en z (locale) 0-15
      * @param newLight Nouvelle valeur de lumière
+     * @throws RuntimeException si newLight n'est pas compris entre 0 et 15
      */
     public void setBlockSkyLight(int x, int y, int z, int newLight){
         if (newLight < 0 || newLight > 15) throw new RuntimeException("La lumière doit être comprise entre 0 et 15");
@@ -243,6 +346,7 @@ public class SubChunk extends Node3D{
      * @param y Coordonnées en y (locale) 0-15
      * @param z Coordonnées en z (locale) 0-15
      * @param newLight Nouvelle valeur de lumière
+     * @throws RuntimeException si newLight n'est pas compris entre 0 et 15
      */
     public void setBlockLight(int x, int y, int z, int newLight){
         if (newLight < 0 || newLight > 15) throw new RuntimeException("La lumière doit être comprise entre 0 et 15");
@@ -290,7 +394,8 @@ public class SubChunk extends Node3D{
     }
 
     /**
-     * Génère la maille d'un subChunk
+     * Génère la maille (mesh) d'un subChunk : calcule le face culling et construit
+     * les meshes opaque, verre, transparent et liquide.
      */
     // sync, comme ça peu importe par où le mesh est généré, deux threads ne peuvent jamais être dedans en même temps pour le même subchunk.
     @ChunkThread
@@ -347,9 +452,10 @@ public class SubChunk extends Node3D{
     /**
      * Retourne le bloc à la position.
      * @param x Coordonnée en x (locale)
-     * @param y Coordonnée en x (locale)
-     * @param z Coordonnée en x (locale)
+     * @param y Coordonnée en y (locale)
+     * @param z Coordonnée en z (locale)
      * @return Retourne le bloc
+     * @throws RuntimeException si les coordonnées sont en dehors du subChunk
      */
     public BlockDefinition getBlock(int x, int y, int z){
         if (x < 0 || x >= SubChunk.CHUNKSIZEXZ ||
@@ -417,6 +523,7 @@ public class SubChunk extends Node3D{
      * @param x int
      * @param y int
      * @param z int
+     * @throws RuntimeException si les coordonnées sont en dehors du subChunk
      */
     @ChunkThread
     public void addBlockToSubChunk(BlockDefinition type, int x, int y, int z){
@@ -484,6 +591,7 @@ public class SubChunk extends Node3D{
      * @param x int
      * @param y int
      * @param z int
+     * @throws RuntimeException si les coordonnées sont en dehors du subChunk
      */
     @ChunkThread
     public void removeBlockFromSubChunk(int x, int y, int z){
@@ -566,6 +674,11 @@ public class SubChunk extends Node3D{
         if (y == 0)                         markDirty(this.getNeighborDown());
     }
 
+    /**
+     * Marque un sous-chunk comme "dirty" (à reconstruire) s'il ne l'est pas déjà,
+     * et l'ajoute à la file du LightManager.
+     * @param sub sous-chunk à marquer, ignoré si null
+     */
     private void markDirty(SubChunk sub){
         if (sub == null) return;
         if (sub.dirty.compareAndSet(false, true)){
@@ -598,6 +711,7 @@ public class SubChunk extends Node3D{
 
     /**
      * Envoie le mesh à dessiné
+     * @param quads liste des quads opaques à ajouter au mesh
      */
     @ChunkThread
     private void uploadSubChunkMesh(List<Quad> quads){
@@ -606,6 +720,10 @@ public class SubChunk extends Node3D{
         }        
     }
 
+    /**
+     * Envoie les quads transparents (non-verre) au mesh transparent.
+     * @param quads liste des quads transparents à ajouter au mesh
+     */
     @ChunkThread
     private void uploadSubChunkTransparentMesh(List<Quad> quads){
         for(Quad quad : quads){
@@ -613,6 +731,10 @@ public class SubChunk extends Node3D{
         }        
     }
 
+    /**
+     * Envoie les quads de verre au mesh de verre.
+     * @param quads liste des quads de verre à ajouter au mesh
+     */
     @ChunkThread
     private void uploadSubChunkGlassMesh(List<Quad> quads){
         for(Quad quad : quads){
@@ -620,6 +742,10 @@ public class SubChunk extends Node3D{
         }        
     }
 
+    /**
+     * Envoie les quads de liquide au mesh de liquide.
+     * @param quads liste des quads de liquide à ajouter au mesh
+     */
     @ChunkThread
     private void uploadSubChunkLiquidMesh(List<Quad> quads){
         for(Quad quad : quads){
@@ -627,8 +753,12 @@ public class SubChunk extends Node3D{
         }        
     }
     /**
-     * Comme son nom l'indique
-     * Calcule aussi avec les faces des chunks voisins
+     * Calcule le face culling du subChunk pour un mode donné (opaque, verre ou transparent)
+     * et génère les quads correspondants pour les 6 directions. <br>
+     * Comme son nom l'indique, calcule aussi avec les faces des chunks voisins.
+     * @param faceData tampon thread-local dans lequel écrire les masques de faces visibles
+     * @param mode mode de culling (MODE_OPAQUE, MODE_GLASS ou MODE_TRANSPARENT)
+     * @param quads liste dans laquelle les quads générés sont ajoutés
      */
     @ChunkThread
     private void calculateSubChunkFaceCulling(FaceData faceData, int mode, List<Quad> quads){        
@@ -756,7 +886,12 @@ public class SubChunk extends Node3D{
         this.createQuad(faceData.downAxis,  5, quads);
     }
 
-    // Calcule si le bloc courant doit être inclus dans la ligne selon le mode
+    /**
+     * Calcule si le bloc courant doit être inclus dans la ligne selon le mode.
+     * @param bitSetIndex index du bloc dans solidBitSet / transparentBitSet
+     * @param mode mode de culling (MODE_OPAQUE, MODE_GLASS ou MODE_TRANSPARENT)
+     * @return true si le bloc doit être compté comme "plein" pour ce mode
+     */
     // "->" nouvelle syntaxe qui permet d'évité le break ici il est implicite
     private boolean computeValue(int bitSetIndex, int mode) {
         boolean solid  = solidBitSet.get(bitSetIndex);
@@ -768,7 +903,13 @@ public class SubChunk extends Node3D{
         };
     }
 
-    // Calcule si le bloc voisin cache la face selon le mode
+    /**
+     * Calcule si le bloc voisin cache la face selon le mode.
+     * @param neighbor sous-chunk voisin à interroger
+     * @param bitSetIndex index du bloc voisin dans solidBitSet / transparentBitSet
+     * @param mode mode de culling (MODE_OPAQUE, MODE_GLASS ou MODE_TRANSPARENT)
+     * @return true si le bloc voisin cache la face du bloc courant
+     */
     private boolean computeNeighborValue(SubChunk neighbor, int bitSetIndex, int mode) {
         boolean nSolid  = neighbor.solidBitSet.get(bitSetIndex);
         boolean nTransp = neighbor.transparentBitSet.get(bitSetIndex);
@@ -782,6 +923,12 @@ public class SubChunk extends Node3D{
         };
     }
 
+    /**
+     * Crée les quads de chaque face pour une direction donnée à partir du masque de faces visibles.
+     * @param faceMask masque de bits des faces visibles pour cette direction
+     * @param dir direction de la face (0=nord, 1=sud, 2=ouest, 3=est, 4=haut, 5=bas)
+     * @param quads liste dans laquelle les quads générés sont ajoutés
+     */
     // créer les quads de chaque face
     private void createQuad(int[] faceMask, int dir, List<Quad> quads){
         switch (dir) {
@@ -906,10 +1053,10 @@ public class SubChunk extends Node3D{
      * Détermine si un bloc est solide <br>
      * Si le bloc n'est pas dans le chunk (voisin d'un chunk) <br>
      * On demande au voisin
-     * @param x
-     * @param y
-     * @param z
-     * @return
+     * @param x Coordonnées en x (locale), peut être hors des bornes du subChunk (délégué au voisin)
+     * @param y Coordonnées en y (locale), peut être hors des bornes du subChunk (délégué au voisin)
+     * @param z Coordonnées en z (locale), peut être hors des bornes du subChunk (délégué au voisin)
+     * @return true si le bloc est solide, false s'il est vide ou si aucun voisin n'est chargé
      */
     public boolean isBlockSolid(int x, int y, int z){
         // dans le subchunk courant
@@ -941,16 +1088,16 @@ public class SubChunk extends Node3D{
 
     /**
      * Calcule l'ambient occlusion à appliquer sur le bloc
-     * @param side1X
-     * @param side1Y
-     * @param side1Z
-     * @param side2X
-     * @param side2Y
-     * @param side2Z
-     * @param cornerX
-     * @param cornerY
-     * @param cornerZ
-     * @return
+     * @param side1X Coordonnée x du premier bloc adjacent au coin
+     * @param side1Y Coordonnée y du premier bloc adjacent au coin
+     * @param side1Z Coordonnée z du premier bloc adjacent au coin
+     * @param side2X Coordonnée x du second bloc adjacent au coin
+     * @param side2Y Coordonnée y du second bloc adjacent au coin
+     * @param side2Z Coordonnée z du second bloc adjacent au coin
+     * @param cornerX Coordonnée x du bloc en diagonale du coin
+     * @param cornerY Coordonnée y du bloc en diagonale du coin
+     * @param cornerZ Coordonnée z du bloc en diagonale du coin
+     * @return le niveau d'occlusion ambiante du coin (0 = aucune occlusion, 3 = occlusion maximale)
      */
     private byte computeAO(int side1X, int side1Y, int side1Z,
                            int side2X, int side2Y, int side2Z,
@@ -1082,6 +1229,10 @@ public class SubChunk extends Node3D{
         this.mesh.drawSubChunkMesh();
     }    
 
+    /**
+     * Dessine le mesh opaque et transparent du subChunk (même passe, sans blend).
+     * @param parentModel matrice modèle du nœud parent (chunk)
+     */
     @OpenGLThread
     @Override
     public void drawNode(Matrix4f parentModel){
@@ -1093,6 +1244,10 @@ public class SubChunk extends Node3D{
         this.transparentMesh.drawSubChunkMesh(); // même passe, pas de blend              
     }
 
+    /**
+     * Dessine le mesh de verre du subChunk.
+     * @param parentModel matrice modèle du nœud parent (chunk)
+     */
     @OpenGLThread
     public void drawNodeGlass(Matrix4f parentModel){
         if (this.buffer == null) return;
@@ -1102,6 +1257,10 @@ public class SubChunk extends Node3D{
         this.glassMesh.drawSubChunkMesh();       
     }
 
+    /**
+     * Dessine le mesh des liquides du subChunk.
+     * @param parentModel matrice modèle du nœud parent (chunk)
+     */
     @OpenGLThread
     public void drawNodeLiquid(Matrix4f parentModel){
         if (this.buffer == null) return;

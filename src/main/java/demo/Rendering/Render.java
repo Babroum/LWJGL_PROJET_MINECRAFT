@@ -33,48 +33,76 @@ import demo.Others.FileLoader;
 import demo.Types.Color4f;
 import demo.Managers.PlayersManager;
 
+/**
+ * Gère la boucle de rendu OpenGL, l'initialisation du renderer et les files d'attente entre les threads de génération et le thread OpenGL
+ */
 public class Render {
     
+    /** Racine de la scène 3D. */
     public static SceneGraph sceneGraph = new SceneGraph(); 
+    /** Moniteur de performance global. */
     public static PerformanceMonitor monitor = new PerformanceMonitor();
 
+    /** Instance de rendu de texte/HUD. */
     private static TextRender textRender;  
 
+    /** Historique des FPS pour calculer une moyenne glissante. */
     private static double[] fpsHistory = new double[60];
 
+    /** Index courant dans {@link #fpsHistory}. */
     private static int fpsIndex;
+    /** Compteur de frames total. */
     private static int frameCount;
+    /** FPS moyen affiché. */
     private static float displayedFps = 0.0f;
 
     // nombre de chunk que le ChunkThread peut mettre avant de s'arreter
     // le OpenGLThread va lui afficher ce qu'il y a dans l'array et des qu'il affiche 1 chunk il le retire 
     // du array ce qui permet au ChunkThread de rajouter un nouveau chunk dans l'array
+    /** File des chunks prêts (tous les subchunks maillés) à ajouter à la scène, consommée par le thread OpenGL. */
     public static ArrayBlockingQueue<Chunk> chunkQueue = new ArrayBlockingQueue<>(512); // 512 ajout possibles max
+    /** File des subchunks dont le mesh a été (re)généré et qui doivent être uploadés en VBO/VAO. */
     public static ArrayBlockingQueue<SubChunk> dirtySubChunks = new ArrayBlockingQueue<>(8192); // 512*16 modif possibles max
+    /** File des chunks à décharger (hors de la distance de rendu). */
     public static ConcurrentLinkedQueue<Chunk> chunksToUnload = new ConcurrentLinkedQueue<>();
+    /** File des subchunks en attente de maillage (mesh generation). */
     public static ConcurrentLinkedQueue<SubChunk> subChunkMeshQueue = new ConcurrentLinkedQueue<>();
 
+    /** Buffer réutilisé pour envoyer la matrice de projection à OpenGL. */
     private static FloatBuffer projBuffer = BufferUtils.createFloatBuffer(16);
+    /** Matrice de projection courante. */
     private static final Matrix4f projection = new Matrix4f();
 
+    /** Liste des fichiers de texture à charger au démarrage. */
     private static final String[] TEXTURE_FILES  = 
     {"null", "grass_block_top", "grass_block_side", "dirt", "stone", "stone_brick_wall", "cobblestone", "light_block", "bedrock", "sand", "gravel", "glass",
      "oak_log_top_bottom", "oak_log_side", "oak_leaves", "oak_planks", "water", "torch_block_side", "torch_block_top"
     };
+    /** Liste des blocs à charger au démarrage. */
     private static final String[] BLOCKS_TO_LOAD = 
     {"null", "air", "grass", "dirt", "stone", "stone_brick_wall", "cobblestone", "light_block", "bedrock", "sand", "gravel", "glass",
      "oak_log", "oak_planks", "oak_leaves", "water", "torch"
     };
 
     // pour du debug, à modif car à chier
+    /** Intervalle (en frames) entre deux rafraîchissements du HUD de debug. */
     private static final int HUD_UPDATE_INTERVAL = 10;
+    /** Compteur de frames utilisé pour throttle le rafraîchissement du HUD. */
     private static int hudFrameCounter = 0;
+    /** Première ligne de texte du HUD (position du joueur). */
     private static String display1;
+    /** Deuxième ligne de texte du HUD (lumière). */
     private static String display2;
 
+    /** FPS cible pour limiter la boucle de rendu. */
     private static final double TARGET_FPS        = 500;
+    /** Temps de frame cible correspondant à {@link #TARGET_FPS}. */
     private static final double TARGET_FRAME_TIME = 1.0 / TARGET_FPS;
+    /** Timestamp de début de la frame courante. */
     private static double frameStartTime = 0;
+
+    /** Constructeur implicite vide */
+    public Render(){}
 
     /**
      * Est appelé avant le début du draw scene 
@@ -99,7 +127,6 @@ public class Render {
 
     /**
      * Gère le rendu de la fenêtre.
-     * @param windowRef
      */
     @OpenGLThread
     public static void rendering(){     
@@ -232,9 +259,17 @@ public class Render {
         Window.exitWindow();
     }
 
+    /**
+     * Remplace la file des chunks prêts à ajouter à la scène
+     * @param queue nouvelle file de chunks
+     */
     public static void setChunkQueue(ArrayBlockingQueue<Chunk> queue){
         Render.chunkQueue = queue;
     }
+    /**
+     * Remplace la file des subchunks à uploader en VBO/VAO
+     * @param queue nouvelle file de subchunks
+     */
     public static void setDirtyChunkQueue(ArrayBlockingQueue<SubChunk> queue){
         Render.dirtySubChunks = queue;
     }
@@ -249,7 +284,7 @@ public class Render {
 
     /**
      * Retourne la matrice de projection
-     * @return
+     * @return Matrix4f
      */
     public static Matrix4f getProjection(){
         return Render.projection;
@@ -257,8 +292,8 @@ public class Render {
     
     /**
      * Initialise la 3D avant la boucle de Rendu
-     * @param width int
-     * @param height int
+     * @param width int, largeur de la fenêtre
+     * @param height int, hauteur de la fenêtre
      */
     @OpenGLThread
     private static void initialize3D(final int width, final int height)
@@ -306,8 +341,7 @@ public class Render {
 
     /**
      * Calcule les fps 
-     * @param delta double, temps en nano seconde entre 2 frames
-     * @param window Window
+     * @param delta double, temps en secondes entre 2 frames
      */
     @OpenGLThread
     private static void calculateFPS(double delta){
@@ -326,7 +360,14 @@ public class Render {
         }        
     }
 
-    // calcule la matrice de projection et la retourne en floatbuffer pour les shaders
+    /**
+     * Calcule la matrice de projection et la retourne en FloatBuffer pour les shaders
+     * @param fov float, champ de vision en degrés
+     * @param aspect float, ratio largeur/hauteur
+     * @param near float, plan proche
+     * @param far float, plan éloigné
+     * @return FloatBuffer, la matrice de projection
+     */
     public static FloatBuffer calculateProjection(float fov, float aspect, float near, float far) {
         Render.projBuffer.clear();
         Render.projection.setPerspective((float) Math.toRadians(fov), aspect, near, far);

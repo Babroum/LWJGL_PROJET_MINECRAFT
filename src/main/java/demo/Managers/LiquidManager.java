@@ -16,31 +16,77 @@ import demo.Geometry.SubChunk;
 import demo.Others.Blocks;
 import demo.Others.ChunkGenerationPool;
 
+/**
+ * Gère la propagation et la suppression des liquides (eau) dans le monde via un BFS à délai
+ * (façon Minecraft : le liquide s'étale progressivement, tick par tick).
+ */
 public class LiquidManager {
 
+    /**
+     * Ensemble des positions de liquide déjà en attente de propagation, pour éviter les doublons.
+     */
     private static final Set<Long> liquidQueuedSet        = ConcurrentHashMap.newKeySet();
+    /**
+     * Ensemble des positions de liquide déjà en attente de suppression, pour éviter les doublons.
+     */
     private static final Set<Long> removalLiquidQueuedSet = ConcurrentHashMap.newKeySet();
 
+    /**
+     * File des sous-chunks marqués "dirty" suite à un changement de liquide, à reconstruire sur le thread OpenGL.
+     */
     private static final Queue<SubChunk> dirtySubChunks   = new ConcurrentLinkedQueue<>();
 
+    /**
+     * File d'attente thread-safe des propagations de liquide en attente d'être placées dans {@link #scheduledQueue}.
+     */
     private static final ConcurrentLinkedDeque<Long> pendingSchedule        = new ConcurrentLinkedDeque<>();
+    /**
+     * File d'attente thread-safe des suppressions de liquide en attente d'être placées dans {@link #scheduledRemovalQueue}.
+     */
     private static final ConcurrentLinkedDeque<Long> pendingRemovalSchedule = new ConcurrentLinkedDeque<>();
 
+    /**
+     * Décalage appliqué aux coordonnées x/z avant encodage pour garder des valeurs positives sur 26 bits.
+     */
     private static final long OFFSET = 1L << 25;
+    /**
+     * Masque pour extraire 26 bits (coordonnées x/z encodées).
+     */
     private static final long MASK26 = 0x3FFFFFFL;
 
+    /**
+     * Nombre de buckets (ticks) du ring buffer de délai de propagation/suppression du liquide.
+     */
     private static final int FLOW_DELAY_TICKS   = 10;
+    /**
+     * Délai en ticks entre chaque étape de propagation d'un bloc de liquide (5 ticks/bloc, comme Minecraft Java).
+     */
     private static final int FLOW_STEP_DELAY    = 5; // 5 ticks/bloc comme Minecraft Java
+    /**
+     * Délai en ticks entre chaque étape de suppression d'un bloc de liquide.
+     */
     private static final int REMOVAL_STEP_DELAY = 5;
 
+    /**
+     * Compteur de ticks du LiquidManager, utilisé pour indexer le ring buffer de délai.
+     */
     private static long currentTick = 0;
 
+    /**
+     * Les 4 directions horizontales (est, ouest, nord, sud) utilisées pour l'étalement du liquide.
+     */
     private static final int[][] HORIZONTAL_NEIGHBORS = {
         {1,0,0},{-1,0,0},{0,0,1},{0,0,-1}
     };
 
+    /**
+     * Ring buffer de {@link #FLOW_DELAY_TICKS} files, un bucket par tick, pour retarder la propagation du liquide.
+     */
     @SuppressWarnings("unchecked")
     private static final Deque<Long>[] scheduledQueue        = new ArrayDeque[FLOW_DELAY_TICKS];
+    /**
+     * Ring buffer de {@link #FLOW_DELAY_TICKS} files, un bucket par tick, pour retarder la suppression du liquide.
+     */
     @SuppressWarnings("unchecked")
     private static final Deque<Long>[] scheduledRemovalQueue = new ArrayDeque[FLOW_DELAY_TICKS];
     static {
@@ -50,6 +96,17 @@ public class LiquidManager {
         }
     }
 
+    /** Constructeur implicite vide */
+    public LiquidManager(){}
+
+    /**
+     * Encode (x,y,z,niveau de liquide) en un Long pour les files BFS.
+     * @param gx coordonnée x globale
+     * @param gy coordonnée y globale
+     * @param gz coordonnée z globale
+     * @param liquidLevel niveau de liquide (0-15)
+     * @return les 4 paramètres encodés dans un long
+     */
     private static long encode(int gx, int gy, int gz, int liquidLevel) {
         long px = (gx + OFFSET) & MASK26;
         long pz = (gz + OFFSET) & MASK26;
@@ -58,19 +115,40 @@ public class LiquidManager {
         return (px << 38) | (pz << 12) | (py << 4) | pl;
     }
 
+    /**
+     * Place une propagation de liquide encodée dans la file d'attente en attente de scheduling (délai standard).
+     * @param encoded position et niveau de liquide encodés
+     */
     private static void schedule(long encoded) {
         pendingSchedule.addLast(encoded);
     }
 
+    /**
+     * Place une propagation de liquide encodée directement dans le bucket du prochain tick (sans délai standard).
+     * Utilisé pour re-remplir immédiatement les trous après une cascade de suppression.
+     * @param encoded position et niveau de liquide encodés
+     */
     private static void scheduleImmediate(long encoded) {
         int bucket = (int)((currentTick + 1) % FLOW_DELAY_TICKS);
         scheduledQueue[bucket].addLast(encoded);
     }
 
+    /**
+     * Place une suppression de liquide encodée dans la file d'attente en attente de scheduling (délai standard).
+     * @param encoded position et niveau de liquide encodés
+     */
     private static void scheduleRemoval(long encoded) {
         pendingRemovalSchedule.addLast(encoded);
     }
 
+    /**
+     * Ajoute une source de liquide à la file de propagation.
+     * @param chunk chunk dans lequel se trouve le bloc
+     * @param x coordonnée x locale du bloc (0-15)
+     * @param y coordonnée y globale du bloc (0-255)
+     * @param z coordonnée z locale du bloc (0-15)
+     * @param liquidLevel niveau de liquide à propager (0-15)
+     */
     public static void addLiquid(Chunk chunk, int x, int y, int z, byte liquidLevel) {
         if (liquidLevel <= 1) return;
         int gx = chunk.x + x;
@@ -80,6 +158,14 @@ public class LiquidManager {
         schedule(encoded);
     }
 
+    /**
+     * Ajoute une position de liquide à la file de suppression.
+     * @param chunk chunk dans lequel se trouve le bloc
+     * @param x coordonnée x locale du bloc (0-15)
+     * @param y coordonnée y globale du bloc (0-255)
+     * @param z coordonnée z locale du bloc (0-15)
+     * @param liquidLevel niveau de liquide au moment de la suppression (0-15)
+     */
     public static void removeLiquid(Chunk chunk, int x, int y, int z, byte liquidLevel) {
         if (liquidLevel <= 1) return;
         int gx = chunk.x + x;
@@ -89,6 +175,14 @@ public class LiquidManager {
         scheduleRemoval(encoded);
     }
 
+    /**
+     * Détermine si la position donnée agit comme un "drain" (le bloc du dessous est de l'air, donc
+     * le liquide peut s'y écouler verticalement).
+     * @param gx coordonnée x globale
+     * @param gy coordonnée y globale
+     * @param gz coordonnée z globale
+     * @return true si la position est un drain
+     */
     private static boolean isDrain(int gx, int gy, int gz) {
         if (gy - 1 < 0) return false;
         Chunk c = ChunksManager.getChunkAt(gx, gz);
@@ -102,6 +196,16 @@ public class LiquidManager {
         return sub.getLiquidLevel(lx, ly, lz) == 0; // doit être de l'air, pas de l'eau
     }
 
+    /**
+     * Détermine, pour chacune des 4 directions horizontales, si elle mène au chemin le plus court
+     * vers un drain (via un BFS borné par maxRange). Utilisé pour prioriser l'étalement du liquide vers les creux.
+     * @param gx coordonnée x globale de départ
+     * @param gy coordonnée y globale de départ
+     * @param gz coordonnée z globale de départ
+     * @param maxRange distance maximale de recherche d'un drain
+     * @return tableau de 4 booléens (un par direction de {@link #HORIZONTAL_NEIGHBORS}), true si la direction
+     *         mène au chemin le plus court vers un drain (ou si aucun drain n'a été trouvé, toutes valent true)
+     */
     private static boolean[] findDrainDirections(int gx, int gy, int gz, int maxRange) {
         int[] weights = new int[4];
         Arrays.fill(weights, 1000);
@@ -179,6 +283,11 @@ public class LiquidManager {
         return result;
     }
 
+    /**
+     * Propage un liquide depuis une position encodée : étalement horizontal si un sol est présent en dessous
+     * (en priorisant les directions menant à un drain), sinon chute verticale.
+     * @param packed position et niveau de liquide encodés
+     */
     private static void bfsPropagate(long packed) {
         int gx = (int) (((packed >>> 38) & MASK26) - OFFSET);
         int gz = (int) (((packed >>> 12) & MASK26) - OFFSET);
@@ -280,6 +389,12 @@ public class LiquidManager {
         }
     }
 
+    /**
+     * Supprime un liquide depuis une position encodée en propageant la suppression aux voisins dépendants
+     * (alimentés uniquement par ce bloc) et en re-propageant immédiatement les voisins indépendants
+     * (ayant leur propre source).
+     * @param packed position et niveau de liquide encodés
+     */
     private static void bfsRemove(long packed) {
         int gx = (int) (((packed >>> 38) & MASK26) - OFFSET);
         int gz = (int) (((packed >>> 12) & MASK26) - OFFSET);
@@ -377,6 +492,10 @@ public class LiquidManager {
         }
     }
 
+    /**
+     * Fait avancer le ring buffer d'un tick : déplace les propagations/suppressions en attente vers leur
+     * bucket cible, puis traite le bucket du tick courant (propagation et suppression de liquide).
+     */
     public static void processLiquidBFS() {
         // Drainer les pending (thread-safe) dans les ring buffers (single-thread)
         Long pending;
@@ -405,6 +524,10 @@ public class LiquidManager {
         currentTick++;
     }
 
+    /**
+     * Reconstruit (rebuild) tous les sous-chunks marqués "dirty" suite à un changement de liquide.
+     * A appeler uniquement depuis le thread OpenGL ; soumet chaque reconstruction au pool de threads.
+     */
     @OpenGLThread
     public static void flushDirtySubChunks() {
         SubChunk s;
@@ -415,10 +538,17 @@ public class LiquidManager {
         }
     }
 
+    /**
+     * Ajoute un sous-chunk à la file des sous-chunks à reconstruire.
+     * @param sub le sous-chunk à ajouter
+     */
     public static void addDirtySubChunk(SubChunk sub) {
         dirtySubChunks.add(sub);
     }
 
+    /**
+     * Vide toutes les files et ensembles de propagation/suppression de liquide ainsi que la liste des sous-chunks dirty.
+     */
     public static void clearAll() {
         liquidQueuedSet.clear();
         removalLiquidQueuedSet.clear();
