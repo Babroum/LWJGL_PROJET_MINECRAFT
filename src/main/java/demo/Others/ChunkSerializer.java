@@ -7,9 +7,19 @@ import java.util.Comparator;
 import demo.Geometry.Chunk;
 import demo.Managers.ChunksManager;
 
+/**
+ * Gère la sauvegarde et le chargement des chunks sur le disque
+ */
 public class ChunkSerializer {
+    /** Dossier de sauvegarde des chunks. */
     private static final String SAVE_DIR = "saves/world/";
 
+    /** Constructeur implicite vide */
+    public ChunkSerializer(){}
+
+    /**
+     * Initialise le dossier de sauvegarde, en le créant si absent ou en le vidant si présent
+     */
     public static void init(){
         try{                       
             Path path = Paths.get(ChunkSerializer.SAVE_DIR);
@@ -40,6 +50,10 @@ public class ChunkSerializer {
         }
     }
 
+    /**
+     * Sauvegarde un chunk sur le disque de façon atomique (via un fichier temporaire)
+     * @param chunk Chunk à sauvegarder
+     */
     public static void save(Chunk chunk){
         byte[] blocks = chunk.getAllSubChunkBlocks();
         Path path = getPath(ChunksManager.floorDiv(chunk.x, 16), ChunksManager.floorDiv(chunk.z, 16));
@@ -59,6 +73,12 @@ public class ChunkSerializer {
         }
     }
 
+    /**
+     * Charge les blocs d'un chunk sauvegardé
+     * @param cx Coordonnées en x (chunk)
+     * @param cz Coordonnées en z (chunk)
+     * @return byte[], les blocs du chunk, ou null si aucune sauvegarde ou erreur de lecture
+     */
     public static byte[] load(int cx, int cz){
         Path path = getPath(cx, cz);
         if (!Files.exists(path)) return null;

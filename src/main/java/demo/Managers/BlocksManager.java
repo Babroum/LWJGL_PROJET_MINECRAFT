@@ -7,10 +7,28 @@ import demo.Others.Blocks;
 import demo.Rendering.Render;
 import java.io.InputStream;
 
+/**
+ * Charge et référence toutes les définitions de blocs (BlockDefinition) du jeu.
+ */
 public class BlocksManager {
+    /**
+     * Registre des définitions de blocs, indexé par leur id (0-255).
+     */
     private static final BlockDefinition[] REGISTRY = new BlockDefinition[256];
+    /**
+     * Mapper JSON utilisé pour désérialiser les fichiers de définition de blocs.
+     */
     private static final ObjectMapper mapper = new ObjectMapper();
 
+    /** Constructeur implicite vide */
+    public BlocksManager(){}
+
+    /**
+     * Charge tous les fichiers JSON de définition de blocs donnés, les enregistre dans le registre,
+     * initialise les raccourcis statiques de {@link Blocks} et "bake" chaque bloc.
+     * @param files noms des fichiers JSON (sans extension) à charger depuis "/Blocks/"
+     * @throws Exception si une erreur survient pendant le chargement
+     */
     public static void init(String[] files) throws Exception {
         for (String blockName : files) {
             try {
@@ -66,7 +84,7 @@ public class BlocksManager {
     /**
      * Retourne le BlockDefinition avec son id.
      * @param id Identifiant du bloc
-     * @return
+     * @return la définition du bloc, ou celle du bloc Air (id 0) si l'id est introuvable
      */
     public static BlockDefinition get(int id) {
         return REGISTRY[id & 0xFF] != null ? REGISTRY[id & 0xFF] : REGISTRY[0];

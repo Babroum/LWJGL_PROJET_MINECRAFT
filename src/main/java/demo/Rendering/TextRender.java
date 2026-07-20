@@ -20,29 +20,44 @@ import demo.Types.Color4f;
  */
 public class TextRender {
 
+    /** Largeur d'une case de la grille de caractères. */
     private int gridWidth;
+    /** Hauteur d'une case de la grille de caractères. */
     private int gridHeight;
+    /** Largeur de l'image de la police. */
     private int width;
+    /** Hauteur de l'image de la police. */
     private int height;
+    /** Id de la texture OpenGL de la police. */
     private int textureId;
+    /** Nombre de caractères par ligne dans l'image de la police. */
     private int fontPerRow;
+    /** Liste des caractères disponibles dans l'image, dans l'ordre. */
     private String chars;
 
+    /** Ids des buffers OpenGL (vbo, vao, ebo). */
     private int[] ids;
+    /** Buffer des sommets du texte, réutilisé à chaque appel. */
     private FloatBuffer vertexsBuffer;
+    /** Buffer des indices du texte, réutilisé à chaque appel. */
     private IntBuffer indicesBuffer;
+    /** Nombre maximum de caractères dessinables en un seul appel. */
     private final int BUFFERSIZE = 512;
+    /** Emplacement uniforme de la texture dans le shader de texte. */
     private int texUniformLocation;
 
+    /** Données des sommets (position + UV) de chaque caractère. */
     private float[] data = new float[BUFFERSIZE * 16];
+    /** Indices des triangles de chaque caractère. */
     private int[] indices = new int[BUFFERSIZE * 6];
     
+    /** Buffer réutilisé pour la matrice orthonormée du texte. */
     private FloatBuffer buffer;
 
     /**
      * Charge l'image des caractères en mémoire <br>
      * <b>TAILLE MAX TEXT 512 CHAR</b>
-     * @param path String, chemin de l'image
+     * @param path ByteBuffer, contenu de l'image
      * @param gWidth int, largeur d'une case de la grille
      * @param gHeight int, hauteur d'une case de la grille
      * @param ftPerRow int, nb de caractère par ligne

@@ -11,8 +11,13 @@ import demo.Managers.PlayersManager;
  */
 public class FrustumCulling {
     
+    /** Objet JOML utilisé pour tester les intersections avec le frustum. */
     private static final FrustumIntersection frustumIntersect = new FrustumIntersection();
+    /** Matrice projection * vue, réutilisée à chaque frame. */
     private static final Matrix4f matViewProj = new Matrix4f();
+
+    /** Constructeur implicite vide */
+    public FrustumCulling(){}
 
     /**
      * Multiplie la matrice de vue et de projection<br>

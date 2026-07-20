@@ -14,38 +14,67 @@ import demo.Others.FileLoader;
  */
 public abstract class ShadersManager {
 
+    /** Id du programme shader principal (rendu des chunks opaque/transparent/verre). */
     private static int programId;
+    /** Id du programme shader des bordures de bloc. */
     private static int programBlockBorderId;
+    /** Id du programme shader du texte. */
     private static int programTextId;
+    /** Id du programme shader de post-process (FBO). */
     private static int programPostProcessId;
+    /** Id du programme shader des liquides. */
     private static int programLiquidId;
 
+    /** Emplacement uniforme "screenTex" du shader de post-process. */
     private static int locationScreenTex;
+    /** Emplacement uniforme "saturationAmount" du shader de post-process. */
     private static int locationSaturation;
 
+    /** Emplacements uniformes "projection", "view" et "model" du shader principal. */
     private static int locationProj, locationView, locationModel;
+    /** Emplacements uniformes "projection", "view" et "blockPos" du shader des bordures de bloc. */
     private static int locationProjBlockBorder, locationViewBlockBorder, locationBlockPosBlockBorder;
+    /** Emplacements uniformes "ortho" et "color" du shader de texte. */
     private static int locationOrtho, locationTextColor;
+    /** Emplacement uniforme "fogStart" du shader principal. */
     private static int locationFogStart;
+    /** Emplacement uniforme "fogEnd" du shader principal. */
     private static int locationFogEnd;
+    /** Emplacement uniforme "skyColor" du shader principal. */
     private static int locationSkyColor;
+    /** Emplacement uniforme "blockLightColor" du shader principal. */
     private static int locationBlockLightColor;
+    /** Emplacement uniforme "time" du shader principal. */
     private static int locationTime;
 
+    /** Emplacement uniforme "projection" du shader liquide. */
     private static int locationProjLiquid; 
+    /** Emplacement uniforme "view" du shader liquide. */
     private static int locationViewLiquid;
+    /** Emplacement uniforme "model" du shader liquide. */
     private static int locationModelLiquid;
+    /** Emplacement uniforme "time" du shader liquide. */
     private static int locationTimeLiquid;
+    /** Emplacement uniforme "skyColor" du shader liquide. */
     private static int locationSkyColorLiquid;
+    /** Emplacement uniforme "fogStart" du shader liquide. */
     private static int locationFogStartLiquid;
+    /** Emplacement uniforme "fogEnd" du shader liquide. */
     private static int locationFogEndLiquid;
+    /** Emplacement uniforme "blockLightColor" du shader liquide. */
     private static int locationBlockLightColorLiquid;
 
+    /** Constructeur implicite vide */
+    public ShadersManager(){}
+
+    /** Matrice orthonormée réutilisée pour le rendu du texte. */
     private static final Matrix4f textOrthoMatrix = new Matrix4f();
+    /** Dernières largeur/hauteur de fenêtre utilisées pour {@link #textOrthoMatrix}, pour éviter de la recalculer inutilement. */
     private static int lastWidth = 0, lastHeight = 0;
 
     /**
      * Initialise le shader des liquides
+     * @throws RuntimeException si la compilation ou le linkage du shader échoue
      */
     @OpenGLThread
     public static void createLiquidShader(){
@@ -82,6 +111,7 @@ public abstract class ShadersManager {
 
     /**
      * Initialise le shader de post-process (FBO)
+     * @throws RuntimeException si la compilation ou le linkage du shader échoue
      */
     @OpenGLThread
     public static void createPostProcessShader(){
@@ -118,6 +148,7 @@ public abstract class ShadersManager {
 
     /**
      * Initialise les shaders pour le texte
+     * @throws RuntimeException si la compilation ou le linkage du shader échoue
      */
     @OpenGLThread
     public static void createTextShader(){
@@ -157,7 +188,7 @@ public abstract class ShadersManager {
 
     /**
      * Initialise les shaders pour les bordures de bloc
-     * @throws ShaderManagerError
+     * @throws RuntimeException si la compilation ou le linkage du shader échoue
     */
     @OpenGLThread
     public static void createBlockBorderShader(){
@@ -197,7 +228,7 @@ public abstract class ShadersManager {
 
     /**
      * Initialise les shaders pour les chunks
-     * @throws ShaderManagerError
+     * @throws RuntimeException si la compilation ou le linkage du shader échoue
      */
     @OpenGLThread
     public static void createShader(){
@@ -237,10 +268,11 @@ public abstract class ShadersManager {
 
 
     /**
-     * Initialise les shaders
-     * @param vertexShader
-     * @param fragmentShader
-     * @return
+     * Compile un vertex shader et un fragment shader à partir de leur code source.
+     * @param vertexShader code source du vertex shader
+     * @param fragmentShader code source du fragment shader
+     * @return int[] {idVertexShader, idFragmentShader}
+     * @throws RuntimeException si la compilation d'un des deux shaders échoue
      */
     @OpenGLThread
     private static int[] create(String vertexShader, String fragmentShader){
@@ -266,6 +298,10 @@ public abstract class ShadersManager {
         return new int[]{vsId, fgId};
     }
 
+    /**
+     * Recherche et met en cache l'emplacement de tous les uniforms de tous les programmes shader.
+     * A appeler une seule fois après avoir créé tous les shaders.
+     */
     // Appeller une seule fois après avoir créé les shaders
     public static void getUniformLocations() {
         locationProj                  = GL20.glGetUniformLocation(programId, "projection");
@@ -297,41 +333,68 @@ public abstract class ShadersManager {
         locationTimeLiquid            = GL20.glGetUniformLocation(programLiquidId, "time");
     }   
 
+    /**
+     * Active le shader des liquides
+     */
     @OpenGLThread
     public static void useLiquidShader(){
         GL20.glUseProgram(ShadersManager.programLiquidId);
     }
 
+    /**
+     * Active le shader de post-process (FBO)
+     */
     @OpenGLThread
     public static void usePostProcessShader(){
         GL20.glUseProgram(ShadersManager.programPostProcessId);
     }
 
+    /**
+     * Active le shader principal (chunks)
+     */
     @OpenGLThread
     public static void useShader(){
         GL20.glUseProgram(ShadersManager.programId);
     }
 
+    /**
+     * Active le shader des bordures de bloc
+     */
     @OpenGLThread
     public static void useBlockBorderShader(){
         GL20.glUseProgram(ShadersManager.programBlockBorderId);
     }
     
+    /**
+     * Active le shader de texte
+     */
     @OpenGLThread
     public static void useTextShader(){
         GL20.glUseProgram(ShadersManager.programTextId);
     }
 
+    /**
+     * Envoie le temps écoulé au shader principal
+     * @param time float, temps écoulé
+     */
     @OpenGLThread
     public static void runTime(float time){
         GL20.glUniform1f(ShadersManager.locationTime, time);
     }
 
+    /**
+     * Envoie le temps écoulé au shader liquide
+     * @param time float, temps écoulé
+     */
     @OpenGLThread
     public static void runTimeLiquid(float time){
         GL20.glUniform1f(ShadersManager.locationTimeLiquid, time);
     }
 
+    /**
+     * Envoie l'unité de texture de l'écran au shader de post-process
+     * @param textureUnit int, unité de texture
+     */
     @OpenGLThread
     public static void runScreenTex(int textureUnit){
         GL20.glUniform1i(ShadersManager.locationScreenTex, textureUnit);
@@ -396,6 +459,10 @@ public abstract class ShadersManager {
     }
 
 
+    /**
+     * Envoie la quantité de saturation au shader de post-process
+     * @param saturationAmount float, quantité de saturation
+     */
     @OpenGLThread
     public static void runSaturationAmountPostProcess(float saturationAmount){
         GL20.glUniform1f(ShadersManager.locationSaturation, saturationAmount);
@@ -544,51 +611,86 @@ public abstract class ShadersManager {
         GL20.glUniform4f(ShadersManager.locationTextColor, red, green, blue, alpha);
     }
 
+    /**
+     * Supprime le programme shader des liquides
+     */
     @OpenGLThread
     public static void closeProgramLiquidId(){
         GL20.glDeleteProgram(ShadersManager.programLiquidId);
     }
 
+    /**
+     * Supprime le programme shader de post-process
+     */
     @OpenGLThread
     public static void closeProgramPostProcessId(){
         GL20.glDeleteProgram(ShadersManager.programPostProcessId);
     }
 
+    /**
+     * Supprime le programme shader principal
+     */
     @OpenGLThread
     public static void closeProgramId(){
         GL20.glDeleteProgram(ShadersManager.programId);
     }
 
+    /**
+     * Supprime le programme shader des bordures de bloc
+     */
    @OpenGLThread
     public static void closeProgramBlockBorderId(){
         GL20.glDeleteProgram(ShadersManager.programBlockBorderId);
     }  
 
+    /**
+     * Supprime le programme shader de texte
+     */
     @OpenGLThread
     public static void closeProgramTextId(){
         GL20.glDeleteProgram(ShadersManager.programTextId);
     }
 
+    /**
+     * Retourne l'id du programme shader des liquides
+     * @return int
+     */
     @OpenGLThread
     public static int getProgramLiquidId(){
         return ShadersManager.programLiquidId;
     }
 
+    /**
+     * Retourne l'id du programme shader de post-process
+     * @return int
+     */
     @OpenGLThread
     public static int getProgramPostProcessId(){
         return ShadersManager.programPostProcessId;
     }
 
+    /**
+     * Retourne l'id du programme shader principal
+     * @return int
+     */
     @OpenGLThread
     public static int getProgramId(){
         return ShadersManager.programId;
     }
 
+    /**
+     * Retourne l'id du programme shader des bordures de bloc
+     * @return int
+     */
     @OpenGLThread
     public static int getProgramBlockBorderId(){
         return ShadersManager.programBlockBorderId;
     }
 
+    /**
+     * Retourne l'id du programme shader de texte
+     * @return int
+     */
     @OpenGLThread
     public static int getProgramTextId(){
         return ShadersManager.programTextId;

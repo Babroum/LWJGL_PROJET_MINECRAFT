@@ -15,7 +15,7 @@ import demo.Rendering.Render;
 import demo.Managers.TextureManager;
 
 /**
- * Une Maille décrivant l'ensemble des ..
+ * Une Maille décrivant l'ensemble des sommets packés d'un subchunk, prête à être envoyée sur la CG
  */
 // PERFORMANCE CALCULER SEULEMENT SUR LE PACKING ET PAS TOUT LE RESTE
 // IL NE VA PLUS AVOIR D'EBO CAR
@@ -43,20 +43,23 @@ import demo.Managers.TextureManager;
 // 36 * 65280(max cube par chunk) * 15 * 15 (render distance) = 529 millions d'ints
 
 // 10 go de ram = 2.6 milliards d'ints 
-// 2 684 354 560 - 36 * 65280 * 1000(nb chunks chargé) = 334 274 560 d'ints restants sur 10go de ram
+// 2 684 354 560 - 36 * 65280 * 1000(nb chunks chargé) = 334 274 560 d'ints restants sur 10go de ram
 // ~8.7 Go utilisés
 
 // meilleur : VERTEX PACKING SANS EBO
 public class SubChunkMesh {
 
-    // Tout les sommets de tout les objets en IntBuffer pour opengl pack
+    /** Tout les sommets de tout les objets en IntBuffer pour opengl pack. */
     private IntBuffer vertexBufferPack;
-    // Tout les sommets de tout les objets avant la transformation en IntBuffer pack
+    /** Tout les sommets de tout les objets avant la transformation en IntBuffer pack. */
     private int[] vertexArrayPack;
 
+    /** Nombre de valeurs int packées par sommet (x, y, z, u, v, dir, ao, sky, block). */
     private final int ITEM_TO_PACK = 9;
 
+    /** Buffer temporaire des 6 sommets d'une face avant packing. */
     private final int[][] vertsBuffer = new int[6][ITEM_TO_PACK];
+    /** Buffer temporaire à plat des 6 sommets d'une face avant packing. */
     private final int[] arrayBuffer   = new int[6 * ITEM_TO_PACK];
 
     /**
@@ -64,8 +67,11 @@ public class SubChunkMesh {
      */
     private int vertexCount;
 
-    // ids des vao vbo, et le vbo et vao du chunkborder
+    /** Ids des vbo/vao (et du vbo/vao de bordure du chunk). */
     private int[] ids; 
+
+    /** Constructeur implicite vide */
+    public SubChunkMesh(){}
 
     /**
      * Ajoute un quad au donnée du mesh.
@@ -153,7 +159,19 @@ public class SubChunkMesh {
         } catch(Exception e){ e.printStackTrace(); }
     }
 
-    // utilitaire pour simplifier
+    /**
+     * Utilitaire pour simplifier le remplissage d'un sommet dans le buffer temporaire
+     * @param v tableau de sommets à remplir
+     * @param i index du sommet
+     * @param x position x
+     * @param y position y
+     * @param z position z
+     * @param u coordonnée u de texture
+     * @param vv coordonnée v de texture
+     * @param ao valeur d'ambient occlusion
+     * @param sky niveau de lumière du ciel
+     * @param block niveau de lumière de bloc
+     */
     private void setVert(int[][] v, int i, int x, int y, int z, int u, int vv, int ao, int sky, int block){
         v[i][0]=x;
         v[i][1]=y; 
@@ -168,9 +186,12 @@ public class SubChunkMesh {
     /**
      * Ajoute les mailles d'un cube à la maille du chunk <br>
      * <b>Vertex Packing Ici</b>
-     * @param array
-     * @param w
-     * @param h
+     * @param array tableau à plat des sommets (9 valeurs par sommet)
+     * @param w largeur du quad
+     * @param h hauteur du quad
+     * @param d profondeur du quad
+     * @param textureId identifiant de texture du quad
+     * @throws RuntimeException si le tableau passé est plus petit qu'un sommet packé
      */
     /*
     [ 0000 0000 0 | 0000 0000 0 | 0000 0000 0 | 0 | 0 | 000 ]
@@ -217,7 +238,7 @@ public class SubChunkMesh {
 
     /**
      * Retourne le nombre de sommets dans le chunk
-     * @return
+     * @return int
      */
     public int getVertexCount(){
         return this.vertexCount;
@@ -225,7 +246,7 @@ public class SubChunkMesh {
 
     /**
      * Définit la taille du buffer pour les vertexs
-     * @param blockCount int
+     * @param blockCount int, nombre de blocs visibles dans le subchunk
      */
     @ChunkThread
     public void setupSubChunkBuffers(int blockCount){
@@ -299,6 +320,9 @@ public class SubChunkMesh {
         }
     }
 
+    /**
+     * Supprime les buffers VBO/VAO (et de bordure) de ce mesh
+     */
     @OpenGLThread
     public void deleteSubChunkVBOVAO(){
         if (this.ids == null) return;
@@ -348,6 +372,9 @@ public class SubChunkMesh {
         MemoryUtil.memFree(linesBuffer);
     }
 
+    /**
+     * Supprime les buffers VBO/VAO de bordure de ce mesh
+     */
     @OpenGLThread
     public void deleteSubChunkBorderVBOVAO(){
         if (this.ids == null) return;
@@ -419,7 +446,9 @@ public class SubChunkMesh {
         Render.monitor.addTriangles(this.vertexCount / 3); 
     } 
 
-    // À appeler si le SubChunk est détruit avant que son buffer ait été uploadé
+    /**
+     * À appeler si le SubChunk est détruit avant que son buffer ait été uploadé, libère la mémoire off-heap restante
+     */
     public void cleanup(){
         if (this.vertexBufferPack != null){
             MemoryUtil.memFree(this.vertexBufferPack);

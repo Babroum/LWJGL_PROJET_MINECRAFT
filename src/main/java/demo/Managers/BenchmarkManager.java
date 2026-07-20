@@ -70,7 +70,9 @@ public class BenchmarkManager {
     //  Thread de collecte
     // ─────────────────────────────────────────────────────────────────
 
+    /** Thread dédié à la collecte périodique des métriques. */
     private Thread      collectorThread;
+    /** Vrai tant que la collecte est active. */
     private volatile boolean running = false;
 
     /** Accès aux stats mémoire JVM. */
@@ -80,8 +82,18 @@ public class BenchmarkManager {
     //  API publique
     // ─────────────────────────────────────────────────────────────────
 
+    /** Constructeur implicite vide */
+    public BenchmarkManager(){}
+
     // singleton
+    /**
+     * Instance unique (singleton) du BenchmarkManager.
+     */
     private static BenchmarkManager instance;
+    /**
+     * Retourne l'instance unique du BenchmarkManager, la créant si besoin.
+     * @return l'instance singleton
+     */
     public static BenchmarkManager getInstance() {
         if (instance == null) instance = new BenchmarkManager();
         return instance;
@@ -129,6 +141,10 @@ public class BenchmarkManager {
     //  Boucle de collecte interne (1 snapshot / seconde)
     // ─────────────────────────────────────────────────────────────────
 
+    /**
+     * Boucle interne exécutée dans le thread de collecte : prend un instantané des compteurs
+     * (FPS, chunks générés, RAM) une fois par seconde et l'enregistre.
+     */
     private void collectorLoop() {
         int elapsed = 0;
 

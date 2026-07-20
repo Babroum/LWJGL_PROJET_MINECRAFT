@@ -14,8 +14,17 @@ import demo.Annotations.OpenGLThread;
  */
 public class BuffersManager {
 
+    /**
+     * Nombre de VAO actuellement actifs (créés et non supprimés).
+     */
     public static int activeVAOCount = 0;
+    /**
+     * Taille cumulée en octets de tous les VBO de subChunks actuellement alloués.
+     */
     public static long vboSizeBytes = 0;
+
+    /** Constructeur implicite vide */
+    public BuffersManager(){}
     
     /**
      * Créer les buffers en les remplissant <br>
@@ -90,6 +99,12 @@ public class BuffersManager {
         return new int[]{vbo, vao};
     }
 
+    /**
+     * Créer les buffers pour le texte (vertex, indices) en les remplissant.
+     * @param vertex FloatBuffer, sommets (position + uv) à afficher
+     * @param indices IntBuffer, indices des sommets (pour éviter les duplications)
+     * @return int[] {vbo, vao, ebo}
+     */
     // pareil que en haut mais pour les shaders de texte
     @OpenGLThread
     public static int[] createTextVBOVAOEBO(FloatBuffer vertex, IntBuffer indices){
@@ -155,6 +170,10 @@ public class BuffersManager {
         GL15.glBufferSubData(GL15.GL_ELEMENT_ARRAY_BUFFER, 0, indices);
     }
 
+    /**
+     * Supprime un VBO, un VAO et un EBO.
+     * @param ids tableau {vbo, vao, ebo}
+     */
     @OpenGLThread
     public static void deleteVBOVAOEBO(int[] ids){        
         GL20.glDeleteBuffers(ids[0]); // vbo
@@ -163,6 +182,10 @@ public class BuffersManager {
         activeVAOCount--;
     }
 
+    /**
+     * Supprime un VBO et un VAO.
+     * @param ids tableau {vbo, vao}
+     */
     @OpenGLThread
     public static void deleteVBOVAO(int[] ids){
         GL20.glDeleteBuffers(ids[0]);       // ids[0] = vbo

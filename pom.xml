@@ -5,7 +5,7 @@
 
   <groupId>demo</groupId>
   <artifactId>LWJGL_PROJET_MINECRAFT</artifactId>
-  <version>0.0.2</version>
+  <version>0.0.3</version>
   <name>LWJGL PROJET MINECRAFT</name>
   <url>http://www.example.com</url>
 
@@ -114,6 +114,7 @@
   </dependencies>
 
   <build>
+    <finalName>Wankraft-${project.version}</finalName>
     <plugins>
 
       <!-- Lancement via Maven -->
@@ -150,6 +151,20 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
+        <configuration>          
+          <!-- exclure un fichier spécifique (nécessite une version > 2.10.2) -->
+          <sourceFileExcludes>
+              <sourceFileExclude>**/FastNoiseLite.java</sourceFileExclude>
+          </sourceFileExcludes>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+            <skip>true</skip>
+        </configuration>
       </plugin>
 
       <!-- Extraire les natives dans target/natives -->
@@ -174,7 +189,9 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
+        <version>3.7.1</version>
         <configuration>
+          <appendAssemblyId>false</appendAssemblyId>
           <archive>
             <manifest>
               <mainClass>demo.App</mainClass>

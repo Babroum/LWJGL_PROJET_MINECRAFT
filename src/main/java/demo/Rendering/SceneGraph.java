@@ -20,8 +20,13 @@ import demo.Types.Color4f;
  */
 public class SceneGraph {
 
+    /** Nœud racine de la scène. */
     public final Node3D root = new Node3D();
+    /** Couleur de fond de la scène. */
     private Color4f backGroundColor = Color4f.WHITE;    
+
+    /** Constructeur implicite vide */
+    public SceneGraph(){}
 
     /**
      * Définis la couleur de la scène
@@ -55,7 +60,11 @@ public class SceneGraph {
         return this.getNumberOfNode(root) - 1;
     }
 
-    // calcule le nombre de sommet
+    /**
+     * Calcule le nombre de sommets dans tous les chunks chargés
+     * @param node Node3D, non utilisé, conservé pour compatibilité de signature
+     * @return int
+     */
     private int getNumberOfVertex(Node3D node){
         int count = 0;
         for (Chunk chunk : ChunksManager.getAllChunks()) {
@@ -67,7 +76,11 @@ public class SceneGraph {
         return count;
     }
 
-    // calcule récursivement le nombre de nœud
+    /**
+     * Calcule récursivement le nombre de nœuds
+     * @param node Node3D, nœud de départ
+     * @return int
+     */
     private int getNumberOfNode(Node3D node){
         int count = 1;
 

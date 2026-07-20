@@ -14,7 +14,16 @@ import demo.Rendering.Render;
  * Permet de lire des fichiers
  */
 public class FileLoader {
-    // permet de lire les images/sons qui seront dans le .jar
+
+    /** Constructeur implicite vide */
+    public FileLoader(){}
+
+    /**
+     * Lit un fichier (image/son) depuis le classpath (.jar) et le retourne en ByteBuffer off-heap
+     * @param path chemin du fichier dans le classpath
+     * @return ByteBuffer, le contenu du fichier
+     * @throws IOException si la lecture du fichier échoue
+     */
     public static ByteBuffer loadFileFromClasspathBB(String path) throws IOException {
         InputStream is = Render.class.getResourceAsStream(path);
         byte[] bytes = is.readAllBytes();
@@ -23,10 +32,14 @@ public class FileLoader {
         return buffer;
     }
 
-    // permet de lire les fichiers qui seront dans le .jar
+    /**
+     * Lit un fichier shader depuis le classpath (.jar) et le retourne en String
+     * @param path chemin du fichier dans le classpath
+     * @return String, le contenu du fichier
+     * @throws IOException si la lecture du fichier échoue
+     */
     public static String loadShaderFromClasspathS(String path) throws IOException {
         InputStream is = ShadersManager.class.getResourceAsStream(path);
         return new String(is.readAllBytes(), StandardCharsets.UTF_8);
     }
 }
-

@@ -34,9 +34,11 @@ public class Window {
      */
     public static int height;
 
-    // Référence de la fenêtre
+    /** Référence de la fenêtre GLFW. */
     public static long window;
+    /** Gestionnaire de l'événement de fermeture de la fenêtre. */
     private static WindowCloseEventManager windowCloseEventManager = new WindowCloseEventManager();
+    /** Callback exécuté une fois le contexte OpenGL prêt. */
     private static Runnable onReady;
 
     /**
@@ -56,6 +58,10 @@ public class Window {
         new InputManager();  
     }
 
+    /**
+     * Démarre la fenêtre dans un nouveau thread
+     * @param onReady Runnable exécuté une fois le contexte OpenGL créé
+     */
     public static void startWindow(Runnable onReady){   
         // onReady permet juste de verifie que le contexte openGL est créer avant de lancer le dessin      
         Window.onReady = onReady;
@@ -64,6 +70,11 @@ public class Window {
         (new Thread(Window::init)).start(); // démarre le thread
     }
 
+    /**
+     * Initialise GLFW, crée la fenêtre et le contexte OpenGL, puis lance la boucle de rendu
+     * @throws IllegalStateException si GLFW ne peut pas être initialisé
+     * @throws RuntimeException si la fenêtre ne peut pas être créée
+     */
     @OpenGLThread
     public static void init(){
         // Toutes les méthodes exécuté depuis init seront dans le thread car init est dans le thread
@@ -123,6 +134,9 @@ public class Window {
         Render.rendering();
     }
 
+    /**
+     * Ferme proprement la fenêtre, libère les ressources OpenGL/GLFW/audio et termine le programme
+     */
     public static void exitWindow()
     {
         // On libère tous les listeners
@@ -152,6 +166,9 @@ public class Window {
         System.exit(0);
     }
 
+    /**
+     * Termine la gestion GLFW et arrête de traquer les erreurs
+     */
     private static void closeGLFW()
     {
         // Termine la gestion de la fenêtre par GLFW

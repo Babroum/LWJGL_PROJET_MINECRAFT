@@ -7,6 +7,9 @@ import java.util.Map;
 
 import demo.Managers.TextureManager;
 
+/**
+ * Représente la définition d'un bloc chargée depuis un fichier JSON
+ */
 @JsonIgnoreProperties(ignoreUnknown = true) // Évite les crashs si le JSON a des champs en trop
 public class BlockDefinition {
     /**
@@ -58,13 +61,16 @@ public class BlockDefinition {
      */
     public int z;
     
-    // "up" -> "grass_bloc_top", "down" -> "dirt", etc.
+    /** Textures du bloc par direction, exemple : "up" -> "grass_bloc_top", "down" -> "dirt", etc. */
     public Map<String, String> textures;
 
-    // C'est ici qu'on stocke les ingrédients "prêts"
+    /** Textures déjà converties en index OpenGL, prêtes à l'emploi (clé = id de direction). */
     private final Map<Integer, Integer> bakedTextures = new HashMap<>();
 
-    // Appelé UNE SEULE FOIS dans le blocsManager après le chargement
+    /**
+     * Convertit les noms de texture en index OpenGL. <br>
+     * Appelé une seule fois dans le BlocksManager après le chargement
+     */
     public void bake() {
         if (textures == null) return;
         
@@ -101,9 +107,16 @@ public class BlockDefinition {
         }
     }
 
-    // Constructeur vide requis par Jackson
+    /**
+     * Constructeur vide requis par Jackson
+     * @throws Exception jamais levée ici, requis par Jackson
+     */
     public BlockDefinition() throws Exception {}
 
+    /**
+     * Vérifie la cohérence des valeurs chargées depuis le JSON
+     * @throws Exception si une valeur est hors des bornes autorisées
+     */
     public void checkInfo() throws Exception {
         if (opacity > 15){
             throw new Exception("Erreur JSON (id=" + this.id + ") : Opacity > 15");
@@ -173,7 +186,12 @@ public class BlockDefinition {
         }
     }
 
-    // Cette méthode remplace l'ancien getTexture(Directions)
+    /**
+     * Retourne l'index de texture déjà préparé pour une direction donnée. <br>
+     * Remplace l'ancien getTexture(Directions)
+     * @param direction id de la direction (0=north, 1=south, 2=west, 3=east, 4=up, 5=down, 6=all)
+     * @return int, index de texture, ou celui de "all" si absent, ou 0 par défaut
+     */
     public int getTextureLayer(int direction) {
         // Plus de recherche de nom, plus d'appel au TextureManager
         // On récupère juste le chiffre déjà prêt

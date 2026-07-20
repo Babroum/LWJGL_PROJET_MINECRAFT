@@ -16,22 +16,60 @@ import demo.Others.BlockDefinition;
  */
 public class Chunk extends Node3D{
     
+    /**
+     * Nombre de SubChunks empilés verticalement dans un chunk.
+     */
     public static final int SUBCHUNKCOUNT = 16;
+    /**
+     * Tableau des SubChunks composant ce chunk, du bas vers le haut.
+     */
     public SubChunk[] subChunks;
 
+    /**
+     * Coordonnée X minimale (globale) du chunk, utilisée pour le frustum culling.
+     */
     private int minX;
+    /**
+     * Coordonnée Y minimale (globale) du chunk, utilisée pour le frustum culling.
+     */
     private int minY;
+    /**
+     * Coordonnée Z minimale (globale) du chunk, utilisée pour le frustum culling.
+     */
     private int minZ;
 
+    /**
+     * Coordonnée X maximale (globale) du chunk, utilisée pour le frustum culling.
+     */
     private int maxX;
+    /**
+     * Coordonnée Y maximale (globale) du chunk, utilisée pour le frustum culling.
+     */
     private int maxY;
+    /**
+     * Coordonnée Z maximale (globale) du chunk, utilisée pour le frustum culling.
+     */
     private int maxZ;
 
+    /**
+     * Tampon réutilisable stockant les coordonnées Y d'une colonne lors de la
+     * propagation d'obscurité (voir {@link #updateHeightMapAtWhenAdd}).
+     */
     private int[] colY      = new int[256];
+    /**
+     * Tampon réutilisable stockant les valeurs de lumière d'une colonne lors de la
+     * propagation d'obscurité (voir {@link #updateHeightMapAtWhenAdd}).
+     */
     private byte[] colLight = new byte[256];
 
+    /**
+     * Vrai lorsque le chunk a fini son initialisation (génération/chargement) et peut être utilisé.
+     */
     public volatile boolean isReady = false;
 
+    /**
+     * Compteur du nombre de meshes de SubChunks en attente de traitement pour ce chunk.
+     */
     public AtomicInteger pendingMeshCount = new AtomicInteger(0);
 
     /**
@@ -108,7 +146,7 @@ public class Chunk extends Node3D{
     /**
      * Met à jour la height map quand un bloc est poser si besoin, et propage de l'obscurité
      * @param x Coordonnées en x (locale) 0-15
-     * @param x Coordonnées en y (locale) 0-255
+     * @param y Coordonnées en y (locale) 0-255
      * @param z Coordonnées en z (locale) 0-15
      */
     @ChunkThread
@@ -166,7 +204,7 @@ public class Chunk extends Node3D{
     /**
      * Met à jour la height map quand un bloc est casser si besoin, et ajoute les 6 voisins à la propagation de lumière
      * @param x Coordonnées en x (locale) 0-15
-     * @param x Coordonnées en y (locale) 0-255
+     * @param y Coordonnées en y (locale) 0-255
      * @param z Coordonnées en z (locale) 0-15
      */
     public void updateHeightMapAtWhenBreak(int x, int y, int z){
@@ -238,6 +276,7 @@ public class Chunk extends Node3D{
      * @param y Coordonnées en y (global)
      * @param z Coordonnées en z (locale) 0-15
      * @return Retourne le bloc trouvé
+     * @throws RuntimeException si y est en dehors de la plage valide (0 à CHUNKSIZEHEIGHT-1)
      */
     public BlockDefinition getBlock(int x, int y, int z){
         if (y < 0 || y >= SubChunk.CHUNKSIZEHEIGHT){throw new RuntimeException("Valeur en Y incorrect");}
@@ -292,7 +331,7 @@ public class Chunk extends Node3D{
      * @param x int
      * @param y int
      * @param z int
-     * @throws IncorrectCoordinates
+     * @throws RuntimeException si les coordonnées sont en dehors du chunk
      */
     @ChunkThread
     public void addBlockToChunk(BlockDefinition type, int x, int y, int z){
@@ -309,7 +348,7 @@ public class Chunk extends Node3D{
      * @param x int
      * @param y int
      * @param z int
-     * @throws IncorrectCoordinates
+     * @throws RuntimeException si les coordonnées sont en dehors du chunk
      */
     @ChunkThread
     public void removeBlockFromChunk(int x, int y, int z){
@@ -324,6 +363,7 @@ public class Chunk extends Node3D{
      * Retourne le subChunk à la position donné (y).
      * @param y Coordonnée en y (global)
      * @return Le subChunk retourné
+     * @throws RuntimeException si y est en dehors de la plage valide (0 à CHUNKSIZEHEIGHT-1)
      */
     public SubChunk getSubChunkAt(int y){ 
         if (y < 0 || y >= SubChunk.CHUNKSIZEHEIGHT) {
@@ -348,6 +388,10 @@ public class Chunk extends Node3D{
         for(SubChunk sub : this.subChunks) sub.setupSubChunkVBOVAO();
     }
 
+    /**
+     * Dessine tous les SubChunks du chunk (mesh opaque) visibles dans le frustum de la caméra.
+     * @param parentModel matrice modèle du nœud parent
+     */
     @OpenGLThread
     @Override
     public void drawNode(Matrix4f parentModel){
@@ -358,6 +402,10 @@ public class Chunk extends Node3D{
         }
     }
 
+    /**
+     * Dessine tous les SubChunks du chunk (mesh du verre) visibles dans le frustum de la caméra.
+     * @param parentModel matrice modèle du nœud parent
+     */
     @OpenGLThread
     public void drawNodeGlass(Matrix4f parentModel){        
         for (SubChunk sub : subChunks){
@@ -367,6 +415,10 @@ public class Chunk extends Node3D{
         }        
     }
 
+    /**
+     * Dessine tous les SubChunks du chunk (mesh des liquides) visibles dans le frustum de la caméra.
+     * @param parentModel matrice modèle du nœud parent
+     */
     @OpenGLThread
     public void drawNodeLiquid(Matrix4f parentModel){
         for (SubChunk sub : subChunks){

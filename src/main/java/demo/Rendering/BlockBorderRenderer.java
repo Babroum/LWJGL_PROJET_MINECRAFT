@@ -9,11 +9,18 @@ import demo.Managers.BuffersManager;
 import demo.Managers.PlayersManager;
 import demo.Managers.ShadersManager;
 
+/**
+ * Dessine le contour du bloc visé par le joueur
+ */
 public class BlockBorderRenderer {
 
-    // Un seul VAO partagé pour toutes les bordures
+    /** Id du VAO partagé pour toutes les bordures. */
     private static int vao = 0;
+    /** Id du VBO partagé pour toutes les bordures. */
     private static int vbo = 0;
+
+    /** Constructeur implicite vide */
+    public BlockBorderRenderer(){}
 
     /**
      * Initialise le mesh du contour de bloc

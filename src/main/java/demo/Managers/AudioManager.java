@@ -18,22 +18,46 @@ import static org.lwjgl.stb.STBVorbis.*;
 
 // MERCI CLAUDE CAR C INCOMPREHENSIBLE OPENAL
 
+/**
+ * Gère le son du jeu via OpenAL (chargement, lecture, volume, nettoyage).
+ */
 public class AudioManager {
 
+    /**
+     * Handle du device audio (carte son physique).
+     */
     private static long device;   // représente la carte son physique
+    /**
+     * Handle du contexte audio OpenAL (équivalent d'un contexte OpenGL).
+     */
     private static long context;  // environnement audio (comme un contexte OpenGL)
+    /**
+     * Capacités OpenAL du device courant.
+     */
     private static ALCapabilities caps;
 
     // Stocke les buffers audio (données PCM brutes) par nom
     // ex: "music" -> buffer OpenAL contenant les données du fichier OGG
+    /**
+     * Buffers audio (données PCM décodées) indexés par nom (ex: "music" -> buffer OpenAL du fichier OGG).
+     */
     private static Map<String, Integer> buffers = new HashMap<>();
 
     // Stocke les sources audio (les "joueurs") par nom
     // une source = un objet 3D dans l'espace qui émet un son
     // ex: "music" -> source OpenAL qui joue le buffer "music"
+    /**
+     * Sources audio (objets 3D émetteurs de son) indexées par nom (ex: "music" -> source OpenAL qui joue "music").
+     */
     private static Map<String, Integer> sources = new HashMap<>();
 
+    /**
+     * Sources temporaires créées par {@link #playOnce(String)}, nettoyées périodiquement via {@link #cleanupTempSources()}.
+     */
     private static List<Integer> tempSources = new ArrayList<>();
+
+    /** Constructeur implicite vide */
+    public AudioManager(){}
 
     /**
      * Initialise OpenAL.
@@ -163,6 +187,12 @@ public class AudioManager {
         }
     }
 
+    /**
+     * Joue un son UNE FOIS depuis une source temporaire dédiée, sans interrompre une lecture en cours.
+     * Idéal pour les sons pouvant se chevaucher (plusieurs tirs rapprochés, etc).
+     * La source temporaire est nettoyée automatiquement par {@link #cleanupTempSources()}.
+     * @param name nom du son chargé avec loadSound()
+     */
     public static void playOnce(String name) {
         Integer buffer = buffers.get(name);
         if (buffer == null) {
@@ -299,6 +329,10 @@ public class AudioManager {
         return alGetSourcei(source, AL_SOURCE_STATE) == AL_PLAYING;
     }
 
+    /**
+     * Supprime les sources temporaires créées par {@link #playOnce(String)} dont la lecture est terminée.
+     * A appeler périodiquement (ex: chaque frame ou tick).
+     */
     public static void cleanupTempSources() {
         tempSources.removeIf(source -> {
             if (alGetSourcei(source, AL_SOURCE_STATE) != AL_PLAYING) {

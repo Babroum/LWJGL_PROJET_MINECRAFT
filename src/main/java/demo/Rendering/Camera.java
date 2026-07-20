@@ -17,20 +17,34 @@ import demo.Others.Blocks;
  */
 public class Camera {
     
+    /** Position de la caméra dans le monde. */
     private Vector3f position;
+    /** Direction dans laquelle regarde la caméra. */
     private Vector3f direction;
+    /** Matrice de vue calculée à partir de la position/rotation. */
     private Matrix4f viewMatrix;
+    /** Buffer réutilisé pour envoyer la viewMatrix à OpenGL. */
     private FloatBuffer matrixBuffer = BufferUtils.createFloatBuffer(16);
-    private float yaw = 0;   // Rotation gauche/droite
-    private float pitch = 0; // Rotation haut/bas
+    /** Rotation gauche/droite. */
+    private float yaw = 0;
+    /** Rotation haut/bas. */
+    private float pitch = 0;
 
     // Champs réutilisés à chaque frame
+    /** Position de départ du rayon, réutilisée à chaque appel de {@link #getLookAt(float)}. */
     private final Vector3f rayPos = new Vector3f();
+    /** Direction du rayon, réutilisée à chaque appel de {@link #getLookAt(float)}. */
     private final Vector3f rayDir = new Vector3f();
+    /** Vecteur de direction avant, réutilisé à chaque appel de {@link #getForwardDirection(float)}. */
     private final Vector3f forwardDir = new Vector3f();
+    /** Vecteur de direction droite, réutilisé à chaque appel de {@link #getRightDirection(float)}. */
     private final Vector3f rightDir = new Vector3f();
+    /** Résultat réutilisé du raycast : [0] bloc visé, [1] position où poser. */
     private final Vector3f[] lookAtResult = new Vector3f[]{new Vector3f(), new Vector3f()};
 
+    /**
+     * Créer une nouvelle caméra à la position (0,0,0)
+     */
     public Camera() {
         this.direction = new Vector3f();
         this.position = new Vector3f();
@@ -39,8 +53,8 @@ public class Camera {
 
     /**
      * Ajoute une rotation au vecteur de rotation
-     * @param rx float
-     * @param ry float
+     * @param rx float, rotation horizontale (yaw) en radians
+     * @param ry float, rotation verticale (pitch) en radians
      */
     public void addRotation(float rx, float ry) {
         // rx correspond souvent au mouvement horizontal de la souris (Yaw)
@@ -74,8 +88,8 @@ public class Camera {
     /**
      * Fonctionne comme un raycast <br>
      * Raycast DDA (Digital Differential Analysis)
-     * @param distance float
-     * @return Vector3f[], [0] bloc visé et [1] où poser
+     * @param distance float, distance maximale du raycast
+     * @return Vector3f[], [0] bloc visé et [1] où poser, ou null si aucun bloc trouvé dans la distance
      */
     public Vector3f[] getLookAt(float distance){
         this.rayPos.set(this.position);
@@ -171,7 +185,7 @@ public class Camera {
     /**
      * Permet d'obtenir la direction en avant<br>
      * Ne déplace pas
-     * @param inc float
+     * @param inc float, magnitude du vecteur retourné
      * @return Vector3f
      */
     public Vector3f getForwardDirection(float inc) {
@@ -190,7 +204,7 @@ public class Camera {
     /**
      * Permet d'obtenir la direction sur le côté<br>
      * Ne déplace pas
-     * @param inc float
+     * @param inc float, magnitude du vecteur retourné
      * @return Vector3f
      */
     public Vector3f getRightDirection(float inc) {
@@ -206,13 +220,17 @@ public class Camera {
     /**
      * Permet d'obtenir la direction sur le dessus<br>
      * Ne déplace pas
-     * @param inc float
+     * @param inc float, magnitude du vecteur retourné
      * @return Vector3f
      */
     public Vector3f getUpDirection(float inc){
         return new Vector3f(0, inc, 0);
     }
 
+    /**
+     * Retourne la rotation horizontale actuelle
+     * @return float
+     */
     public float getYaw() {
         return yaw;
     }
@@ -238,8 +256,8 @@ public class Camera {
 
     /**
      * Définis une rotation pour le vecteur de rotation
-     * @param x float
-     * @param y float 
+     * @param x float, pitch en radians
+     * @param y float, yaw en radians
      */
     public void setRotation(float x, float y) {
         // Si x et y sont passés en radians, on les convertit
