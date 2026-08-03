@@ -50,9 +50,6 @@ public class TextRender {
     private float[] data = new float[BUFFERSIZE * 16];
     /** Indices des triangles de chaque caractère. */
     private int[] indices = new int[BUFFERSIZE * 6];
-    
-    /** Buffer réutilisé pour la matrice orthonormée du texte. */
-    private FloatBuffer buffer;
 
     /**
      * Charge l'image des caractères en mémoire <br>
@@ -69,8 +66,6 @@ public class TextRender {
         this.gridHeight = gHeight;
         this.fontPerRow = ftPerRow;
         this.chars = chars;
-
-        this.buffer = MemoryUtil.memAllocFloat(16);
 
         // pour opengl les buffers          
         IntBuffer width   = MemoryUtil.memAllocInt(1);
@@ -129,11 +124,8 @@ public class TextRender {
 
         if (text == null) return;
 
-        ShadersManager.useTextShader();
-        ShadersManager.runTextOrtho(this.buffer, Window.width, Window.height);
         ShadersManager.runTextFragmentColor(color.red, color.green, color.blue, color.alpha);
 
-        GL11.glDisable(GL11.GL_DEPTH_TEST);
         GL20.glActiveTexture(GL20.GL_TEXTURE0);
         GL11.glBindTexture(GL11.GL_TEXTURE_2D, this.textureId);
         GL20.glUniform1i(this.texUniformLocation, 0);
@@ -163,11 +155,7 @@ public class TextRender {
 
         GL30.glBindVertexArray(ids[1]);
         GL11.glDrawElements(GL11.GL_TRIANGLES, text.length() * 6, GL11.GL_UNSIGNED_INT, 0);
-        GL30.glBindVertexArray(0);
-
-        GL11.glEnable(GL11.GL_DEPTH_TEST);
-
-        ShadersManager.useShader();      
+        GL30.glBindVertexArray(0);  
     }
 
     /**
@@ -219,7 +207,6 @@ public class TextRender {
     public void cleanup() {
         MemoryUtil.memFree(this.vertexsBuffer);
         MemoryUtil.memFree(this.indicesBuffer);
-        MemoryUtil.memFree(this.buffer);
         GL11.glDeleteTextures(this.textureId);
     }
 }

@@ -10,6 +10,7 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL13;
+import org.lwjgl.system.MemoryUtil;
 
 import demo.Annotations.OpenGLThread;
 import demo.Events.KeyboardInput;
@@ -214,6 +215,10 @@ public class Render {
         GL11.glEnable(GL11.GL_DEPTH_TEST);
 
         // === PASSE 3 : dessiner le texte/HUD par-dessus, hors FBO ===
+        ShadersManager.useTextShader();
+        FloatBuffer buffer = MemoryUtil.memAllocFloat(16);
+        ShadersManager.runTextOrtho(buffer, Window.width, Window.height);
+        GL11.glDisable(GL11.GL_DEPTH_TEST);
         Render.calculateFPS(delta);
 
         Render.getTextRender().drawText("+", Window.width / 2, Window.height / 2, 30, Color4f.BLACK);
@@ -234,6 +239,10 @@ public class Render {
                 Render.getTextRender().drawText(lines[i], 0, 20 + i * 20, 15, Color4f.PURPLE);
             }
         }    
+
+        GL11.glEnable(GL11.GL_DEPTH_TEST);        
+        MemoryUtil.memFree(buffer);
+        ShadersManager.useShader();    
 
         AudioManager.cleanupTempSources();
         
