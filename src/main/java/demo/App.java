@@ -14,6 +14,7 @@ import javax.imageio.ImageIO;
 
 import demo.Managers.BenchmarkManager;
 import demo.Others.ChunkSerializer;
+import demo.Rendering.GuiRenderer;
 import demo.Rendering.SceneGraph;
 import demo.Rendering.Window;
 
@@ -45,6 +46,7 @@ public class App
     {   
         List<GuiImageEntry> entries = listAllGuiFiles("src/main/resources/Textures/GUI");
         mergeFilesGrid(entries, "atlas_GUI.png");
+        GuiRenderer.createImagesAtlas();
         /*
         // création de la fenêtre 
         new Window(1200,800);

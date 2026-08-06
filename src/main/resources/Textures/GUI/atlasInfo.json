@@ -1,0 +1,3043 @@
+{
+  "atlasWidth" : 1024,
+  "atlasHeight" : 1500,
+  "textures" : [ {
+    "name" : "slide_vertical_grey.png",
+    "parentFolder" : "Yellow",
+    "x" : 0,
+    "y" : 0,
+    "width" : 16,
+    "height" : 96
+  }, {
+    "name" : "slide_vertical_color.png",
+    "parentFolder" : "Yellow",
+    "x" : 16,
+    "y" : 0,
+    "width" : 16,
+    "height" : 96
+  }, {
+    "name" : "slide_vertical_grey.png",
+    "parentFolder" : "Red",
+    "x" : 32,
+    "y" : 0,
+    "width" : 16,
+    "height" : 96
+  }, {
+    "name" : "slide_vertical_color.png",
+    "parentFolder" : "Red",
+    "x" : 48,
+    "y" : 0,
+    "width" : 16,
+    "height" : 96
+  }, {
+    "name" : "slide_vertical_grey.png",
+    "parentFolder" : "Grey",
+    "x" : 64,
+    "y" : 0,
+    "width" : 16,
+    "height" : 96
+  }, {
+    "name" : "slide_vertical_color.png",
+    "parentFolder" : "Grey",
+    "x" : 80,
+    "y" : 0,
+    "width" : 16,
+    "height" : 96
+  }, {
+    "name" : "slide_vertical_grey.png",
+    "parentFolder" : "Green",
+    "x" : 96,
+    "y" : 0,
+    "width" : 16,
+    "height" : 96
+  }, {
+    "name" : "slide_vertical_color.png",
+    "parentFolder" : "Green",
+    "x" : 112,
+    "y" : 0,
+    "width" : 16,
+    "height" : 96
+  }, {
+    "name" : "slide_vertical_grey.png",
+    "parentFolder" : "Blue",
+    "x" : 128,
+    "y" : 0,
+    "width" : 16,
+    "height" : 96
+  }, {
+    "name" : "slide_vertical_color.png",
+    "parentFolder" : "Blue",
+    "x" : 144,
+    "y" : 0,
+    "width" : 16,
+    "height" : 96
+  }, {
+    "name" : "button_square_line.png",
+    "parentFolder" : "Yellow",
+    "x" : 160,
+    "y" : 0,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_square_gradient.png",
+    "parentFolder" : "Yellow",
+    "x" : 224,
+    "y" : 0,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_square_gloss.png",
+    "parentFolder" : "Yellow",
+    "x" : 288,
+    "y" : 0,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_square_flat.png",
+    "parentFolder" : "Yellow",
+    "x" : 352,
+    "y" : 0,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_square_depth_line.png",
+    "parentFolder" : "Yellow",
+    "x" : 416,
+    "y" : 0,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_square_depth_gradient.png",
+    "parentFolder" : "Yellow",
+    "x" : 480,
+    "y" : 0,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_square_depth_gloss.png",
+    "parentFolder" : "Yellow",
+    "x" : 544,
+    "y" : 0,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_square_depth_flat.png",
+    "parentFolder" : "Yellow",
+    "x" : 608,
+    "y" : 0,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_square_depth_border.png",
+    "parentFolder" : "Yellow",
+    "x" : 672,
+    "y" : 0,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_square_border.png",
+    "parentFolder" : "Yellow",
+    "x" : 736,
+    "y" : 0,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_line.png",
+    "parentFolder" : "Yellow",
+    "x" : 800,
+    "y" : 0,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_gradient.png",
+    "parentFolder" : "Yellow",
+    "x" : 864,
+    "y" : 0,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_gloss.png",
+    "parentFolder" : "Yellow",
+    "x" : 928,
+    "y" : 0,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_flat.png",
+    "parentFolder" : "Yellow",
+    "x" : 992,
+    "y" : 96,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_depth_line.png",
+    "parentFolder" : "Yellow",
+    "x" : 64,
+    "y" : 96,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_depth_gradient.png",
+    "parentFolder" : "Yellow",
+    "x" : 128,
+    "y" : 96,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_depth_gloss.png",
+    "parentFolder" : "Yellow",
+    "x" : 192,
+    "y" : 96,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_depth_flat.png",
+    "parentFolder" : "Yellow",
+    "x" : 256,
+    "y" : 96,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_depth_border.png",
+    "parentFolder" : "Yellow",
+    "x" : 320,
+    "y" : 96,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_border.png",
+    "parentFolder" : "Yellow",
+    "x" : 384,
+    "y" : 96,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_line.png",
+    "parentFolder" : "Yellow",
+    "x" : 448,
+    "y" : 96,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_gradient.png",
+    "parentFolder" : "Yellow",
+    "x" : 640,
+    "y" : 96,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_gloss.png",
+    "parentFolder" : "Yellow",
+    "x" : 832,
+    "y" : 96,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_flat.png",
+    "parentFolder" : "Yellow",
+    "x" : 1024,
+    "y" : 160,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_depth_line.png",
+    "parentFolder" : "Yellow",
+    "x" : 192,
+    "y" : 160,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_depth_gradient.png",
+    "parentFolder" : "Yellow",
+    "x" : 384,
+    "y" : 160,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_depth_gloss.png",
+    "parentFolder" : "Yellow",
+    "x" : 576,
+    "y" : 160,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_depth_flat.png",
+    "parentFolder" : "Yellow",
+    "x" : 768,
+    "y" : 160,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_depth_border.png",
+    "parentFolder" : "Yellow",
+    "x" : 960,
+    "y" : 224,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_border.png",
+    "parentFolder" : "Yellow",
+    "x" : 192,
+    "y" : 224,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_square_line.png",
+    "parentFolder" : "Red",
+    "x" : 384,
+    "y" : 224,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_square_gradient.png",
+    "parentFolder" : "Red",
+    "x" : 448,
+    "y" : 224,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_square_gloss.png",
+    "parentFolder" : "Red",
+    "x" : 512,
+    "y" : 224,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_square_flat.png",
+    "parentFolder" : "Red",
+    "x" : 576,
+    "y" : 224,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_square_depth_line.png",
+    "parentFolder" : "Red",
+    "x" : 640,
+    "y" : 224,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_square_depth_gradient.png",
+    "parentFolder" : "Red",
+    "x" : 704,
+    "y" : 224,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_square_depth_gloss.png",
+    "parentFolder" : "Red",
+    "x" : 768,
+    "y" : 224,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_square_depth_flat.png",
+    "parentFolder" : "Red",
+    "x" : 832,
+    "y" : 224,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_square_depth_border.png",
+    "parentFolder" : "Red",
+    "x" : 896,
+    "y" : 224,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_square_border.png",
+    "parentFolder" : "Red",
+    "x" : 960,
+    "y" : 224,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_line.png",
+    "parentFolder" : "Red",
+    "x" : 1024,
+    "y" : 288,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_gradient.png",
+    "parentFolder" : "Red",
+    "x" : 64,
+    "y" : 288,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_gloss.png",
+    "parentFolder" : "Red",
+    "x" : 128,
+    "y" : 288,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_flat.png",
+    "parentFolder" : "Red",
+    "x" : 192,
+    "y" : 288,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_depth_line.png",
+    "parentFolder" : "Red",
+    "x" : 256,
+    "y" : 288,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_depth_gradient.png",
+    "parentFolder" : "Red",
+    "x" : 320,
+    "y" : 288,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_depth_gloss.png",
+    "parentFolder" : "Red",
+    "x" : 384,
+    "y" : 288,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_depth_flat.png",
+    "parentFolder" : "Red",
+    "x" : 448,
+    "y" : 288,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_depth_border.png",
+    "parentFolder" : "Red",
+    "x" : 512,
+    "y" : 288,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_border.png",
+    "parentFolder" : "Red",
+    "x" : 576,
+    "y" : 288,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_line.png",
+    "parentFolder" : "Red",
+    "x" : 640,
+    "y" : 288,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_gradient.png",
+    "parentFolder" : "Red",
+    "x" : 832,
+    "y" : 288,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_gloss.png",
+    "parentFolder" : "Red",
+    "x" : 1024,
+    "y" : 352,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_flat.png",
+    "parentFolder" : "Red",
+    "x" : 192,
+    "y" : 352,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_depth_line.png",
+    "parentFolder" : "Red",
+    "x" : 384,
+    "y" : 352,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_depth_gradient.png",
+    "parentFolder" : "Red",
+    "x" : 576,
+    "y" : 352,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_depth_gloss.png",
+    "parentFolder" : "Red",
+    "x" : 768,
+    "y" : 352,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_depth_flat.png",
+    "parentFolder" : "Red",
+    "x" : 960,
+    "y" : 416,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_depth_border.png",
+    "parentFolder" : "Red",
+    "x" : 192,
+    "y" : 416,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_border.png",
+    "parentFolder" : "Red",
+    "x" : 384,
+    "y" : 416,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_square_line.png",
+    "parentFolder" : "Grey",
+    "x" : 576,
+    "y" : 416,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_square_gradient.png",
+    "parentFolder" : "Grey",
+    "x" : 640,
+    "y" : 416,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_square_gloss.png",
+    "parentFolder" : "Grey",
+    "x" : 704,
+    "y" : 416,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_square_flat.png",
+    "parentFolder" : "Grey",
+    "x" : 768,
+    "y" : 416,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_square_depth_line.png",
+    "parentFolder" : "Grey",
+    "x" : 832,
+    "y" : 416,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_square_depth_gradient.png",
+    "parentFolder" : "Grey",
+    "x" : 896,
+    "y" : 416,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_square_depth_gloss.png",
+    "parentFolder" : "Grey",
+    "x" : 960,
+    "y" : 416,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_square_depth_flat.png",
+    "parentFolder" : "Grey",
+    "x" : 1024,
+    "y" : 480,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_square_depth_border.png",
+    "parentFolder" : "Grey",
+    "x" : 64,
+    "y" : 480,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_square_border.png",
+    "parentFolder" : "Grey",
+    "x" : 128,
+    "y" : 480,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_line.png",
+    "parentFolder" : "Grey",
+    "x" : 192,
+    "y" : 480,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_gradient.png",
+    "parentFolder" : "Grey",
+    "x" : 256,
+    "y" : 480,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_gloss.png",
+    "parentFolder" : "Grey",
+    "x" : 320,
+    "y" : 480,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_flat.png",
+    "parentFolder" : "Grey",
+    "x" : 384,
+    "y" : 480,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_depth_line.png",
+    "parentFolder" : "Grey",
+    "x" : 448,
+    "y" : 480,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_depth_gradient.png",
+    "parentFolder" : "Grey",
+    "x" : 512,
+    "y" : 480,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_depth_gloss.png",
+    "parentFolder" : "Grey",
+    "x" : 576,
+    "y" : 480,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_depth_flat.png",
+    "parentFolder" : "Grey",
+    "x" : 640,
+    "y" : 480,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_depth_border.png",
+    "parentFolder" : "Grey",
+    "x" : 704,
+    "y" : 480,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_border.png",
+    "parentFolder" : "Grey",
+    "x" : 768,
+    "y" : 480,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_line.png",
+    "parentFolder" : "Grey",
+    "x" : 832,
+    "y" : 480,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_gradient.png",
+    "parentFolder" : "Grey",
+    "x" : 1024,
+    "y" : 544,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_gloss.png",
+    "parentFolder" : "Grey",
+    "x" : 192,
+    "y" : 544,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_flat.png",
+    "parentFolder" : "Grey",
+    "x" : 384,
+    "y" : 544,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_depth_line.png",
+    "parentFolder" : "Grey",
+    "x" : 576,
+    "y" : 544,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_depth_gradient.png",
+    "parentFolder" : "Grey",
+    "x" : 768,
+    "y" : 544,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_depth_gloss.png",
+    "parentFolder" : "Grey",
+    "x" : 960,
+    "y" : 608,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_depth_flat.png",
+    "parentFolder" : "Grey",
+    "x" : 192,
+    "y" : 608,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_depth_border.png",
+    "parentFolder" : "Grey",
+    "x" : 384,
+    "y" : 608,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_border.png",
+    "parentFolder" : "Grey",
+    "x" : 576,
+    "y" : 608,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_square_line.png",
+    "parentFolder" : "Green",
+    "x" : 768,
+    "y" : 608,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_square_gradient.png",
+    "parentFolder" : "Green",
+    "x" : 832,
+    "y" : 608,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_square_gloss.png",
+    "parentFolder" : "Green",
+    "x" : 896,
+    "y" : 608,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_square_flat.png",
+    "parentFolder" : "Green",
+    "x" : 960,
+    "y" : 608,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_square_depth_line.png",
+    "parentFolder" : "Green",
+    "x" : 1024,
+    "y" : 672,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_square_depth_gradient.png",
+    "parentFolder" : "Green",
+    "x" : 64,
+    "y" : 672,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_square_depth_gloss.png",
+    "parentFolder" : "Green",
+    "x" : 128,
+    "y" : 672,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_square_depth_flat.png",
+    "parentFolder" : "Green",
+    "x" : 192,
+    "y" : 672,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_square_depth_border.png",
+    "parentFolder" : "Green",
+    "x" : 256,
+    "y" : 672,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_square_border.png",
+    "parentFolder" : "Green",
+    "x" : 320,
+    "y" : 672,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_line.png",
+    "parentFolder" : "Green",
+    "x" : 384,
+    "y" : 672,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_gradient.png",
+    "parentFolder" : "Green",
+    "x" : 448,
+    "y" : 672,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_gloss.png",
+    "parentFolder" : "Green",
+    "x" : 512,
+    "y" : 672,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_flat.png",
+    "parentFolder" : "Green",
+    "x" : 576,
+    "y" : 672,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_depth_line.png",
+    "parentFolder" : "Green",
+    "x" : 640,
+    "y" : 672,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_depth_gradient.png",
+    "parentFolder" : "Green",
+    "x" : 704,
+    "y" : 672,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_depth_gloss.png",
+    "parentFolder" : "Green",
+    "x" : 768,
+    "y" : 672,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_depth_flat.png",
+    "parentFolder" : "Green",
+    "x" : 832,
+    "y" : 672,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_depth_border.png",
+    "parentFolder" : "Green",
+    "x" : 896,
+    "y" : 672,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_border.png",
+    "parentFolder" : "Green",
+    "x" : 960,
+    "y" : 672,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_line.png",
+    "parentFolder" : "Green",
+    "x" : 1024,
+    "y" : 736,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_gradient.png",
+    "parentFolder" : "Green",
+    "x" : 192,
+    "y" : 736,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_gloss.png",
+    "parentFolder" : "Green",
+    "x" : 384,
+    "y" : 736,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_flat.png",
+    "parentFolder" : "Green",
+    "x" : 576,
+    "y" : 736,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_depth_line.png",
+    "parentFolder" : "Green",
+    "x" : 768,
+    "y" : 736,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_depth_gradient.png",
+    "parentFolder" : "Green",
+    "x" : 960,
+    "y" : 800,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_depth_gloss.png",
+    "parentFolder" : "Green",
+    "x" : 192,
+    "y" : 800,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_depth_flat.png",
+    "parentFolder" : "Green",
+    "x" : 384,
+    "y" : 800,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_depth_border.png",
+    "parentFolder" : "Green",
+    "x" : 576,
+    "y" : 800,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_border.png",
+    "parentFolder" : "Green",
+    "x" : 768,
+    "y" : 800,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "input_square.png",
+    "parentFolder" : "Extra",
+    "x" : 960,
+    "y" : 800,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "input_rectangle.png",
+    "parentFolder" : "Extra",
+    "x" : 1024,
+    "y" : 864,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "input_outline_square.png",
+    "parentFolder" : "Extra",
+    "x" : 192,
+    "y" : 864,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "input_outline_rectangle.png",
+    "parentFolder" : "Extra",
+    "x" : 256,
+    "y" : 864,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_square_line.png",
+    "parentFolder" : "Extra",
+    "x" : 448,
+    "y" : 864,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_square_depth_line.png",
+    "parentFolder" : "Extra",
+    "x" : 512,
+    "y" : 864,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_line.png",
+    "parentFolder" : "Extra",
+    "x" : 576,
+    "y" : 864,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_depth_line.png",
+    "parentFolder" : "Extra",
+    "x" : 640,
+    "y" : 864,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_line.png",
+    "parentFolder" : "Extra",
+    "x" : 704,
+    "y" : 864,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_depth_line.png",
+    "parentFolder" : "Extra",
+    "x" : 896,
+    "y" : 928,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_square_line.png",
+    "parentFolder" : "Blue",
+    "x" : 192,
+    "y" : 928,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_square_gradient.png",
+    "parentFolder" : "Blue",
+    "x" : 256,
+    "y" : 928,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_square_gloss.png",
+    "parentFolder" : "Blue",
+    "x" : 320,
+    "y" : 928,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_square_flat.png",
+    "parentFolder" : "Blue",
+    "x" : 384,
+    "y" : 928,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_square_depth_line.png",
+    "parentFolder" : "Blue",
+    "x" : 448,
+    "y" : 928,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_square_depth_gradient.png",
+    "parentFolder" : "Blue",
+    "x" : 512,
+    "y" : 928,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_square_depth_gloss.png",
+    "parentFolder" : "Blue",
+    "x" : 576,
+    "y" : 928,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_square_depth_flat.png",
+    "parentFolder" : "Blue",
+    "x" : 640,
+    "y" : 928,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_square_depth_border.png",
+    "parentFolder" : "Blue",
+    "x" : 704,
+    "y" : 928,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_square_border.png",
+    "parentFolder" : "Blue",
+    "x" : 768,
+    "y" : 928,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_line.png",
+    "parentFolder" : "Blue",
+    "x" : 832,
+    "y" : 928,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_gradient.png",
+    "parentFolder" : "Blue",
+    "x" : 896,
+    "y" : 928,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_gloss.png",
+    "parentFolder" : "Blue",
+    "x" : 960,
+    "y" : 928,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_flat.png",
+    "parentFolder" : "Blue",
+    "x" : 1024,
+    "y" : 992,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_depth_line.png",
+    "parentFolder" : "Blue",
+    "x" : 64,
+    "y" : 992,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_depth_gradient.png",
+    "parentFolder" : "Blue",
+    "x" : 128,
+    "y" : 992,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_depth_gloss.png",
+    "parentFolder" : "Blue",
+    "x" : 192,
+    "y" : 992,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_depth_flat.png",
+    "parentFolder" : "Blue",
+    "x" : 256,
+    "y" : 992,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_depth_border.png",
+    "parentFolder" : "Blue",
+    "x" : 320,
+    "y" : 992,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_round_border.png",
+    "parentFolder" : "Blue",
+    "x" : 384,
+    "y" : 992,
+    "width" : 64,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_line.png",
+    "parentFolder" : "Blue",
+    "x" : 448,
+    "y" : 992,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_gradient.png",
+    "parentFolder" : "Blue",
+    "x" : 640,
+    "y" : 992,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_gloss.png",
+    "parentFolder" : "Blue",
+    "x" : 832,
+    "y" : 992,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_flat.png",
+    "parentFolder" : "Blue",
+    "x" : 1024,
+    "y" : 1056,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_depth_line.png",
+    "parentFolder" : "Blue",
+    "x" : 192,
+    "y" : 1056,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_depth_gradient.png",
+    "parentFolder" : "Blue",
+    "x" : 384,
+    "y" : 1056,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_depth_gloss.png",
+    "parentFolder" : "Blue",
+    "x" : 576,
+    "y" : 1056,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_depth_flat.png",
+    "parentFolder" : "Blue",
+    "x" : 768,
+    "y" : 1056,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_depth_border.png",
+    "parentFolder" : "Blue",
+    "x" : 960,
+    "y" : 1120,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "button_rectangle_border.png",
+    "parentFolder" : "Blue",
+    "x" : 192,
+    "y" : 1120,
+    "width" : 192,
+    "height" : 64
+  }, {
+    "name" : "star_outline_depth.png",
+    "parentFolder" : "Yellow",
+    "x" : 384,
+    "y" : 1120,
+    "width" : 64,
+    "height" : 60
+  }, {
+    "name" : "star_outline.png",
+    "parentFolder" : "Yellow",
+    "x" : 448,
+    "y" : 1120,
+    "width" : 64,
+    "height" : 60
+  }, {
+    "name" : "star.png",
+    "parentFolder" : "Yellow",
+    "x" : 512,
+    "y" : 1120,
+    "width" : 64,
+    "height" : 60
+  }, {
+    "name" : "star_outline_depth.png",
+    "parentFolder" : "Red",
+    "x" : 576,
+    "y" : 1120,
+    "width" : 64,
+    "height" : 60
+  }, {
+    "name" : "star_outline.png",
+    "parentFolder" : "Red",
+    "x" : 640,
+    "y" : 1120,
+    "width" : 64,
+    "height" : 60
+  }, {
+    "name" : "star.png",
+    "parentFolder" : "Red",
+    "x" : 704,
+    "y" : 1120,
+    "width" : 64,
+    "height" : 60
+  }, {
+    "name" : "star_outline_depth.png",
+    "parentFolder" : "Grey",
+    "x" : 768,
+    "y" : 1120,
+    "width" : 64,
+    "height" : 60
+  }, {
+    "name" : "star_outline.png",
+    "parentFolder" : "Grey",
+    "x" : 832,
+    "y" : 1120,
+    "width" : 64,
+    "height" : 60
+  }, {
+    "name" : "star.png",
+    "parentFolder" : "Grey",
+    "x" : 896,
+    "y" : 1120,
+    "width" : 64,
+    "height" : 60
+  }, {
+    "name" : "star_outline_depth.png",
+    "parentFolder" : "Green",
+    "x" : 960,
+    "y" : 1120,
+    "width" : 64,
+    "height" : 60
+  }, {
+    "name" : "star_outline.png",
+    "parentFolder" : "Green",
+    "x" : 1024,
+    "y" : 1184,
+    "width" : 64,
+    "height" : 60
+  }, {
+    "name" : "star.png",
+    "parentFolder" : "Green",
+    "x" : 64,
+    "y" : 1184,
+    "width" : 64,
+    "height" : 60
+  }, {
+    "name" : "star_outline_depth.png",
+    "parentFolder" : "Blue",
+    "x" : 128,
+    "y" : 1184,
+    "width" : 64,
+    "height" : 60
+  }, {
+    "name" : "star_outline.png",
+    "parentFolder" : "Blue",
+    "x" : 192,
+    "y" : 1184,
+    "width" : 64,
+    "height" : 60
+  }, {
+    "name" : "star.png",
+    "parentFolder" : "Blue",
+    "x" : 256,
+    "y" : 1184,
+    "width" : 64,
+    "height" : 60
+  }, {
+    "name" : "icon_repeat_outline.png",
+    "parentFolder" : "Extra",
+    "x" : 320,
+    "y" : 1184,
+    "width" : 45,
+    "height" : 40
+  }, {
+    "name" : "icon_play_outline.png",
+    "parentFolder" : "Extra",
+    "x" : 365,
+    "y" : 1184,
+    "width" : 34,
+    "height" : 38
+  }, {
+    "name" : "icon_repeat_light.png",
+    "parentFolder" : "Extra",
+    "x" : 399,
+    "y" : 1184,
+    "width" : 41,
+    "height" : 36
+  }, {
+    "name" : "icon_repeat_dark.png",
+    "parentFolder" : "Extra",
+    "x" : 440,
+    "y" : 1184,
+    "width" : 41,
+    "height" : 36
+  }, {
+    "name" : "icon_play_light.png",
+    "parentFolder" : "Extra",
+    "x" : 481,
+    "y" : 1184,
+    "width" : 30,
+    "height" : 34
+  }, {
+    "name" : "icon_play_dark.png",
+    "parentFolder" : "Extra",
+    "x" : 511,
+    "y" : 1184,
+    "width" : 30,
+    "height" : 34
+  }, {
+    "name" : "slide_vertical_grey_section_wide.png",
+    "parentFolder" : "Yellow",
+    "x" : 541,
+    "y" : 1184,
+    "width" : 16,
+    "height" : 32
+  }, {
+    "name" : "slide_vertical_color_section_wide.png",
+    "parentFolder" : "Yellow",
+    "x" : 557,
+    "y" : 1184,
+    "width" : 16,
+    "height" : 32
+  }, {
+    "name" : "slide_hangle.png",
+    "parentFolder" : "Yellow",
+    "x" : 573,
+    "y" : 1184,
+    "width" : 24,
+    "height" : 32
+  }, {
+    "name" : "check_square_grey_square.png",
+    "parentFolder" : "Yellow",
+    "x" : 597,
+    "y" : 1184,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_square_grey_cross.png",
+    "parentFolder" : "Yellow",
+    "x" : 629,
+    "y" : 1184,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_square_grey_checkmark.png",
+    "parentFolder" : "Yellow",
+    "x" : 661,
+    "y" : 1184,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_square_grey.png",
+    "parentFolder" : "Yellow",
+    "x" : 693,
+    "y" : 1184,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_square_color_square.png",
+    "parentFolder" : "Yellow",
+    "x" : 725,
+    "y" : 1184,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_square_color_cross.png",
+    "parentFolder" : "Yellow",
+    "x" : 757,
+    "y" : 1184,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_square_color_checkmark.png",
+    "parentFolder" : "Yellow",
+    "x" : 789,
+    "y" : 1184,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_square_color.png",
+    "parentFolder" : "Yellow",
+    "x" : 821,
+    "y" : 1184,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_round_round_circle.png",
+    "parentFolder" : "Yellow",
+    "x" : 853,
+    "y" : 1184,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_round_grey_circle.png",
+    "parentFolder" : "Yellow",
+    "x" : 885,
+    "y" : 1184,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_round_grey.png",
+    "parentFolder" : "Yellow",
+    "x" : 917,
+    "y" : 1184,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_round_color.png",
+    "parentFolder" : "Yellow",
+    "x" : 949,
+    "y" : 1184,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "arrow_decorative_w.png",
+    "parentFolder" : "Yellow",
+    "x" : 981,
+    "y" : 1184,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "arrow_decorative_s.png",
+    "parentFolder" : "Yellow",
+    "x" : 1013,
+    "y" : 1244,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "arrow_decorative_n.png",
+    "parentFolder" : "Yellow",
+    "x" : 32,
+    "y" : 1244,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "arrow_decorative_e.png",
+    "parentFolder" : "Yellow",
+    "x" : 64,
+    "y" : 1244,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "arrow_basic_w.png",
+    "parentFolder" : "Yellow",
+    "x" : 96,
+    "y" : 1244,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "arrow_basic_s.png",
+    "parentFolder" : "Yellow",
+    "x" : 128,
+    "y" : 1244,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "arrow_basic_n.png",
+    "parentFolder" : "Yellow",
+    "x" : 160,
+    "y" : 1244,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "arrow_basic_e.png",
+    "parentFolder" : "Yellow",
+    "x" : 192,
+    "y" : 1244,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "slide_vertical_grey_section_wide.png",
+    "parentFolder" : "Red",
+    "x" : 224,
+    "y" : 1244,
+    "width" : 16,
+    "height" : 32
+  }, {
+    "name" : "slide_vertical_color_section_wide.png",
+    "parentFolder" : "Red",
+    "x" : 240,
+    "y" : 1244,
+    "width" : 16,
+    "height" : 32
+  }, {
+    "name" : "slide_hangle.png",
+    "parentFolder" : "Red",
+    "x" : 256,
+    "y" : 1244,
+    "width" : 24,
+    "height" : 32
+  }, {
+    "name" : "check_square_grey_square.png",
+    "parentFolder" : "Red",
+    "x" : 280,
+    "y" : 1244,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_square_grey_cross.png",
+    "parentFolder" : "Red",
+    "x" : 312,
+    "y" : 1244,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_square_grey_checkmark.png",
+    "parentFolder" : "Red",
+    "x" : 344,
+    "y" : 1244,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_square_grey.png",
+    "parentFolder" : "Red",
+    "x" : 376,
+    "y" : 1244,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_square_color_square.png",
+    "parentFolder" : "Red",
+    "x" : 408,
+    "y" : 1244,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_square_color_cross.png",
+    "parentFolder" : "Red",
+    "x" : 440,
+    "y" : 1244,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_square_color_checkmark.png",
+    "parentFolder" : "Red",
+    "x" : 472,
+    "y" : 1244,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_square_color.png",
+    "parentFolder" : "Red",
+    "x" : 504,
+    "y" : 1244,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_round_round_circle.png",
+    "parentFolder" : "Red",
+    "x" : 536,
+    "y" : 1244,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_round_grey_circle.png",
+    "parentFolder" : "Red",
+    "x" : 568,
+    "y" : 1244,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_round_grey.png",
+    "parentFolder" : "Red",
+    "x" : 600,
+    "y" : 1244,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_round_color.png",
+    "parentFolder" : "Red",
+    "x" : 632,
+    "y" : 1244,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "arrow_decorative_w.png",
+    "parentFolder" : "Red",
+    "x" : 664,
+    "y" : 1244,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "arrow_decorative_s.png",
+    "parentFolder" : "Red",
+    "x" : 696,
+    "y" : 1244,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "arrow_decorative_n.png",
+    "parentFolder" : "Red",
+    "x" : 728,
+    "y" : 1244,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "arrow_decorative_e.png",
+    "parentFolder" : "Red",
+    "x" : 760,
+    "y" : 1244,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "arrow_basic_w.png",
+    "parentFolder" : "Red",
+    "x" : 792,
+    "y" : 1244,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "arrow_basic_s.png",
+    "parentFolder" : "Red",
+    "x" : 824,
+    "y" : 1244,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "arrow_basic_n.png",
+    "parentFolder" : "Red",
+    "x" : 856,
+    "y" : 1244,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "arrow_basic_e.png",
+    "parentFolder" : "Red",
+    "x" : 888,
+    "y" : 1244,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "slide_vertical_grey_section_wide.png",
+    "parentFolder" : "Grey",
+    "x" : 920,
+    "y" : 1244,
+    "width" : 16,
+    "height" : 32
+  }, {
+    "name" : "slide_vertical_color_section_wide.png",
+    "parentFolder" : "Grey",
+    "x" : 936,
+    "y" : 1244,
+    "width" : 16,
+    "height" : 32
+  }, {
+    "name" : "slide_hangle.png",
+    "parentFolder" : "Grey",
+    "x" : 952,
+    "y" : 1244,
+    "width" : 24,
+    "height" : 32
+  }, {
+    "name" : "check_square_grey_square.png",
+    "parentFolder" : "Grey",
+    "x" : 976,
+    "y" : 1244,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_square_grey_cross.png",
+    "parentFolder" : "Grey",
+    "x" : 1008,
+    "y" : 1276,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_square_grey_checkmark.png",
+    "parentFolder" : "Grey",
+    "x" : 32,
+    "y" : 1276,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_square_grey.png",
+    "parentFolder" : "Grey",
+    "x" : 64,
+    "y" : 1276,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_square_color_square.png",
+    "parentFolder" : "Grey",
+    "x" : 96,
+    "y" : 1276,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_square_color_cross.png",
+    "parentFolder" : "Grey",
+    "x" : 128,
+    "y" : 1276,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_square_color_checkmark.png",
+    "parentFolder" : "Grey",
+    "x" : 160,
+    "y" : 1276,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_square_color.png",
+    "parentFolder" : "Grey",
+    "x" : 192,
+    "y" : 1276,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_round_round_circle.png",
+    "parentFolder" : "Grey",
+    "x" : 224,
+    "y" : 1276,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_round_grey_circle.png",
+    "parentFolder" : "Grey",
+    "x" : 256,
+    "y" : 1276,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_round_grey.png",
+    "parentFolder" : "Grey",
+    "x" : 288,
+    "y" : 1276,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_round_color.png",
+    "parentFolder" : "Grey",
+    "x" : 320,
+    "y" : 1276,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "arrow_decorative_w.png",
+    "parentFolder" : "Grey",
+    "x" : 352,
+    "y" : 1276,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "arrow_decorative_s.png",
+    "parentFolder" : "Grey",
+    "x" : 384,
+    "y" : 1276,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "arrow_decorative_n.png",
+    "parentFolder" : "Grey",
+    "x" : 416,
+    "y" : 1276,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "arrow_decorative_e.png",
+    "parentFolder" : "Grey",
+    "x" : 448,
+    "y" : 1276,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "arrow_basic_w.png",
+    "parentFolder" : "Grey",
+    "x" : 480,
+    "y" : 1276,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "arrow_basic_s.png",
+    "parentFolder" : "Grey",
+    "x" : 512,
+    "y" : 1276,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "arrow_basic_n.png",
+    "parentFolder" : "Grey",
+    "x" : 544,
+    "y" : 1276,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "arrow_basic_e.png",
+    "parentFolder" : "Grey",
+    "x" : 576,
+    "y" : 1276,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "slide_vertical_grey_section_wide.png",
+    "parentFolder" : "Green",
+    "x" : 608,
+    "y" : 1276,
+    "width" : 16,
+    "height" : 32
+  }, {
+    "name" : "slide_vertical_color_section_wide.png",
+    "parentFolder" : "Green",
+    "x" : 624,
+    "y" : 1276,
+    "width" : 16,
+    "height" : 32
+  }, {
+    "name" : "slide_hangle.png",
+    "parentFolder" : "Green",
+    "x" : 640,
+    "y" : 1276,
+    "width" : 24,
+    "height" : 32
+  }, {
+    "name" : "check_square_grey_square.png",
+    "parentFolder" : "Green",
+    "x" : 664,
+    "y" : 1276,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_square_grey_cross.png",
+    "parentFolder" : "Green",
+    "x" : 696,
+    "y" : 1276,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_square_grey_checkmark.png",
+    "parentFolder" : "Green",
+    "x" : 728,
+    "y" : 1276,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_square_grey.png",
+    "parentFolder" : "Green",
+    "x" : 760,
+    "y" : 1276,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_square_color_square.png",
+    "parentFolder" : "Green",
+    "x" : 792,
+    "y" : 1276,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_square_color_cross.png",
+    "parentFolder" : "Green",
+    "x" : 824,
+    "y" : 1276,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_square_color_checkmark.png",
+    "parentFolder" : "Green",
+    "x" : 856,
+    "y" : 1276,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_square_color.png",
+    "parentFolder" : "Green",
+    "x" : 888,
+    "y" : 1276,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_round_round_circle.png",
+    "parentFolder" : "Green",
+    "x" : 920,
+    "y" : 1276,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_round_grey_circle.png",
+    "parentFolder" : "Green",
+    "x" : 952,
+    "y" : 1276,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_round_grey.png",
+    "parentFolder" : "Green",
+    "x" : 984,
+    "y" : 1276,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_round_color.png",
+    "parentFolder" : "Green",
+    "x" : 1016,
+    "y" : 1308,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "arrow_decorative_w.png",
+    "parentFolder" : "Green",
+    "x" : 32,
+    "y" : 1308,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "arrow_decorative_s.png",
+    "parentFolder" : "Green",
+    "x" : 64,
+    "y" : 1308,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "arrow_decorative_n.png",
+    "parentFolder" : "Green",
+    "x" : 96,
+    "y" : 1308,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "arrow_decorative_e.png",
+    "parentFolder" : "Green",
+    "x" : 128,
+    "y" : 1308,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "arrow_basic_w.png",
+    "parentFolder" : "Green",
+    "x" : 160,
+    "y" : 1308,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "arrow_basic_s.png",
+    "parentFolder" : "Green",
+    "x" : 192,
+    "y" : 1308,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "arrow_basic_n.png",
+    "parentFolder" : "Green",
+    "x" : 224,
+    "y" : 1308,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "arrow_basic_e.png",
+    "parentFolder" : "Green",
+    "x" : 256,
+    "y" : 1308,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "slide_vertical_grey_section_wide.png",
+    "parentFolder" : "Blue",
+    "x" : 288,
+    "y" : 1308,
+    "width" : 16,
+    "height" : 32
+  }, {
+    "name" : "slide_vertical_color_section_wide.png",
+    "parentFolder" : "Blue",
+    "x" : 304,
+    "y" : 1308,
+    "width" : 16,
+    "height" : 32
+  }, {
+    "name" : "slide_hangle.png",
+    "parentFolder" : "Blue",
+    "x" : 320,
+    "y" : 1308,
+    "width" : 24,
+    "height" : 32
+  }, {
+    "name" : "check_square_grey_square.png",
+    "parentFolder" : "Blue",
+    "x" : 344,
+    "y" : 1308,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_square_grey_cross.png",
+    "parentFolder" : "Blue",
+    "x" : 376,
+    "y" : 1308,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_square_grey_checkmark.png",
+    "parentFolder" : "Blue",
+    "x" : 408,
+    "y" : 1308,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_square_grey.png",
+    "parentFolder" : "Blue",
+    "x" : 440,
+    "y" : 1308,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_square_color_square.png",
+    "parentFolder" : "Blue",
+    "x" : 472,
+    "y" : 1308,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_square_color_cross.png",
+    "parentFolder" : "Blue",
+    "x" : 504,
+    "y" : 1308,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_square_color_checkmark.png",
+    "parentFolder" : "Blue",
+    "x" : 536,
+    "y" : 1308,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_square_color.png",
+    "parentFolder" : "Blue",
+    "x" : 568,
+    "y" : 1308,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_round_round_circle.png",
+    "parentFolder" : "Blue",
+    "x" : 600,
+    "y" : 1308,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_round_grey_circle.png",
+    "parentFolder" : "Blue",
+    "x" : 632,
+    "y" : 1308,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_round_grey.png",
+    "parentFolder" : "Blue",
+    "x" : 664,
+    "y" : 1308,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "check_round_color.png",
+    "parentFolder" : "Blue",
+    "x" : 696,
+    "y" : 1308,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "arrow_decorative_w.png",
+    "parentFolder" : "Blue",
+    "x" : 728,
+    "y" : 1308,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "arrow_decorative_s.png",
+    "parentFolder" : "Blue",
+    "x" : 760,
+    "y" : 1308,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "arrow_decorative_n.png",
+    "parentFolder" : "Blue",
+    "x" : 792,
+    "y" : 1308,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "arrow_decorative_e.png",
+    "parentFolder" : "Blue",
+    "x" : 824,
+    "y" : 1308,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "arrow_basic_w.png",
+    "parentFolder" : "Blue",
+    "x" : 856,
+    "y" : 1308,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "arrow_basic_s.png",
+    "parentFolder" : "Blue",
+    "x" : 888,
+    "y" : 1308,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "arrow_basic_n.png",
+    "parentFolder" : "Blue",
+    "x" : 920,
+    "y" : 1308,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "arrow_basic_e.png",
+    "parentFolder" : "Blue",
+    "x" : 952,
+    "y" : 1308,
+    "width" : 32,
+    "height" : 32
+  }, {
+    "name" : "icon_arrow_up_outline.png",
+    "parentFolder" : "Extra",
+    "x" : 984,
+    "y" : 1308,
+    "width" : 38,
+    "height" : 26
+  }, {
+    "name" : "icon_arrow_down_outline.png",
+    "parentFolder" : "Extra",
+    "x" : 1022,
+    "y" : 1340,
+    "width" : 38,
+    "height" : 26
+  }, {
+    "name" : "arrow_decorative_w_small.png",
+    "parentFolder" : "Yellow",
+    "x" : 38,
+    "y" : 1340,
+    "width" : 24,
+    "height" : 24
+  }, {
+    "name" : "arrow_decorative_s_small.png",
+    "parentFolder" : "Yellow",
+    "x" : 62,
+    "y" : 1340,
+    "width" : 24,
+    "height" : 24
+  }, {
+    "name" : "arrow_decorative_n_small.png",
+    "parentFolder" : "Yellow",
+    "x" : 86,
+    "y" : 1340,
+    "width" : 24,
+    "height" : 24
+  }, {
+    "name" : "arrow_decorative_e_small.png",
+    "parentFolder" : "Yellow",
+    "x" : 110,
+    "y" : 1340,
+    "width" : 24,
+    "height" : 24
+  }, {
+    "name" : "arrow_basic_w_small.png",
+    "parentFolder" : "Yellow",
+    "x" : 134,
+    "y" : 1340,
+    "width" : 24,
+    "height" : 24
+  }, {
+    "name" : "arrow_basic_s_small.png",
+    "parentFolder" : "Yellow",
+    "x" : 158,
+    "y" : 1340,
+    "width" : 24,
+    "height" : 24
+  }, {
+    "name" : "arrow_basic_n_small.png",
+    "parentFolder" : "Yellow",
+    "x" : 182,
+    "y" : 1340,
+    "width" : 24,
+    "height" : 24
+  }, {
+    "name" : "arrow_basic_e_small.png",
+    "parentFolder" : "Yellow",
+    "x" : 206,
+    "y" : 1340,
+    "width" : 24,
+    "height" : 24
+  }, {
+    "name" : "arrow_decorative_w_small.png",
+    "parentFolder" : "Red",
+    "x" : 230,
+    "y" : 1340,
+    "width" : 24,
+    "height" : 24
+  }, {
+    "name" : "arrow_decorative_s_small.png",
+    "parentFolder" : "Red",
+    "x" : 254,
+    "y" : 1340,
+    "width" : 24,
+    "height" : 24
+  }, {
+    "name" : "arrow_decorative_n_small.png",
+    "parentFolder" : "Red",
+    "x" : 278,
+    "y" : 1340,
+    "width" : 24,
+    "height" : 24
+  }, {
+    "name" : "arrow_decorative_e_small.png",
+    "parentFolder" : "Red",
+    "x" : 302,
+    "y" : 1340,
+    "width" : 24,
+    "height" : 24
+  }, {
+    "name" : "arrow_basic_w_small.png",
+    "parentFolder" : "Red",
+    "x" : 326,
+    "y" : 1340,
+    "width" : 24,
+    "height" : 24
+  }, {
+    "name" : "arrow_basic_s_small.png",
+    "parentFolder" : "Red",
+    "x" : 350,
+    "y" : 1340,
+    "width" : 24,
+    "height" : 24
+  }, {
+    "name" : "arrow_basic_n_small.png",
+    "parentFolder" : "Red",
+    "x" : 374,
+    "y" : 1340,
+    "width" : 24,
+    "height" : 24
+  }, {
+    "name" : "arrow_basic_e_small.png",
+    "parentFolder" : "Red",
+    "x" : 398,
+    "y" : 1340,
+    "width" : 24,
+    "height" : 24
+  }, {
+    "name" : "arrow_decorative_w_small.png",
+    "parentFolder" : "Grey",
+    "x" : 422,
+    "y" : 1340,
+    "width" : 24,
+    "height" : 24
+  }, {
+    "name" : "arrow_decorative_s_small.png",
+    "parentFolder" : "Grey",
+    "x" : 446,
+    "y" : 1340,
+    "width" : 24,
+    "height" : 24
+  }, {
+    "name" : "arrow_decorative_n_small.png",
+    "parentFolder" : "Grey",
+    "x" : 470,
+    "y" : 1340,
+    "width" : 24,
+    "height" : 24
+  }, {
+    "name" : "arrow_decorative_e_small.png",
+    "parentFolder" : "Grey",
+    "x" : 494,
+    "y" : 1340,
+    "width" : 24,
+    "height" : 24
+  }, {
+    "name" : "arrow_basic_w_small.png",
+    "parentFolder" : "Grey",
+    "x" : 518,
+    "y" : 1340,
+    "width" : 24,
+    "height" : 24
+  }, {
+    "name" : "arrow_basic_s_small.png",
+    "parentFolder" : "Grey",
+    "x" : 542,
+    "y" : 1340,
+    "width" : 24,
+    "height" : 24
+  }, {
+    "name" : "arrow_basic_n_small.png",
+    "parentFolder" : "Grey",
+    "x" : 566,
+    "y" : 1340,
+    "width" : 24,
+    "height" : 24
+  }, {
+    "name" : "arrow_basic_e_small.png",
+    "parentFolder" : "Grey",
+    "x" : 590,
+    "y" : 1340,
+    "width" : 24,
+    "height" : 24
+  }, {
+    "name" : "arrow_decorative_w_small.png",
+    "parentFolder" : "Green",
+    "x" : 614,
+    "y" : 1340,
+    "width" : 24,
+    "height" : 24
+  }, {
+    "name" : "arrow_decorative_s_small.png",
+    "parentFolder" : "Green",
+    "x" : 638,
+    "y" : 1340,
+    "width" : 24,
+    "height" : 24
+  }, {
+    "name" : "arrow_decorative_n_small.png",
+    "parentFolder" : "Green",
+    "x" : 662,
+    "y" : 1340,
+    "width" : 24,
+    "height" : 24
+  }, {
+    "name" : "arrow_decorative_e_small.png",
+    "parentFolder" : "Green",
+    "x" : 686,
+    "y" : 1340,
+    "width" : 24,
+    "height" : 24
+  }, {
+    "name" : "arrow_basic_w_small.png",
+    "parentFolder" : "Green",
+    "x" : 710,
+    "y" : 1340,
+    "width" : 24,
+    "height" : 24
+  }, {
+    "name" : "arrow_basic_s_small.png",
+    "parentFolder" : "Green",
+    "x" : 734,
+    "y" : 1340,
+    "width" : 24,
+    "height" : 24
+  }, {
+    "name" : "arrow_basic_n_small.png",
+    "parentFolder" : "Green",
+    "x" : 758,
+    "y" : 1340,
+    "width" : 24,
+    "height" : 24
+  }, {
+    "name" : "arrow_basic_e_small.png",
+    "parentFolder" : "Green",
+    "x" : 782,
+    "y" : 1340,
+    "width" : 24,
+    "height" : 24
+  }, {
+    "name" : "arrow_decorative_w_small.png",
+    "parentFolder" : "Blue",
+    "x" : 806,
+    "y" : 1340,
+    "width" : 24,
+    "height" : 24
+  }, {
+    "name" : "arrow_decorative_s_small.png",
+    "parentFolder" : "Blue",
+    "x" : 830,
+    "y" : 1340,
+    "width" : 24,
+    "height" : 24
+  }, {
+    "name" : "arrow_decorative_n_small.png",
+    "parentFolder" : "Blue",
+    "x" : 854,
+    "y" : 1340,
+    "width" : 24,
+    "height" : 24
+  }, {
+    "name" : "arrow_decorative_e_small.png",
+    "parentFolder" : "Blue",
+    "x" : 878,
+    "y" : 1340,
+    "width" : 24,
+    "height" : 24
+  }, {
+    "name" : "arrow_basic_w_small.png",
+    "parentFolder" : "Blue",
+    "x" : 902,
+    "y" : 1340,
+    "width" : 24,
+    "height" : 24
+  }, {
+    "name" : "arrow_basic_s_small.png",
+    "parentFolder" : "Blue",
+    "x" : 926,
+    "y" : 1340,
+    "width" : 24,
+    "height" : 24
+  }, {
+    "name" : "arrow_basic_n_small.png",
+    "parentFolder" : "Blue",
+    "x" : 950,
+    "y" : 1340,
+    "width" : 24,
+    "height" : 24
+  }, {
+    "name" : "arrow_basic_e_small.png",
+    "parentFolder" : "Blue",
+    "x" : 974,
+    "y" : 1340,
+    "width" : 24,
+    "height" : 24
+  }, {
+    "name" : "icon_arrow_up_light.png",
+    "parentFolder" : "Extra",
+    "x" : 998,
+    "y" : 1366,
+    "width" : 34,
+    "height" : 22
+  }, {
+    "name" : "icon_arrow_up_dark.png",
+    "parentFolder" : "Extra",
+    "x" : 34,
+    "y" : 1366,
+    "width" : 34,
+    "height" : 22
+  }, {
+    "name" : "icon_arrow_down_light.png",
+    "parentFolder" : "Extra",
+    "x" : 68,
+    "y" : 1366,
+    "width" : 34,
+    "height" : 22
+  }, {
+    "name" : "icon_arrow_down_dark.png",
+    "parentFolder" : "Extra",
+    "x" : 102,
+    "y" : 1366,
+    "width" : 34,
+    "height" : 22
+  }, {
+    "name" : "icon_outline_cross.png",
+    "parentFolder" : "Yellow",
+    "x" : 136,
+    "y" : 1366,
+    "width" : 18,
+    "height" : 18
+  }, {
+    "name" : "icon_outline_checkmark.png",
+    "parentFolder" : "Yellow",
+    "x" : 154,
+    "y" : 1366,
+    "width" : 20,
+    "height" : 18
+  }, {
+    "name" : "icon_cross.png",
+    "parentFolder" : "Yellow",
+    "x" : 174,
+    "y" : 1366,
+    "width" : 18,
+    "height" : 18
+  }, {
+    "name" : "icon_checkmark.png",
+    "parentFolder" : "Yellow",
+    "x" : 192,
+    "y" : 1366,
+    "width" : 20,
+    "height" : 18
+  }, {
+    "name" : "icon_outline_cross.png",
+    "parentFolder" : "Red",
+    "x" : 212,
+    "y" : 1366,
+    "width" : 18,
+    "height" : 18
+  }, {
+    "name" : "icon_outline_checkmark.png",
+    "parentFolder" : "Red",
+    "x" : 230,
+    "y" : 1366,
+    "width" : 20,
+    "height" : 18
+  }, {
+    "name" : "icon_cross.png",
+    "parentFolder" : "Red",
+    "x" : 250,
+    "y" : 1366,
+    "width" : 18,
+    "height" : 18
+  }, {
+    "name" : "icon_checkmark.png",
+    "parentFolder" : "Red",
+    "x" : 268,
+    "y" : 1366,
+    "width" : 20,
+    "height" : 18
+  }, {
+    "name" : "icon_outline_cross.png",
+    "parentFolder" : "Grey",
+    "x" : 288,
+    "y" : 1366,
+    "width" : 18,
+    "height" : 18
+  }, {
+    "name" : "icon_outline_checkmark.png",
+    "parentFolder" : "Grey",
+    "x" : 306,
+    "y" : 1366,
+    "width" : 20,
+    "height" : 18
+  }, {
+    "name" : "icon_cross.png",
+    "parentFolder" : "Grey",
+    "x" : 326,
+    "y" : 1366,
+    "width" : 18,
+    "height" : 18
+  }, {
+    "name" : "icon_checkmark.png",
+    "parentFolder" : "Grey",
+    "x" : 344,
+    "y" : 1366,
+    "width" : 20,
+    "height" : 18
+  }, {
+    "name" : "icon_outline_cross.png",
+    "parentFolder" : "Green",
+    "x" : 364,
+    "y" : 1366,
+    "width" : 18,
+    "height" : 18
+  }, {
+    "name" : "icon_outline_checkmark.png",
+    "parentFolder" : "Green",
+    "x" : 382,
+    "y" : 1366,
+    "width" : 20,
+    "height" : 18
+  }, {
+    "name" : "icon_cross.png",
+    "parentFolder" : "Green",
+    "x" : 402,
+    "y" : 1366,
+    "width" : 18,
+    "height" : 18
+  }, {
+    "name" : "icon_checkmark.png",
+    "parentFolder" : "Green",
+    "x" : 420,
+    "y" : 1366,
+    "width" : 20,
+    "height" : 18
+  }, {
+    "name" : "icon_outline_cross.png",
+    "parentFolder" : "Blue",
+    "x" : 440,
+    "y" : 1366,
+    "width" : 18,
+    "height" : 18
+  }, {
+    "name" : "icon_outline_checkmark.png",
+    "parentFolder" : "Blue",
+    "x" : 458,
+    "y" : 1366,
+    "width" : 20,
+    "height" : 18
+  }, {
+    "name" : "icon_cross.png",
+    "parentFolder" : "Blue",
+    "x" : 478,
+    "y" : 1366,
+    "width" : 18,
+    "height" : 18
+  }, {
+    "name" : "icon_checkmark.png",
+    "parentFolder" : "Blue",
+    "x" : 496,
+    "y" : 1366,
+    "width" : 20,
+    "height" : 18
+  }, {
+    "name" : "slide_vertical_grey_section.png",
+    "parentFolder" : "Yellow",
+    "x" : 516,
+    "y" : 1366,
+    "width" : 16,
+    "height" : 16
+  }, {
+    "name" : "slide_vertical_color_section.png",
+    "parentFolder" : "Yellow",
+    "x" : 532,
+    "y" : 1366,
+    "width" : 16,
+    "height" : 16
+  }, {
+    "name" : "slide_horizontal_grey_section_wide.png",
+    "parentFolder" : "Yellow",
+    "x" : 548,
+    "y" : 1366,
+    "width" : 32,
+    "height" : 16
+  }, {
+    "name" : "slide_horizontal_grey_section.png",
+    "parentFolder" : "Yellow",
+    "x" : 580,
+    "y" : 1366,
+    "width" : 16,
+    "height" : 16
+  }, {
+    "name" : "slide_horizontal_grey.png",
+    "parentFolder" : "Yellow",
+    "x" : 596,
+    "y" : 1366,
+    "width" : 96,
+    "height" : 16
+  }, {
+    "name" : "slide_horizontal_color_section_wide.png",
+    "parentFolder" : "Yellow",
+    "x" : 692,
+    "y" : 1366,
+    "width" : 32,
+    "height" : 16
+  }, {
+    "name" : "slide_horizontal_color_section.png",
+    "parentFolder" : "Yellow",
+    "x" : 724,
+    "y" : 1366,
+    "width" : 16,
+    "height" : 16
+  }, {
+    "name" : "slide_horizontal_color.png",
+    "parentFolder" : "Yellow",
+    "x" : 740,
+    "y" : 1366,
+    "width" : 96,
+    "height" : 16
+  }, {
+    "name" : "icon_square.png",
+    "parentFolder" : "Yellow",
+    "x" : 836,
+    "y" : 1366,
+    "width" : 16,
+    "height" : 16
+  }, {
+    "name" : "icon_outline_square.png",
+    "parentFolder" : "Yellow",
+    "x" : 852,
+    "y" : 1366,
+    "width" : 16,
+    "height" : 16
+  }, {
+    "name" : "icon_outline_circle.png",
+    "parentFolder" : "Yellow",
+    "x" : 868,
+    "y" : 1366,
+    "width" : 16,
+    "height" : 16
+  }, {
+    "name" : "icon_circle.png",
+    "parentFolder" : "Yellow",
+    "x" : 884,
+    "y" : 1366,
+    "width" : 16,
+    "height" : 16
+  }, {
+    "name" : "slide_vertical_grey_section.png",
+    "parentFolder" : "Red",
+    "x" : 900,
+    "y" : 1366,
+    "width" : 16,
+    "height" : 16
+  }, {
+    "name" : "slide_vertical_color_section.png",
+    "parentFolder" : "Red",
+    "x" : 916,
+    "y" : 1366,
+    "width" : 16,
+    "height" : 16
+  }, {
+    "name" : "slide_horizontal_grey_section_wide.png",
+    "parentFolder" : "Red",
+    "x" : 932,
+    "y" : 1366,
+    "width" : 32,
+    "height" : 16
+  }, {
+    "name" : "slide_horizontal_grey_section.png",
+    "parentFolder" : "Red",
+    "x" : 964,
+    "y" : 1366,
+    "width" : 16,
+    "height" : 16
+  }, {
+    "name" : "slide_horizontal_grey.png",
+    "parentFolder" : "Red",
+    "x" : 980,
+    "y" : 1388,
+    "width" : 96,
+    "height" : 16
+  }, {
+    "name" : "slide_horizontal_color_section_wide.png",
+    "parentFolder" : "Red",
+    "x" : 96,
+    "y" : 1388,
+    "width" : 32,
+    "height" : 16
+  }, {
+    "name" : "slide_horizontal_color_section.png",
+    "parentFolder" : "Red",
+    "x" : 128,
+    "y" : 1388,
+    "width" : 16,
+    "height" : 16
+  }, {
+    "name" : "slide_horizontal_color.png",
+    "parentFolder" : "Red",
+    "x" : 144,
+    "y" : 1388,
+    "width" : 96,
+    "height" : 16
+  }, {
+    "name" : "icon_square.png",
+    "parentFolder" : "Red",
+    "x" : 240,
+    "y" : 1388,
+    "width" : 16,
+    "height" : 16
+  }, {
+    "name" : "icon_outline_square.png",
+    "parentFolder" : "Red",
+    "x" : 256,
+    "y" : 1388,
+    "width" : 16,
+    "height" : 16
+  }, {
+    "name" : "icon_outline_circle.png",
+    "parentFolder" : "Red",
+    "x" : 272,
+    "y" : 1388,
+    "width" : 16,
+    "height" : 16
+  }, {
+    "name" : "icon_circle.png",
+    "parentFolder" : "Red",
+    "x" : 288,
+    "y" : 1388,
+    "width" : 16,
+    "height" : 16
+  }, {
+    "name" : "slide_vertical_grey_section.png",
+    "parentFolder" : "Grey",
+    "x" : 304,
+    "y" : 1388,
+    "width" : 16,
+    "height" : 16
+  }, {
+    "name" : "slide_vertical_color_section.png",
+    "parentFolder" : "Grey",
+    "x" : 320,
+    "y" : 1388,
+    "width" : 16,
+    "height" : 16
+  }, {
+    "name" : "slide_horizontal_grey_section_wide.png",
+    "parentFolder" : "Grey",
+    "x" : 336,
+    "y" : 1388,
+    "width" : 32,
+    "height" : 16
+  }, {
+    "name" : "slide_horizontal_grey_section.png",
+    "parentFolder" : "Grey",
+    "x" : 368,
+    "y" : 1388,
+    "width" : 16,
+    "height" : 16
+  }, {
+    "name" : "slide_horizontal_grey.png",
+    "parentFolder" : "Grey",
+    "x" : 384,
+    "y" : 1388,
+    "width" : 96,
+    "height" : 16
+  }, {
+    "name" : "slide_horizontal_color_section_wide.png",
+    "parentFolder" : "Grey",
+    "x" : 480,
+    "y" : 1388,
+    "width" : 32,
+    "height" : 16
+  }, {
+    "name" : "slide_horizontal_color_section.png",
+    "parentFolder" : "Grey",
+    "x" : 512,
+    "y" : 1388,
+    "width" : 16,
+    "height" : 16
+  }, {
+    "name" : "slide_horizontal_color.png",
+    "parentFolder" : "Grey",
+    "x" : 528,
+    "y" : 1388,
+    "width" : 96,
+    "height" : 16
+  }, {
+    "name" : "icon_square.png",
+    "parentFolder" : "Grey",
+    "x" : 624,
+    "y" : 1388,
+    "width" : 16,
+    "height" : 16
+  }, {
+    "name" : "icon_outline_square.png",
+    "parentFolder" : "Grey",
+    "x" : 640,
+    "y" : 1388,
+    "width" : 16,
+    "height" : 16
+  }, {
+    "name" : "icon_outline_circle.png",
+    "parentFolder" : "Grey",
+    "x" : 656,
+    "y" : 1388,
+    "width" : 16,
+    "height" : 16
+  }, {
+    "name" : "icon_circle.png",
+    "parentFolder" : "Grey",
+    "x" : 672,
+    "y" : 1388,
+    "width" : 16,
+    "height" : 16
+  }, {
+    "name" : "slide_vertical_grey_section.png",
+    "parentFolder" : "Green",
+    "x" : 688,
+    "y" : 1388,
+    "width" : 16,
+    "height" : 16
+  }, {
+    "name" : "slide_vertical_color_section.png",
+    "parentFolder" : "Green",
+    "x" : 704,
+    "y" : 1388,
+    "width" : 16,
+    "height" : 16
+  }, {
+    "name" : "slide_horizontal_grey_section_wide.png",
+    "parentFolder" : "Green",
+    "x" : 720,
+    "y" : 1388,
+    "width" : 32,
+    "height" : 16
+  }, {
+    "name" : "slide_horizontal_grey_section.png",
+    "parentFolder" : "Green",
+    "x" : 752,
+    "y" : 1388,
+    "width" : 16,
+    "height" : 16
+  }, {
+    "name" : "slide_horizontal_grey.png",
+    "parentFolder" : "Green",
+    "x" : 768,
+    "y" : 1388,
+    "width" : 96,
+    "height" : 16
+  }, {
+    "name" : "slide_horizontal_color_section_wide.png",
+    "parentFolder" : "Green",
+    "x" : 864,
+    "y" : 1388,
+    "width" : 32,
+    "height" : 16
+  }, {
+    "name" : "slide_horizontal_color_section.png",
+    "parentFolder" : "Green",
+    "x" : 896,
+    "y" : 1388,
+    "width" : 16,
+    "height" : 16
+  }, {
+    "name" : "slide_horizontal_color.png",
+    "parentFolder" : "Green",
+    "x" : 912,
+    "y" : 1388,
+    "width" : 96,
+    "height" : 16
+  }, {
+    "name" : "icon_square.png",
+    "parentFolder" : "Green",
+    "x" : 1008,
+    "y" : 1388,
+    "width" : 16,
+    "height" : 16
+  }, {
+    "name" : "icon_outline_square.png",
+    "parentFolder" : "Green",
+    "x" : 1024,
+    "y" : 1404,
+    "width" : 16,
+    "height" : 16
+  }, {
+    "name" : "icon_outline_circle.png",
+    "parentFolder" : "Green",
+    "x" : 16,
+    "y" : 1404,
+    "width" : 16,
+    "height" : 16
+  }, {
+    "name" : "icon_circle.png",
+    "parentFolder" : "Green",
+    "x" : 32,
+    "y" : 1404,
+    "width" : 16,
+    "height" : 16
+  }, {
+    "name" : "slide_vertical_grey_section.png",
+    "parentFolder" : "Blue",
+    "x" : 48,
+    "y" : 1404,
+    "width" : 16,
+    "height" : 16
+  }, {
+    "name" : "slide_vertical_color_section.png",
+    "parentFolder" : "Blue",
+    "x" : 64,
+    "y" : 1404,
+    "width" : 16,
+    "height" : 16
+  }, {
+    "name" : "slide_horizontal_grey_section_wide.png",
+    "parentFolder" : "Blue",
+    "x" : 80,
+    "y" : 1404,
+    "width" : 32,
+    "height" : 16
+  }, {
+    "name" : "slide_horizontal_grey_section.png",
+    "parentFolder" : "Blue",
+    "x" : 112,
+    "y" : 1404,
+    "width" : 16,
+    "height" : 16
+  }, {
+    "name" : "slide_horizontal_grey.png",
+    "parentFolder" : "Blue",
+    "x" : 128,
+    "y" : 1404,
+    "width" : 96,
+    "height" : 16
+  }, {
+    "name" : "slide_horizontal_color_section_wide.png",
+    "parentFolder" : "Blue",
+    "x" : 224,
+    "y" : 1404,
+    "width" : 32,
+    "height" : 16
+  }, {
+    "name" : "slide_horizontal_color_section.png",
+    "parentFolder" : "Blue",
+    "x" : 256,
+    "y" : 1404,
+    "width" : 16,
+    "height" : 16
+  }, {
+    "name" : "slide_horizontal_color.png",
+    "parentFolder" : "Blue",
+    "x" : 272,
+    "y" : 1404,
+    "width" : 96,
+    "height" : 16
+  }, {
+    "name" : "icon_square.png",
+    "parentFolder" : "Blue",
+    "x" : 368,
+    "y" : 1404,
+    "width" : 16,
+    "height" : 16
+  }, {
+    "name" : "icon_outline_square.png",
+    "parentFolder" : "Blue",
+    "x" : 384,
+    "y" : 1404,
+    "width" : 16,
+    "height" : 16
+  }, {
+    "name" : "icon_outline_circle.png",
+    "parentFolder" : "Blue",
+    "x" : 400,
+    "y" : 1404,
+    "width" : 16,
+    "height" : 16
+  }, {
+    "name" : "icon_circle.png",
+    "parentFolder" : "Blue",
+    "x" : 416,
+    "y" : 1404,
+    "width" : 16,
+    "height" : 16
+  }, {
+    "name" : "divider_edges.png",
+    "parentFolder" : "Extra",
+    "x" : 432,
+    "y" : 1404,
+    "width" : 64,
+    "height" : 4
+  }, {
+    "name" : "divider.png",
+    "parentFolder" : "Extra",
+    "x" : 496,
+    "y" : 1404,
+    "width" : 64,
+    "height" : 4
+  } ]
+}
