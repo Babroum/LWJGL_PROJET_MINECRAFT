@@ -18,8 +18,8 @@ public abstract class ShadersManager {
     private static int programId;
     /** Id du programme shader des bordures de bloc. */
     private static int programBlockBorderId;
-    /** Id du programme shader du texte. */
-    private static int programTextId;
+    /** Id du programme shader du Gui. */
+    private static int programGuiId;
     /** Id du programme shader de post-process (FBO). */
     private static int programPostProcessId;
     /** Id du programme shader des liquides. */
@@ -34,8 +34,8 @@ public abstract class ShadersManager {
     private static int locationProj, locationView, locationModel;
     /** Emplacements uniformes "projection", "view" et "blockPos" du shader des bordures de bloc. */
     private static int locationProjBlockBorder, locationViewBlockBorder, locationBlockPosBlockBorder;
-    /** Emplacements uniformes "ortho" et "color" du shader de texte. */
-    private static int locationOrtho, locationTextColor;
+    /** Emplacements uniformes "ortho" et "tex" du shader de Gui. */
+    private static int locationOrtho, locationGuiTex;
     /** Emplacement uniforme "fogStart" du shader principal. */
     private static int locationFogStart;
     /** Emplacement uniforme "fogEnd" du shader principal. */
@@ -67,9 +67,9 @@ public abstract class ShadersManager {
     /** Constructeur implicite vide */
     public ShadersManager(){}
 
-    /** Matrice orthonormée réutilisée pour le rendu du texte. */
-    private static final Matrix4f textOrthoMatrix = new Matrix4f();
-    /** Dernières largeur/hauteur de fenêtre utilisées pour {@link #textOrthoMatrix}, pour éviter de la recalculer inutilement. */
+    /** Matrice orthonormée réutilisée pour le rendu du Gui. */
+    private static final Matrix4f guiOrthoMatrix = new Matrix4f();
+    /** Dernières largeur/hauteur de fenêtre utilisées pour {@link #guiOrthoMatrix}, pour éviter de la recalculer inutilement. */
     private static int lastWidth = 0, lastHeight = 0;
 
     /**
@@ -147,43 +147,43 @@ public abstract class ShadersManager {
     }
 
     /**
-     * Initialise les shaders pour le texte
+     * Initialise les shaders pour le Gui
      * @throws RuntimeException si la compilation ou le linkage du shader échoue
      */
     @OpenGLThread
-    public static void createTextShader(){
-        String vertexTextShader;
-        String fragmentTextShader;
+    public static void createGuiShader(){
+        String vertexGuiShader;
+        String fragmentGuiShader;
         try{
-            vertexTextShader = FileLoader.loadShaderFromClasspathS("/Shaders/vertex_text.glsl");
-            fragmentTextShader = FileLoader.loadShaderFromClasspathS("/Shaders/fragment_text.glsl");
+            vertexGuiShader = FileLoader.loadShaderFromClasspathS("/Shaders/vertex_Gui.glsl");
+            fragmentGuiShader = FileLoader.loadShaderFromClasspathS("/Shaders/fragment_Gui.glsl");
         }catch(IOException e){
             e.printStackTrace();
             return;
         }
 
-        int[] ids = ShadersManager.create(vertexTextShader, fragmentTextShader);
+        int[] ids = ShadersManager.create(vertexGuiShader, fragmentGuiShader);
         int vsId = ids[0];
         int fgId = ids[1];
-
+        
         // attacher les shader compilés au programme
-        ShadersManager.programTextId = GL20.glCreateProgram();
-        GL20.glAttachShader(ShadersManager.programTextId, vsId);
-        GL20.glAttachShader(ShadersManager.programTextId, fgId);
-
+        ShadersManager.programGuiId = GL20.glCreateProgram();
+        GL20.glAttachShader(ShadersManager.programGuiId, vsId);
+        GL20.glAttachShader(ShadersManager.programGuiId, fgId);
+         
         // vérifie que les sorties du vertex shader corresponde aux entrées du fragment shader
-        GL20.glLinkProgram(ShadersManager.programTextId);
-        int success = GL20.glGetProgrami(ShadersManager.programTextId, GL20.GL_LINK_STATUS);
+        GL20.glLinkProgram(ShadersManager.programGuiId);
+        int success = GL20.glGetProgrami(ShadersManager.programGuiId, GL20.GL_LINK_STATUS);
         if (success == GL20.GL_FALSE){
-            throw new RuntimeException("ShaderManagerError : "+GL20.glGetProgramInfoLog(ShadersManager.programTextId));
+            throw new RuntimeException("ShaderManagerError : "+GL20.glGetProgramInfoLog(ShadersManager.programGuiId));
         }
-
+        
         // une fois les vertex liés on détache et supprime les shaders
-        GL20.glDetachShader(ShadersManager.programTextId, vsId);
+        GL20.glDetachShader(ShadersManager.programGuiId, vsId);
         GL20.glDeleteShader(vsId);
-
-        GL20.glDetachShader(ShadersManager.programTextId, fgId);
-        GL20.glDeleteShader(fgId);
+        
+        GL20.glDetachShader(ShadersManager.programGuiId, fgId);
+        GL20.glDeleteShader(fgId);        
     }
 
     /**
@@ -317,8 +317,8 @@ public abstract class ShadersManager {
         locationViewBlockBorder       = GL20.glGetUniformLocation(programBlockBorderId, "view");
         locationBlockPosBlockBorder   = GL20.glGetUniformLocation(programBlockBorderId, "blockPos");
 
-        locationOrtho                 = GL20.glGetUniformLocation(programTextId, "ortho");
-        locationTextColor             = GL20.glGetUniformLocation(programTextId, "color");
+        locationOrtho                 = GL20.glGetUniformLocation(programGuiId, "ortho");
+        locationGuiTex                = GL20.glGetUniformLocation(programGuiId, "tex");
 
         locationSaturation            = GL20.glGetUniformLocation(programPostProcessId, "saturationAmount");
         locationScreenTex             = GL20.glGetUniformLocation(programPostProcessId, "screenTex");
@@ -366,11 +366,11 @@ public abstract class ShadersManager {
     }
     
     /**
-     * Active le shader de texte
+     * Active le shader de Gui
      */
     @OpenGLThread
-    public static void useTextShader(){
-        GL20.glUseProgram(ShadersManager.programTextId);
+    public static void useGuiShader(){
+        GL20.glUseProgram(ShadersManager.programGuiId);
     }
 
     /**
@@ -588,27 +588,24 @@ public abstract class ShadersManager {
      * @param height int
      */
     @OpenGLThread
-    public static void runTextOrtho(FloatBuffer buffer, int width, int height){
+    public static void runGuiOrtho(FloatBuffer buffer, int width, int height){
         // ne change que si la fenetre est redimensionnée
         if (width != lastWidth || height != lastHeight) {
-            textOrthoMatrix.identity().ortho(0, width, height, 0, -1, 1);
+            guiOrthoMatrix.identity().ortho(0, width, height, 0, -1, 1);
             lastWidth = width;
             lastHeight = height;
         }
-        textOrthoMatrix.get(buffer);
+        guiOrthoMatrix.get(buffer);
         GL20.glUniformMatrix4fv(ShadersManager.locationOrtho, false, buffer);
     }
 
     /**
-     * Envoie la couleur au shader de texte
-     * @param red float
-     * @param green float
-     * @param blue float
-     * @param alpha float
+     * Indique au shader GUI quelle unité de texture utiliser
+     * @param textureUnit int, l'unité de texture active (0 pour GL_TEXTURE0)
      */
     @OpenGLThread
-    public static void runTextFragmentColor(float red, float green, float blue, float alpha){
-        GL20.glUniform4f(ShadersManager.locationTextColor, red, green, blue, alpha);
+    public static void runGuiTexture(int textureUnit){
+        GL20.glUniform1i(ShadersManager.locationGuiTex, textureUnit);
     }
 
     /**
@@ -644,11 +641,11 @@ public abstract class ShadersManager {
     }  
 
     /**
-     * Supprime le programme shader de texte
+     * Supprime le programme shader de Gui
      */
     @OpenGLThread
-    public static void closeProgramTextId(){
-        GL20.glDeleteProgram(ShadersManager.programTextId);
+    public static void closeProgramGuiId(){
+        GL20.glDeleteProgram(ShadersManager.programGuiId);
     }
 
     /**
@@ -688,11 +685,11 @@ public abstract class ShadersManager {
     }
 
     /**
-     * Retourne l'id du programme shader de texte
+     * Retourne l'id du programme shader de Gui
      * @return int
      */
     @OpenGLThread
-    public static int getProgramTextId(){
-        return ShadersManager.programTextId;
+    public static int getProgramGuiId(){
+        return ShadersManager.programGuiId;
     }
 }

@@ -5,12 +5,10 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.joml.Matrix4f;
-import org.joml.Vector3f;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL13;
-import org.lwjgl.system.MemoryUtil;
 
 import demo.Annotations.OpenGLThread;
 import demo.Events.KeyboardInput;
@@ -43,9 +41,6 @@ public class Render {
     public static SceneGraph sceneGraph = new SceneGraph(); 
     /** Moniteur de performance global. */
     public static PerformanceMonitor monitor = new PerformanceMonitor();
-
-    /** Instance de rendu de texte/HUD. */
-    private static TextRender textRender;  
 
     /** Historique des FPS pour calculer une moyenne glissante. */
     private static double[] fpsHistory = new double[60];
@@ -85,16 +80,6 @@ public class Render {
      "oak_log", "oak_planks", "oak_leaves", "water", "torch"
     };
 
-    // pour du debug, à modif car à chier
-    /** Intervalle (en frames) entre deux rafraîchissements du HUD de debug. */
-    private static final int HUD_UPDATE_INTERVAL = 10;
-    /** Compteur de frames utilisé pour throttle le rafraîchissement du HUD. */
-    private static int hudFrameCounter = 0;
-    /** Première ligne de texte du HUD (position du joueur). */
-    private static String display1;
-    /** Deuxième ligne de texte du HUD (lumière). */
-    private static String display2;
-
     /** FPS cible pour limiter la boucle de rendu. */
     private static final double TARGET_FPS        = 500;
     /** Temps de frame cible correspondant à {@link #TARGET_FPS}. */
@@ -118,11 +103,9 @@ public class Render {
             BlocksManager.init(BLOCKS_TO_LOAD);
 
             AudioManager.loadSound("bird", "/Audios/bird.ogg");
-            // initialise en mémoire l'image des caractères
-            Render.textRender = new TextRender(FileLoader.loadFileFromClasspathBB("/Textures/font.png"), 20, 20, 19,
-                                        " !\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~");          
+            GuiRenderer.loadAtlasInMemory();       
         }catch(Exception e){
-            System.out.println(e);
+            e.printStackTrace();
         }   
     }
 
@@ -215,6 +198,14 @@ public class Render {
         GL11.glEnable(GL11.GL_DEPTH_TEST);
 
         // === PASSE 3 : dessiner le texte/HUD par-dessus, hors FBO ===
+        GuiRenderer.beginFrame();
+
+        GuiRenderer.drawImage("blue.button.rectangle.pressed", 50, 64);
+        GuiRenderer.drawImage("blue.button.rectangle.hover", 50, 138);
+        GuiRenderer.drawImage("blue.button.rectangle.normal", 50, 212);
+
+        GuiRenderer.endFrame();
+        /*
         ShadersManager.useTextShader();
         FloatBuffer buffer = MemoryUtil.memAllocFloat(16);
         ShadersManager.runTextOrtho(buffer, Window.width, Window.height);
@@ -242,6 +233,7 @@ public class Render {
 
         GL11.glEnable(GL11.GL_DEPTH_TEST);        
         MemoryUtil.memFree(buffer);
+        */
         ShadersManager.useShader();    
 
         AudioManager.cleanupTempSources();
@@ -281,14 +273,6 @@ public class Render {
      */
     public static void setDirtyChunkQueue(ArrayBlockingQueue<SubChunk> queue){
         Render.dirtySubChunks = queue;
-    }
-
-    /**
-     * Retourne le textRender
-     * @return TextRender
-     */
-    public static TextRender getTextRender(){
-        return Render.textRender;
     }
 
     /**
@@ -364,7 +348,7 @@ public class Render {
                 }
                 Render.displayedFps = (float)(sum / Render.fpsHistory.length);
             }
-            Render.getTextRender().drawText("AVG FPS : " + String.format("%.0f", Render.displayedFps) , 0, 0, 20, Color4f.RED);
+            //Render.getTextRender().drawText("AVG FPS : " + String.format("%.0f", Render.displayedFps) , 0, 0, 20, Color4f.RED);
             Render.frameCount++;
         }        
     }

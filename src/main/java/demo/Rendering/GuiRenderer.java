@@ -2,32 +2,70 @@ package demo.Rendering;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import javax.imageio.ImageIO;
+
+import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL20;
+import org.lwjgl.opengl.GL30;
+import org.lwjgl.stb.STBImage;
+import org.lwjgl.system.MemoryUtil;
+
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.core.type.TypeReference;
 
-import demo.Rendering.GuiRenderer.AtlasData;
-import demo.Rendering.GuiRenderer.TextureEntry;
+import demo.Managers.BuffersManager;
+import demo.Managers.ShadersManager;
+import demo.Others.FileLoader;
+import demo.Types.Color4f;
 
 public class GuiRenderer {
+    /** Chemin relatif du dossier Gui */
     private static final String GUIROOTPATH = "src/main/resources/Textures/GUI";
+    /** Chemin relatif de l'atlas */
+    private static final String ATLASPATH = "/Textures/GUI/atlas.png";
+    /** Largeur maximale de l'atlas, taille arbitraire */
     private static final int ATLASMAXWIDTH = 1024;
+    /** Capacité max */
+    private static final int BUFFERSIZE = 1024;
+    /** Variable contenant l'atlas final */
     private static BufferedImage atlas;
+    /** Id de la texture */
+    private static int atlasTextureId;
+    /** Ids des buffers OpenGL (vbo, vao). */
+    private static int[] ids;
+    /** Buffer des sommets du texte, réutilisé à chaque appel. */
+    private static FloatBuffer vertexsBuffer;
+    /** Nombre de vertex écrit dans le vertexsBuffer */
+    private static int vertexCount;
+    /** Buffer intermediaire entre JOML et OpenGl */
+    private static FloatBuffer orthoBuffer = MemoryUtil.memAllocFloat(16);
 
-    // Class pour jackson et la sauvegarde des infos de chaque texture
-    // Le bloc principal qui contient chaque texture et la taille de l'atlas
+    /**
+     * Class pour Jackson et la sauvegarde des infos de chaque texture
+     * Le bloc principal qui contient chaque texture et la taille de l'atlas
+     * écriture
+     * AtlasData
+     */
     public static class AtlasData {
         public int atlasWidth;
         public int atlasHeight;
         public List<TextureEntry> textures;
 
-        public AtlasData() {} // constructeur vide requis par Jackson
+        /**
+         * Constructeur vide requis par Jackson
+         */
+        public AtlasData() {}
 
         public AtlasData(int atlasWidth, int atlasHeight, List<TextureEntry> textures) {
             this.atlasWidth = atlasWidth;
@@ -36,7 +74,11 @@ public class GuiRenderer {
         }
     }
 
-    // Bloc pour chaque texture dans le bloc principal
+    /**
+     * Class pour Jackson, bloc pour chaque texture dans le bloc principal
+     * écriture
+     * TextureEntry
+     */
     public static class TextureEntry {
         public String name;
         public String parentFolder;
@@ -45,7 +87,10 @@ public class GuiRenderer {
         public int width;
         public int height;
 
-        public TextureEntry() {} // constructeur vide requis par Jackson
+        /**
+         * Constructeur vide requis par Jackson
+         */
+        public TextureEntry() {}
 
         public TextureEntry(String name, String parentFolder, int x, int y, int width, int height) {
             this.name = name;
@@ -57,11 +102,14 @@ public class GuiRenderer {
         }
     }
 
-    // pour contenir le nom du fichier et l'image en même temps
+    /**
+     * Class pour contenir le nom du fichier, le dossier parent et l'image en même temps
+     * LoadedTexture
+     */
     public static class LoadedTexture {
-        String name;
-        String parentFolder;
-        BufferedImage image;
+        public String name;
+        public String parentFolder;
+        public BufferedImage image;
 
         LoadedTexture(String name, String parentFolder, BufferedImage image) {
             this.name = name;
@@ -70,7 +118,13 @@ public class GuiRenderer {
         }
     }
     
-    public static void createImagesAtlas() throws Exception{
+    /**
+    * Permet de générer l'atlas de toutes les textures dans les sous-dossiers du dossier Gui,
+    * en même temps que le JSON qui contient les informations sur la position de chaque texture.
+    * @throws Exception Retournée si une texture est plus large que la largeur maximale de l'atlas définie.
+    * @throws IOException Retournée si un problème survient lors de la lecture d'une image.
+    */
+    public static void createImagesAtlasAndJson() throws Exception, IOException{
         File root = new File(GuiRenderer.GUIROOTPATH);
         File[] subFolders = root.listFiles(File::isDirectory);
         if (subFolders == null) {
@@ -109,7 +163,7 @@ public class GuiRenderer {
                     images[i + 1] = new LoadedTexture(imageFile.getName(), folderName, image);
                     imageIndex++;
                 }catch(IOException e){
-                    System.err.println(e);
+                    e.printStackTrace();
                 }                
             }
         }
@@ -157,13 +211,187 @@ public class GuiRenderer {
         
         g2d.dispose();
 
-        File outputFile = new File("src/main/resources/Textures/GUI/atlas.png");
+        File outputFile = new File(GuiRenderer.GUIROOTPATH + "/atlas.png");
         ImageIO.write(atlas, "png", outputFile);
 
         // sauvegarder les infos dans un json
         AtlasData atlasData = new AtlasData(GuiRenderer.ATLASMAXWIDTH, height, textureEntries);
         ObjectMapper mapper = new ObjectMapper();
         mapper.enable(SerializationFeature.INDENT_OUTPUT);
-        mapper.writeValue(new File("src/main/resources/Textures/GUI/atlasInfo.json"), atlasData);
+        mapper.writeValue(new File(GuiRenderer.GUIROOTPATH + "/atlasInfo.json"), atlasData);
+    }
+
+    public static void loadAtlasInMemory() throws Exception{
+        IntBuffer widthBuffer   = MemoryUtil.memAllocInt(1);
+        IntBuffer heightBuffer  = MemoryUtil.memAllocInt(1);
+        IntBuffer channel = MemoryUtil.memAllocInt(1);
+        ByteBuffer path   = MemoryUtil.memAlloc(1);
+
+        try{
+            path = FileLoader.loadFileFromClasspathBB(GuiRenderer.ATLASPATH);
+        }catch(IOException e){
+            e.printStackTrace();
+            return;
+        }
+        
+        if (path == null) throw new Exception("Erreur avec le path buffer");
+
+        ByteBuffer pixels = STBImage.stbi_load_from_memory(path, widthBuffer, heightBuffer, channel, 4);
+        if (pixels == null) throw new Exception(STBImage.stbi_failure_reason());
+
+        GuiRenderer.atlasTextureId = GL11.glGenTextures();
+        if (GuiRenderer.atlasTextureId <= 0) { return;}
+         
+        // définis la texture
+        GL11.glBindTexture(GL11.GL_TEXTURE_2D, GuiRenderer.atlasTextureId);       
+        GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA, widthBuffer.get(0), heightBuffer.get(0), 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, pixels);
+        GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_NEAREST);
+        GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_NEAREST);
+            
+        // libère les mémoires
+        STBImage.stbi_image_free(pixels);
+        MemoryUtil.memFree(widthBuffer);
+        MemoryUtil.memFree(heightBuffer);
+        MemoryUtil.memFree(channel);
+        MemoryUtil.memFree(path); 
+        
+        GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
+        
+        ShadersManager.createGuiShader();        
+        GuiRenderer.vertexsBuffer = MemoryUtil.memAllocFloat(GuiRenderer.BUFFERSIZE * 6 * 8); // taille buffer * vertices par quad * floats par vertex
+        GuiRenderer.ids = BuffersManager.createGuiVBOVAO(vertexsBuffer);
+    }
+
+    /**
+     * Préparation au dessin du Gui à l'écran en utilisant le bon shader et information
+     */
+    public static void beginFrame(){
+        GuiRenderer.vertexCount = 0;
+        GuiRenderer.vertexsBuffer.clear();
+
+        // pour écrire par dessus les autres textures
+        GL11.glDisable(GL11.GL_DEPTH_TEST);
+        // pour prendre en compte la transparence
+        GL11.glEnable(GL11.GL_BLEND);        
+        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+
+        ShadersManager.useGuiShader();
+        GL20.glActiveTexture(GL20.GL_TEXTURE0);
+        GL11.glBindTexture(GL11.GL_TEXTURE_2D, GuiRenderer.atlasTextureId);
+        ShadersManager.runGuiTexture(0);
+        ShadersManager.runGuiOrtho(GuiRenderer.orthoBuffer, Window.width, Window.height);        
+    }
+
+    /**
+     * Envoie un quad au Gpu
+     * @param x1 position en x, départ en haut à gauche
+     * @param y1 position en y, départ en haut à gauche 
+     * @param width largeur du quad
+     * @param height hauteur du quad
+     * @param u0 position u en haut à gauche
+     * @param u1 position u en haut à droite
+     * @param v0 position u en bas à gauche
+     * @param v1 position u en bas à droite
+     * @param color Couleur du quad (RGBA)
+     * @throws RuntimeException Retournée si le buffer ne peut plus contenir de vertex
+     */
+    private static void pushQuad(float x1, float y1, float width, float height, float u0, float u1, float v0, float v1, Color4f color) throws RuntimeException{
+        if (GuiRenderer.vertexCount + 6 > GuiRenderer.BUFFERSIZE * 6){throw new RuntimeException("Trop de vertex pour le Buffer Gui");}
+        float x2 = x1 + width;
+        float y2 = y1 + height;
+        if (color == null) {color = Color4f.WHITE;}
+
+        // On .put direct, pas de tableau intermédiaire qui serait alloué à chaque appel, donc coût sur le GC
+        // triangle 1
+        // haut gauche
+        GuiRenderer.vertexsBuffer.put(x1); GuiRenderer.vertexsBuffer.put(y1);
+        GuiRenderer.vertexsBuffer.put(u0); GuiRenderer.vertexsBuffer.put(v0);
+        GuiRenderer.vertexsBuffer.put(color.red); GuiRenderer.vertexsBuffer.put(color.green); GuiRenderer.vertexsBuffer.put(color.blue); GuiRenderer.vertexsBuffer.put(color.alpha);
+        // haut droite
+        GuiRenderer.vertexsBuffer.put(x2); GuiRenderer.vertexsBuffer.put(y1);
+        GuiRenderer.vertexsBuffer.put(u1); GuiRenderer.vertexsBuffer.put(v0);
+        GuiRenderer.vertexsBuffer.put(color.red); GuiRenderer.vertexsBuffer.put(color.green); GuiRenderer.vertexsBuffer.put(color.blue); GuiRenderer.vertexsBuffer.put(color.alpha);
+        // bas droite
+        GuiRenderer.vertexsBuffer.put(x2); GuiRenderer.vertexsBuffer.put(y2);
+        GuiRenderer.vertexsBuffer.put(u1); GuiRenderer.vertexsBuffer.put(v1);
+        GuiRenderer.vertexsBuffer.put(color.red); GuiRenderer.vertexsBuffer.put(color.green); GuiRenderer.vertexsBuffer.put(color.blue); GuiRenderer.vertexsBuffer.put(color.alpha);
+
+        // triangle 2
+        // bas droite
+        GuiRenderer.vertexsBuffer.put(x2); GuiRenderer.vertexsBuffer.put(y2);
+        GuiRenderer.vertexsBuffer.put(u1); GuiRenderer.vertexsBuffer.put(v1);
+        GuiRenderer.vertexsBuffer.put(color.red); GuiRenderer.vertexsBuffer.put(color.green); GuiRenderer.vertexsBuffer.put(color.blue); GuiRenderer.vertexsBuffer.put(color.alpha);
+        // bas gauche
+        GuiRenderer.vertexsBuffer.put(x1); GuiRenderer.vertexsBuffer.put(y2);
+        GuiRenderer.vertexsBuffer.put(u0); GuiRenderer.vertexsBuffer.put(v1);
+        GuiRenderer.vertexsBuffer.put(color.red); GuiRenderer.vertexsBuffer.put(color.green); GuiRenderer.vertexsBuffer.put(color.blue); GuiRenderer.vertexsBuffer.put(color.alpha);
+        // haut gauche
+        GuiRenderer.vertexsBuffer.put(x1); GuiRenderer.vertexsBuffer.put(y1);
+        GuiRenderer.vertexsBuffer.put(u0); GuiRenderer.vertexsBuffer.put(v0);
+        GuiRenderer.vertexsBuffer.put(color.red); GuiRenderer.vertexsBuffer.put(color.green); GuiRenderer.vertexsBuffer.put(color.blue); GuiRenderer.vertexsBuffer.put(color.alpha);
+
+        GuiRenderer.vertexCount += 6;        
+    }
+
+    public static void endFrame(){
+        // rien à dessiné
+        if (vertexCount == 0) {
+            GL11.glEnable(GL11.GL_DEPTH_TEST);      
+            ShadersManager.useShader();
+            return;
+        }
+        // passe en mode lecture le buffer
+        GuiRenderer.vertexsBuffer.flip();
+
+        BuffersManager.updateGuiVBO(vertexsBuffer, GuiRenderer.ids[0]);
+        GL30.glBindVertexArray(ids[1]);
+        GL11.glDrawArrays(GL11.GL_TRIANGLES, 0, GuiRenderer.vertexCount);
+        GL30.glBindVertexArray(0);
+
+        GL11.glEnable(GL11.GL_DEPTH_TEST);      
+        ShadersManager.useShader();    
+    }
+
+    public static void drawImage(String alias, int x, int y) throws RuntimeException{
+        try{
+            ObjectMapper mapper = new ObjectMapper();
+            Map<String, String> aliasMapping = mapper.readValue(new File(GuiRenderer.GUIROOTPATH + "/imageAlias.json"), new TypeReference<Map<String, String>>() {});
+            AtlasData atlas = mapper.readValue(new File(GuiRenderer.GUIROOTPATH + "/atlasInfo.json"), AtlasData.class);
+
+            String rawName = aliasMapping.get(alias);
+            String parentFolderName = rawName.substring(0, rawName.indexOf("_"));
+            String imgName = rawName.substring(rawName.indexOf("_") + 1); // enlève le dossier parent dans le nom
+
+            float xImg = 0;
+            float yImg = 0;
+            float widthImg = 0;
+            float heightImg = 0;
+            for (TextureEntry img : atlas.textures){
+                if (img.name.equals(imgName) && img.parentFolder.equals(parentFolderName)){
+                    xImg = img.x;
+                    yImg = img.y;
+                    widthImg = img.width;
+                    heightImg = img.height;
+                }
+            }
+            if (widthImg <= 0 || heightImg <= 0){throw new RuntimeException("la taille de l'image ne peut pas être de 0 ou moins");}
+            float u0 = xImg / (float) atlas.atlasWidth;
+            float u1 = (xImg + widthImg) / (float) atlas.atlasWidth;
+            float v0 = yImg / (float) atlas.atlasHeight;
+            float v1 = (yImg + heightImg) / (float) atlas.atlasHeight;
+
+            GuiRenderer.pushQuad(x, y, widthImg, heightImg, u0, u1, v0, v1, null);
+        }catch(Exception e){
+            e.printStackTrace();
+            return;
+        }       
+    }
+
+    /**
+     * Libère le vertex Buffer et la texture.
+     */
+    public static void cleanup() {
+        MemoryUtil.memFree(GuiRenderer.vertexsBuffer);
+        GL11.glDeleteTextures(GuiRenderer.atlasTextureId);
     }
 }

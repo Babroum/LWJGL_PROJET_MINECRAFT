@@ -1,4 +1,4 @@
-package demo.Rendering;
+package demo.Deprecated;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
@@ -15,9 +15,12 @@ import demo.Managers.BuffersManager;
 import demo.Managers.ShadersManager;
 import demo.Types.Color4f;
 
-/**
- * Affichage du texte à l'écran
+/*
+ * Cette classe est un exemple obsolète et ne doit plus être utilisée.
+ * Ne pas supprimer, mais ne pas utiliser.
  */
+@Deprecated
+@SuppressWarnings("all")
 public class TextRender {
 
     /** Largeur d'une case de la grille de caractères. */

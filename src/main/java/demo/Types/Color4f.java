@@ -1,7 +1,5 @@
 package demo.Types;
 
-import demo.Annotations.OpenGLThread;
-
 /**
  * Définis une couleur RGBA
  */
@@ -49,10 +47,10 @@ public class Color4f {
 
     /**
      * Définis une couleur par intensité de rouge, vert et bleu, et un niveau d'opacité
-     * @param r rouge
-     * @param g vert
-     * @param b bleu
-     * @param a alpha
+     * @param r Intensité de rouge (0 à 255)
+     * @param g Intensité de vert (0 à 255)
+     * @param b Intensité de bleu (0 à 255)
+     * @param a Niveau d'opacité (0 à 100)
      * @throws RuntimeException si une des valeurs est hors des bornes autorisées
      */
     public Color4f(float r, float g, float b, float a) throws RuntimeException{
@@ -69,9 +67,9 @@ public class Color4f {
     }
     /**
      * Définis une couleur opaque par intensité de rouge, vert et bleu
-     * @param r float
-     * @param g float
-     * @param b float
+     * @param r Intensité de rouge (0 à 255)
+     * @param g Intensité de vert (0 à 255)
+     * @param b Intensité de bleu (0 à 255)
      * @throws RuntimeException si une des valeurs est hors des bornes autorisées
      */
     public Color4f(float r, float g, float b) throws RuntimeException{
@@ -79,8 +77,8 @@ public class Color4f {
     }
     /**
      * Définis une couleur par intensité de gris et un niveau d'opacité
-     * @param gray float
-     * @param a float
+     * @param gray Intensité de gris (0 à 255)
+     * @param a Niveau d'opacité (0 à 100)
      * @throws RuntimeException si une des valeurs est hors des bornes autorisées
      */
     public Color4f(float gray, float a) throws RuntimeException{
@@ -88,7 +86,7 @@ public class Color4f {
     }
     /**
      * Définis une couleur opaque par intensité de gris
-     * @param gray float
+     * @param gray Intensité de gris (0 à 255)
      * @throws RuntimeException si la valeur est hors des bornes autorisées
      */
     public Color4f(float gray) throws RuntimeException{

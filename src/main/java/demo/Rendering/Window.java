@@ -147,7 +147,7 @@ public class Window {
         Window.closeGLFW();
 
         ShadersManager.closeProgramId();
-        ShadersManager.closeProgramTextId();
+        ShadersManager.closeProgramGuiId();
         ShadersManager.closeProgramBlockBorderId();
         ShadersManager.closeProgramPostProcessId();
         ShadersManager.closeProgramLiquidId();
@@ -157,7 +157,7 @@ public class Window {
         
         AudioManager.cleanup();
         BlockBorderRenderer.cleanup();
-        Render.getTextRender().cleanup();
+        GuiRenderer.cleanup();
 
         ChunksManager.removeAllSubChunk();
         

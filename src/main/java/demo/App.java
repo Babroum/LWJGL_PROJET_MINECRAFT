@@ -44,15 +44,19 @@ public class App
      */
     public static void main( String[] args ) throws Exception
     {   
-        List<GuiImageEntry> entries = listAllGuiFiles("src/main/resources/Textures/GUI");
-        mergeFilesGrid(entries, "atlas_GUI.png");
-        GuiRenderer.createImagesAtlas();
         /*
+        Lancer les 3 lignes ci-dessous seulement si de nouvelles textures ont été ajoutées.
+        Les 2 premières ne servent pas au jeu, mais seulement pour savoir à quoi ressemble telle texture.
+        */
+        //List<GuiImageEntry> entries = listAllGuiFiles("src/main/resources/Textures/GUI");
+        //mergeFilesGrid(entries, "atlas_GUI.png");
+        //GuiRenderer.createImagesAtlasAndJson(); 
+        
         // création de la fenêtre 
         new Window(1200,800);
         // donne le draw en paramètre
         // l'exécutera après l'initialisation d'opengl
-        Window.startWindow(() -> draw(Window.getSceneGraph()));        */
+        Window.startWindow(() -> draw(Window.getSceneGraph()));
     }
 
     /**

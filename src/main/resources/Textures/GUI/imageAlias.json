@@ -1,0 +1,5 @@
+{
+    "blue.button.rectangle.pressed" : "Blue_button_rectangle_flat.png",
+    "blue.button.rectangle.hover" : "Blue_button_rectangle_gloss.png",
+    "blue.button.rectangle.normal" : "Blue_button_rectangle_gradient.png"      
+}
