@@ -12,6 +12,7 @@ import demo.Rendering.Window;
  */
 public class MouseInput {
     
+    private static Vector2f absolutePos; // position réelle du curseur à l'écran, pour le GUI
     private static Vector2f currentPos;
     private static Vector2f displVec;
     private static boolean inWindow;
@@ -25,6 +26,7 @@ public class MouseInput {
      */
     @OpenGLThread
     public MouseInput(){
+        MouseInput.absolutePos = new Vector2f();
         MouseInput.previousPos = new Vector2f(-1, -1);
         MouseInput.currentPos = new Vector2f();
         MouseInput.displVec = new Vector2f();
@@ -35,6 +37,8 @@ public class MouseInput {
         // Callback quand la souris est bougé
         //setCursorPosCallback(windowRef, window);
         GLFW.glfwSetCursorPosCallback(Window.window, (handle, xpos, ypos) -> {
+            MouseInput.absolutePos.x = (float) xpos;
+            MouseInput.absolutePos.y = (float) ypos;
             if (KeyboardInput.isMouseLock){
                 MouseInput.currentPos.x = 0;
                 MouseInput.currentPos.y = 0;
@@ -58,6 +62,14 @@ public class MouseInput {
      */
     public static Vector2f getCurrentPos() {
         return MouseInput.currentPos;
+    }
+
+    /**
+     * Retourne la position absolue de la souris
+     * @return Vector2f
+     */
+    public static Vector2f getAbsolutePos() {
+        return MouseInput.absolutePos;
     }
 
     /**

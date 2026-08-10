@@ -72,7 +72,6 @@
     <dependency><groupId>org.lwjgl</groupId><artifactId>lwjgl-opengl</artifactId></dependency>
     <dependency><groupId>org.lwjgl</groupId><artifactId>lwjgl-par</artifactId></dependency>
     <dependency><groupId>org.lwjgl</groupId><artifactId>lwjgl-stb</artifactId></dependency>
-    <dependency><groupId>org.lwjgl</groupId><artifactId>lwjgl-vulkan</artifactId></dependency>
 
     <!-- Natives (classifier résolu par le profile actif) -->
     <dependency><groupId>org.lwjgl</groupId><artifactId>lwjgl</artifactId><classifier>${lwjgl.natives}</classifier></dependency>
@@ -84,6 +83,8 @@
     <dependency><groupId>org.lwjgl</groupId><artifactId>lwjgl-opengl</artifactId><classifier>${lwjgl.natives}</classifier></dependency>
     <dependency><groupId>org.lwjgl</groupId><artifactId>lwjgl-par</artifactId><classifier>${lwjgl.natives}</classifier></dependency>
     <dependency><groupId>org.lwjgl</groupId><artifactId>lwjgl-stb</artifactId><classifier>${lwjgl.natives}</classifier></dependency>
+    <dependency><groupId>org.lwjgl</groupId><artifactId>lwjgl-freetype</artifactId><classifier>${lwjgl.natives}</classifier></dependency>
+    
 
     <!-- JOML -->
     <dependency>
@@ -95,6 +96,12 @@
       <groupId>org.joml</groupId>
       <artifactId>joml-primitives</artifactId>
       <version>${joml-primitives.version}</version>
+    </dependency>
+
+    <!-- FreeType pour gérer les polices .ttf -->
+    <dependency>
+        <groupId>org.lwjgl</groupId>
+        <artifactId>lwjgl-freetype</artifactId>
     </dependency>
 
     <!-- Test -->

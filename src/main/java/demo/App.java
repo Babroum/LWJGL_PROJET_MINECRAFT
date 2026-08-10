@@ -14,7 +14,6 @@ import javax.imageio.ImageIO;
 
 import demo.Managers.BenchmarkManager;
 import demo.Others.ChunkSerializer;
-import demo.Rendering.GuiRenderer;
 import demo.Rendering.SceneGraph;
 import demo.Rendering.Window;
 

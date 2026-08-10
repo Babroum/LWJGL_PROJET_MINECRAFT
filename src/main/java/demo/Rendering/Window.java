@@ -13,6 +13,7 @@ import org.lwjgl.system.MemoryUtil;
 import demo.Annotations.OpenGLThread;
 import demo.Events.WindowCloseEventManager;
 import demo.Game.GameLoop;
+import demo.Gui.GuiRenderer;
 import demo.Managers.AudioManager;
 import demo.Managers.BenchmarkManager;
 import demo.Managers.ShadersManager;

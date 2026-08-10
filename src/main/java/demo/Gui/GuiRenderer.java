@@ -1,4 +1,4 @@
-package demo.Rendering;
+package demo.Gui;
 
 import java.io.File;
 import java.io.IOException;
@@ -6,6 +6,7 @@ import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -27,6 +28,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import demo.Managers.BuffersManager;
 import demo.Managers.ShadersManager;
 import demo.Others.FileLoader;
+import demo.Rendering.Window;
 import demo.Types.Color4f;
 
 public class GuiRenderer {
@@ -50,6 +52,10 @@ public class GuiRenderer {
     private static int vertexCount;
     /** Buffer intermediaire entre JOML et OpenGl */
     private static FloatBuffer orthoBuffer = MemoryUtil.memAllocFloat(16);
+    /** Alias des textures */
+    private static Map<String, String> aliasMapping;
+    /** Métadonnées des textures */
+    private static AtlasData atlasData;
 
     /**
      * Class pour Jackson et la sauvegarde des infos de chaque texture
@@ -126,7 +132,10 @@ public class GuiRenderer {
     */
     public static void createImagesAtlasAndJson() throws Exception, IOException{
         File root = new File(GuiRenderer.GUIROOTPATH);
-        File[] subFolders = root.listFiles(File::isDirectory);
+        File[] subFolders = Arrays.stream(root.listFiles(File::isDirectory))
+            .filter(folder -> !folder.getName().toLowerCase().contains("Font"))
+            .toArray(File[]::new);
+
         if (subFolders == null) {
             throw new IllegalStateException("Dossier introuvable : " + GUIROOTPATH);
         }        
@@ -218,7 +227,7 @@ public class GuiRenderer {
         AtlasData atlasData = new AtlasData(GuiRenderer.ATLASMAXWIDTH, height, textureEntries);
         ObjectMapper mapper = new ObjectMapper();
         mapper.enable(SerializationFeature.INDENT_OUTPUT);
-        mapper.writeValue(new File(GuiRenderer.GUIROOTPATH + "/atlasInfo.json"), atlasData);
+        mapper.writeValue(new File(GuiRenderer.GUIROOTPATH + "/atlasData.json"), atlasData);
     }
 
     public static void loadAtlasInMemory() throws Exception{
@@ -260,6 +269,10 @@ public class GuiRenderer {
         ShadersManager.createGuiShader();        
         GuiRenderer.vertexsBuffer = MemoryUtil.memAllocFloat(GuiRenderer.BUFFERSIZE * 6 * 8); // taille buffer * vertices par quad * floats par vertex
         GuiRenderer.ids = BuffersManager.createGuiVBOVAO(vertexsBuffer);
+
+        ObjectMapper mapper = new ObjectMapper();
+        GuiRenderer.aliasMapping = mapper.readValue(new File(GuiRenderer.GUIROOTPATH + "/imageAlias.json"), new TypeReference<Map<String, String>>() {});
+        GuiRenderer.atlasData = mapper.readValue(new File(GuiRenderer.GUIROOTPATH + "/atlasData.json"), AtlasData.class);
     }
 
     /**
@@ -352,13 +365,19 @@ public class GuiRenderer {
         ShadersManager.useShader();    
     }
 
-    public static void drawImage(String alias, int x, int y) throws RuntimeException{
-        try{
-            ObjectMapper mapper = new ObjectMapper();
-            Map<String, String> aliasMapping = mapper.readValue(new File(GuiRenderer.GUIROOTPATH + "/imageAlias.json"), new TypeReference<Map<String, String>>() {});
-            AtlasData atlas = mapper.readValue(new File(GuiRenderer.GUIROOTPATH + "/atlasInfo.json"), AtlasData.class);
-
-            String rawName = aliasMapping.get(alias);
+    /**
+     * Affiche une image grâce à son alias sur l'écran aux position données et d'une taille définis
+     * @param alias Alias de l'image
+     * @param x Position en x de l'image
+     * @param y Position en y de l'image
+     * @param width Largeur de l'image
+     * @param height Hauteur de l'image
+     * @throws RuntimeException Retournée si l'image n'a pas de taille dans les métadonnées
+     */
+    public static void drawImage(String alias, int x, int y, int width, int height) throws RuntimeException{
+        // TODO: implémenté la largeur et la hauteur en paramètre
+        try{            
+            String rawName = GuiRenderer.aliasMapping.get(alias);
             String parentFolderName = rawName.substring(0, rawName.indexOf("_"));
             String imgName = rawName.substring(rawName.indexOf("_") + 1); // enlève le dossier parent dans le nom
 
@@ -366,7 +385,7 @@ public class GuiRenderer {
             float yImg = 0;
             float widthImg = 0;
             float heightImg = 0;
-            for (TextureEntry img : atlas.textures){
+            for (TextureEntry img : GuiRenderer.atlasData.textures){
                 if (img.name.equals(imgName) && img.parentFolder.equals(parentFolderName)){
                     xImg = img.x;
                     yImg = img.y;
@@ -375,10 +394,10 @@ public class GuiRenderer {
                 }
             }
             if (widthImg <= 0 || heightImg <= 0){throw new RuntimeException("la taille de l'image ne peut pas être de 0 ou moins");}
-            float u0 = xImg / (float) atlas.atlasWidth;
-            float u1 = (xImg + widthImg) / (float) atlas.atlasWidth;
-            float v0 = yImg / (float) atlas.atlasHeight;
-            float v1 = (yImg + heightImg) / (float) atlas.atlasHeight;
+            float u0 = xImg / (float) GuiRenderer.atlasData.atlasWidth;
+            float u1 = (xImg + widthImg) / (float) GuiRenderer.atlasData.atlasWidth;
+            float v0 = yImg / (float) GuiRenderer.atlasData.atlasHeight;
+            float v1 = (yImg + heightImg) / (float) GuiRenderer.atlasData.atlasHeight;
 
             GuiRenderer.pushQuad(x, y, widthImg, heightImg, u0, u1, v0, v1, null);
         }catch(Exception e){

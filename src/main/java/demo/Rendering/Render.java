@@ -12,9 +12,13 @@ import org.lwjgl.opengl.GL13;
 
 import demo.Annotations.OpenGLThread;
 import demo.Events.KeyboardInput;
+import demo.Events.MouseInput;
 import demo.Game.GameLoop;
 import demo.Geometry.Chunk;
 import demo.Geometry.SubChunk;
+import demo.Gui.GuiFactory;
+import demo.Gui.GuiRenderer;
+import demo.Gui.Button;
 import demo.Managers.AudioManager;
 import demo.Managers.BenchmarkManager;
 import demo.Managers.BlocksManager;
@@ -28,7 +32,6 @@ import demo.Managers.FrameBufferManager;
 import demo.Managers.TextureManager;
 import demo.Managers.WorldManager;
 import demo.Others.ChunkSerializer;
-import demo.Others.FileLoader;
 import demo.Types.Color4f;
 import demo.Managers.PlayersManager;
 
@@ -123,6 +126,12 @@ public class Render {
         GameLoop.init();
         GameLoop.startGameThread();
 
+        Button btn = GuiFactory.createButton("blue.button.rectangle.normal",
+                        "blue.button.rectangle.hover",
+                        "blue.button.rectangle.pressed",
+                        150, 150, 192, 64,
+                        () -> System.out.println("CLIQUE"));
+
         while ( !GLFW.glfwWindowShouldClose(Window.window) ) {  
             BenchmarkManager.getInstance().recordFrame();
             // démarre l'enregistrement de performances pour la frame
@@ -200,9 +209,8 @@ public class Render {
         // === PASSE 3 : dessiner le texte/HUD par-dessus, hors FBO ===
         GuiRenderer.beginFrame();
 
-        GuiRenderer.drawImage("blue.button.rectangle.pressed", 50, 64);
-        GuiRenderer.drawImage("blue.button.rectangle.hover", 50, 138);
-        GuiRenderer.drawImage("blue.button.rectangle.normal", 50, 212);
+        btn.update(MouseInput.getAbsolutePos().x, MouseInput.getAbsolutePos().y, MouseInput.isLeftButtonPressed());
+        btn.render();
 
         GuiRenderer.endFrame();
         /*
