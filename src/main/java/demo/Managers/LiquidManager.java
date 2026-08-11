@@ -11,6 +11,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import demo.Annotations.OpenGLThread;
+import demo.Game.GameSession;
 import demo.Geometry.Chunk;
 import demo.Geometry.SubChunk;
 import demo.Others.Blocks;
@@ -534,7 +535,11 @@ public class LiquidManager {
         while ((s = dirtySubChunks.poll()) != null) {
             s.dirty.set(false);
             final SubChunk sub = s;
-            ChunkGenerationPool.submit(() -> sub.rebuildSubChunk());
+            final int epoch = GameSession.currentEpoch();
+            ChunkGenerationPool.submit(() -> {
+                if (epoch != GameSession.currentEpoch()) return;
+                sub.rebuildSubChunk();
+            });
         }
     }
 

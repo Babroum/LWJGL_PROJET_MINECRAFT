@@ -76,8 +76,6 @@ public class GameLoop {
      * Executer avant la boucle de rendu
      */
     public static void init(){
-        // Créer les Listeners clavier/souris
-        InputManager.create();
         // positionne le joueur
         PlayersManager.player.setPosition(5, 80, 5);
         // sync les snapshots pour éviter un saut au premier tick

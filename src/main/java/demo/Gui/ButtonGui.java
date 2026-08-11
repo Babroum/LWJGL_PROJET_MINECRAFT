@@ -4,7 +4,7 @@ package demo.Gui;
  * Un Bouton intéractif qui change dynamiquement d'image par rapport aux actions de la souris sur lui
  * Button
  */
-public class Button extends Widget {
+public class ButtonGui extends WidgetGui {
     /** L'alias de l'image en mode normal dans "imageAlias.json" */
     public String imageAliasNormal;
     /** L'alias de l'image en mode hover dans "imageAlias.json" */
@@ -29,7 +29,7 @@ public class Button extends Widget {
      * @param height Hauteur du bouton
      * @param onClick CallBack du bouton
      */
-    public Button(String imageAliasNormal, String imageAliasHover, String imageAliasClick, int x, int y, int width, int height, Runnable onClick){
+    public ButtonGui(String imageAliasNormal, String imageAliasHover, String imageAliasClick, int x, int y, int width, int height, Runnable onClick){
         super(x, y, width, height);
         this.imageAliasNormal = imageAliasNormal;
         this.imageAliasHover = imageAliasHover;

@@ -4,6 +4,8 @@ import org.joml.Vector2f;
 import org.lwjgl.glfw.GLFW;
 
 import demo.Annotations.OpenGLThread;
+import demo.Game.GameLoop;
+import demo.Game.GameSession;
 import demo.Rendering.Window;
 
 /**
@@ -39,7 +41,7 @@ public class MouseInput {
         GLFW.glfwSetCursorPosCallback(Window.window, (handle, xpos, ypos) -> {
             MouseInput.absolutePos.x = (float) xpos;
             MouseInput.absolutePos.y = (float) ypos;
-            if (KeyboardInput.isMouseLock){
+            if (KeyboardInput.isMouseLock && GameSession.isRunning()){
                 MouseInput.currentPos.x = 0;
                 MouseInput.currentPos.y = 0;
                 currentPos.x = (float) xpos - Window.width/2;

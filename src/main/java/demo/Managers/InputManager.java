@@ -6,6 +6,7 @@ import org.lwjgl.glfw.GLFW;
 import demo.Annotations.OpenGLThread;
 import demo.Events.KeyboardInput;
 import demo.Events.MouseInput;
+import demo.Game.GameSession;
 import demo.Game.Player;
 import demo.Rendering.Camera;
 import demo.Rendering.Window;
@@ -34,12 +35,16 @@ public class InputManager {
     // Appelé depuis le thread OpenGL (Render)
     @OpenGLThread
     public static void runOpenGL() {
-        MouseInput.input(); // capture le delta souris via GLFW
-        KeyboardInput.pollMovementKeys();
+        if (!GameSession.isRunning()){
+            KeyboardInput.isMouseLock = false;
+        }else{
+            MouseInput.input(); // capture le delta souris via GLFW
+            KeyboardInput.pollMovementKeys();
+        }
 
         // rotation caméra avec la souris
         boolean focused = GLFW.glfwGetWindowAttrib(Window.getWindow(), GLFW.GLFW_FOCUSED) == 1;
-        if (focused && KeyboardInput.isMouseLock) {
+        if (focused && KeyboardInput.isMouseLock && GameSession.isRunning()) {
             Vector2f displVec = MouseInput.getDisplVec();
             Camera camera = PlayersManager.player.getCamera();
             camera.addRotation(
@@ -49,7 +54,7 @@ public class InputManager {
         }
 
         // curseur
-        if (KeyboardInput.isCursorHidden) {
+        if (KeyboardInput.isCursorHidden && GameSession.isRunning()) {
             GLFW.glfwSetInputMode(Window.getWindow(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_HIDDEN);
         } else {
             GLFW.glfwSetInputMode(Window.getWindow(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);

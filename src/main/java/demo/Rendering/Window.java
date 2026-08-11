@@ -136,7 +136,7 @@ public class Window {
     }
 
     /**
-     * Ferme proprement la fenêtre, libère les ressources OpenGL/GLFW/audio et termine le programme
+     * Ferme proprement la jeu, libère les ressources OpenGL/GLFW/audio 
      */
     public static void exitWindow()
     {
@@ -160,10 +160,9 @@ public class Window {
         BlockBorderRenderer.cleanup();
         GuiRenderer.cleanup();
 
-        ChunksManager.removeAllSubChunk();
-        
-        Window.windowCloseEventManager.closeWidow(Window.window);
+        ChunksManager.removeAllSubChunk();       
 
+        Window.windowCloseEventManager.closeWidow(Window.window);
         System.exit(0);
     }
 

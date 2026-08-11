@@ -4,7 +4,7 @@ package demo.Gui;
  * Une image simple
  * Background
  */
-public class Background extends Widget{
+public class BackgroundGui extends WidgetGui{
     /** L'alias de l'image dans "imageAlias.json" */
     public String imageAlias;
 
@@ -12,7 +12,7 @@ public class Background extends Widget{
      * Constructeur de l'image
      * @param imageAlias Alias de l'image
      */
-    public Background(String imageAlias, int x, int y, int width, int height){
+    public BackgroundGui(String imageAlias, int x, int y, int width, int height){
         super(x, y, width, height);
         this.imageAlias = imageAlias;
     }

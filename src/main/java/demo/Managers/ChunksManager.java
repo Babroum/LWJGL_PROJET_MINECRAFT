@@ -131,6 +131,16 @@ public class ChunksManager {
     }
 
     /**
+     * Supprime tous les subchunks (VBO/VAO) ET vide la table des chunks chargés.
+     * A appeler à l'arrêt d'une partie pour repartir sur un état propre.
+     */
+    @OpenGLThread
+    public static void clearAllChunks(){
+        ChunksManager.removeAllSubChunk(); // libère les ressources OpenGL
+        ChunksManager.chunks.clear();      // vide la table
+    }
+
+    /**
      * Retourne un bloc dans l'un des chunks
      * Coordonnée global
      * @param x int

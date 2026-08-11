@@ -3,6 +3,7 @@ package demo.Events;
 import org.lwjgl.glfw.GLFW;
 
 import demo.Annotations.OpenGLThread;
+import demo.Game.GameSession;
 import demo.Geometry.Chunk;
 import demo.Geometry.SubChunk;
 import demo.Managers.AudioManager;
@@ -24,9 +25,9 @@ public class KeyboardInput {
     /** Indique si une demande de fermeture de la fenêtre a été faite. */
     public static volatile boolean isCloseWindow;
     /** Indique si le curseur de la souris est caché. */
-    public static volatile boolean isCursorHidden = true;
+    public static volatile boolean isCursorHidden = false;
     /** Indique si la souris est verrouillée/capturée par la fenêtre. */
-    public static volatile boolean isMouseLock = true;
+    public static volatile boolean isMouseLock = false;
     /** Indique si une téléportation a été demandée. */
     public static volatile boolean isTeleportActive;
     /** Indique si l'affichage des bordures de chunk est actif. */
@@ -51,7 +52,7 @@ public class KeyboardInput {
      */
     @OpenGLThread
     public KeyboardInput(){
-        GLFW.glfwSetKeyCallback(Window.window, KeyboardInput::keyPressedToggle);
+        GLFW.glfwSetKeyCallback(Window.window, KeyboardInput::keyPressedToggleInGame);
     }
 
     // utiliser pour toutes les touches toggle
@@ -59,15 +60,15 @@ public class KeyboardInput {
     // les actions sont traitées dans le InputManager
     /**
      * Callback GLFW appelé à chaque appui de touche, gère les touches toggle (bascule un boolean, l'action est traitée dans l'InputManager)
-     * @param window long, référence de la fenêtre
-     * @param key int, code de la touche
-     * @param scancode int, code matériel de la touche
-     * @param action int, type d'action (press/release/repeat)
-     * @param mods int, modificateurs actifs (shift, ctrl, etc.)
+     * @param window Référence de la fenêtre
+     * @param key Code de la touche
+     * @param scancode Code matériel de la touche
+     * @param action Type d'action (press/release/repeat)
+     * @param mods Modificateurs actifs (shift, ctrl, etc.)
      */
     @OpenGLThread
-    private static void keyPressedToggle(long window, int key, int scancode, int action, int mods) {   
-        if(action == GLFW.GLFW_PRESS){
+    private static void keyPressedToggleInGame(long window, int key, int scancode, int action, int mods) {   
+        if(action == GLFW.GLFW_PRESS && GameSession.isRunning()){
             switch (key) {
                 case GLFW.GLFW_KEY_F1:
                     KeyboardInput.isWireFrameMode = !KeyboardInput.isWireFrameMode;
@@ -138,15 +139,17 @@ public class KeyboardInput {
         }        
     }
 
-    // appelé depuis le thread OpenGL uniquement : lit glfwGetKey et met à jour les volatile
+    // appelé depuis le thread OpenGL uniquement : lit glfwGetKey et met à jour les volatiles
     /**
      * Récupère les appuies des touches de déplacements (avant, arrière, gauche, droite)
      */
     @OpenGLThread
     public static void pollMovementKeys() {
-        keyForward = GLFW.glfwGetKey(Window.window, GLFW.GLFW_KEY_W) == GLFW.GLFW_PRESS;
-        keyBack    = GLFW.glfwGetKey(Window.window, GLFW.GLFW_KEY_S) == GLFW.GLFW_PRESS;
-        keyLeft    = GLFW.glfwGetKey(Window.window, GLFW.GLFW_KEY_A) == GLFW.GLFW_PRESS;
-        keyRight   = GLFW.glfwGetKey(Window.window, GLFW.GLFW_KEY_D) == GLFW.GLFW_PRESS;
+        if (GameSession.isRunning()){
+            keyForward = GLFW.glfwGetKey(Window.window, GLFW.GLFW_KEY_W) == GLFW.GLFW_PRESS;
+            keyBack    = GLFW.glfwGetKey(Window.window, GLFW.GLFW_KEY_S) == GLFW.GLFW_PRESS;
+            keyLeft    = GLFW.glfwGetKey(Window.window, GLFW.GLFW_KEY_A) == GLFW.GLFW_PRESS;
+            keyRight   = GLFW.glfwGetKey(Window.window, GLFW.GLFW_KEY_D) == GLFW.GLFW_PRESS;
+        }        
     }
 }

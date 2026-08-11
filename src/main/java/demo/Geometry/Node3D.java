@@ -120,6 +120,19 @@ public class Node3D {
     }
 
     /**
+     * Retire tous les enfants du nœud, sans libérer leurs ressources OpenGL
+     * (à faire séparément via cleanup() sur chaque enfant si besoin).
+     */
+    public void removeAllChildren(){
+        if (this.children != null){
+            for (int i = 0; i < this.nbChildren; i++){
+                this.children[i] = null;
+            }
+        }
+        this.nbChildren = 0;
+    }
+
+    /**
      * Retourne le tableau d'enfant du nœud
      * @return le tableau des nœuds enfants, ou un tableau vide si aucun enfant n'a été ajouté
      */

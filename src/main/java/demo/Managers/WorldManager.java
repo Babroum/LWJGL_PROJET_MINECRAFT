@@ -10,6 +10,7 @@ import java.util.Random;
 
 import demo.Geometry.WorldGenerator;
 import demo.Geometry.SubChunk;
+import demo.Game.GameSession;
 import demo.Geometry.Chunk;
 import demo.Rendering.Render;
 import demo.Others.Blocks;
@@ -57,6 +58,16 @@ public class WorldManager {
     public WorldManager(){}
 
     /**
+     * Remet le WorldManager à son état initial (à appeler à l'arrêt d'une partie).
+     */
+    public static void reset(){
+        lastPlayerChunkX = Integer.MIN_VALUE;
+        lastPlayerChunkZ = Integer.MIN_VALUE;
+        generatingChunks.clear();
+        unloadingChunks.clear();
+    }
+
+    /**
      * Appelé chaque tick depuis GameLoop.run()
      * @param playerX float, position du joueur en x
      * @param playerZ float, position du joueur en z
@@ -78,18 +89,20 @@ public class WorldManager {
         while (budget-- > 0){
             SubChunk subToMesh = Render.subChunkMeshQueue.poll();
             if (subToMesh == null) break;
+            final int epoch = GameSession.currentEpoch();
             ChunkGenerationPool.submit(() -> {
+                if (epoch != GameSession.currentEpoch()) return; // partie arrêtée entre-temps
                 subToMesh.fillSubChunkBitSet();
                 synchronized (subToMesh) {
                     subToMesh.mesh.setupSubChunkBuffers(subToMesh.solidBitSet.cardinality());
                     subToMesh.transparentMesh.setupSubChunkBuffers(subToMesh.transparentBitSet.cardinality());
                     subToMesh.generateSubChunkMesh();
                 }
-                // si il y a au moins une vertice dans le subchunk
+                if (epoch != GameSession.currentEpoch()) return; // re-check après le travail, avant d'écrire
+
                 if (subToMesh.mesh.getVertexCount() > 0 || subToMesh.transparentMesh.getVertexCount() > 0) {
                     try { Render.dirtySubChunks.put(subToMesh); } catch (InterruptedException e) {}
                 }
-                // si tout les subchunks sont chargés alors on ajoute le chunk à la scène
                 if (subToMesh.parent.pendingMeshCount.decrementAndGet() == 0) {
                     try { Render.chunkQueue.put(subToMesh.parent); } catch (InterruptedException e) {}
                 }
@@ -133,6 +146,8 @@ public class WorldManager {
         List<Future<?>> futures = new ArrayList<>();
         List<Chunk> generatedChunks = new java.util.concurrent.CopyOnWriteArrayList<>();
 
+        final int epoch = GameSession.currentEpoch();
+
         int submitted = 0;
         for (int[] coord : toLoad) {
             if (submitted >= MAX_CHUNKS_PER_TICK) break;
@@ -143,6 +158,8 @@ public class WorldManager {
 
             futures.add(ChunkGenerationPool.submitFuture(() -> {
                 try {
+                    if (epoch != GameSession.currentEpoch()) return; // partie arrêtée, on n'écrit rien
+
                     Chunk chunk = ChunksManager.createChunk(cx, cz);
                     byte[] saved = ChunkSerializer.load(cx, cz);
                     if (saved != null) {
@@ -158,7 +175,9 @@ public class WorldManager {
                 } catch (Exception e) {
                     e.printStackTrace();
                 } finally {
-                    generatingChunks.remove(key);
+                    if (epoch == GameSession.currentEpoch()) {
+                        generatingChunks.remove(key);
+                    }
                 }
             }));
             submitted++;
@@ -170,6 +189,9 @@ public class WorldManager {
             for (Future<?> f : futures) {
                 try { f.get(); } catch (Exception e) {}
             }
+            
+            if (epoch != GameSession.currentEpoch()) return; // même epoch capturé plus haut, réutilisé ici
+
             // Tous les chunks de la phase 1 sont prêts, on peut placer les arbres
             for (Chunk chunk : generatedChunks) {
                 boolean isFromSave = ChunkSerializer.load(
@@ -187,16 +209,6 @@ public class WorldManager {
                                     generator.get().generateTree(x, y + 1, z, chunk);
                                 }
                             }
-                            /*
-                            if (chunk.getBlock(x, y, z) == Blocks.SAND) {
-                                // si il y a du sable alors on place de l'eau au dessus jusqu'a la limite océan                            
-                                for (int i = y + 1; i <= WorldGenerator.SEA_LEVEL; i++){
-                                    SubChunk currentSub = chunk.getSubChunkAt(i);
-                                    int localY = i % WorldGenerator.CHUNK_SIZE;
-                                    int idx = x + localY * WorldGenerator.CHUNK_SIZE + z * WorldGenerator.CHUNK_HEIGHT;
-                                    currentSub.blocks[idx] = (byte) Blocks.WATER.id;
-                                }
-                            }*/
                         }
                     }
                 }

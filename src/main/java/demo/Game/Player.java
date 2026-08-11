@@ -2,6 +2,7 @@ package demo.Game;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import org.joml.Vector3f;
 import org.lwjgl.opengl.GL11;
@@ -101,6 +102,8 @@ public class Player {
     public volatile float curY;
     /** Position en z au tick courant, lue par le thread de rendu pour l'interpolation. */
     public volatile float curZ;
+
+    private ExecutorService chunkModifyThread = createChunkModifyThread();
 
     /**
      * Créer un nouveau joueur à la position (0,0,0)
@@ -596,13 +599,33 @@ public class Player {
         }
     }
 
-    // un seul thread dédié aux actions du joueur (casser/poser)
-    /** Thread dédié aux actions de modification de chunk du joueur (casser/poser un bloc). */
-    private static ExecutorService chunkModifyThread = Executors.newSingleThreadExecutor(r -> {
-        Thread t = new Thread(r, "Player Action Thread");
-        t.setDaemon(true);
-        return t;
-    });
+    private static ExecutorService createChunkModifyThread() {
+        return Executors.newSingleThreadExecutor(r -> {
+            Thread t = new Thread(r, "Player Action Thread");
+            t.setDaemon(true);
+            return t;
+        });
+    }
+
+    /**
+     * Arrête proprement le thread d'actions : annule les tâches en attente,
+     * laisse la tâche en cours (s'il y en a une) se terminer avec un court délai.
+     */
+    public void stopActionThread() {
+        chunkModifyThread.shutdownNow(); // vide la queue interne + interrompt la tâche en cours
+        try {
+            chunkModifyThread.awaitTermination(200, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException ignored) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    /**
+     * Recrée un thread frais pour la nouvelle partie.
+     */
+    public void restartActionThread() {
+        this.chunkModifyThread = createChunkModifyThread();
+    }
 
     /**
      * Retourne la caméra du joueur.

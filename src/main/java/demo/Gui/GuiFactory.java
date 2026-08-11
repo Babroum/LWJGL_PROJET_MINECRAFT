@@ -17,7 +17,7 @@ public class GuiFactory {
      * @param height Hauteur du bouton
      * @param onClick CallBack du bouton
      */
-    public static Button createButton(String imageAliasNormal, String imageAliasHover, String imageAliasClick, int x, int y, int width, int height, Runnable onClick){
-        return new Button(imageAliasNormal, imageAliasHover, imageAliasClick, x, y, width, height, onClick);
+    public static ButtonGui createButton(String imageAliasNormal, String imageAliasHover, String imageAliasClick, int x, int y, int width, int height, Runnable onClick){
+        return new ButtonGui(imageAliasNormal, imageAliasHover, imageAliasClick, x, y, width, height, onClick);
     }
 }

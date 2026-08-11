@@ -7,7 +7,7 @@ import java.util.List;
  * Base simple pour un Widget
  * Widget
  */
-public abstract class Widget {
+public abstract class WidgetGui {
     /** Position en x à l'écran basée sur le parent */
     public int x;
     /** Position en y à l'écran basée sur le parent */
@@ -17,9 +17,9 @@ public abstract class Widget {
     /** Hauteur du widget */
     public int height;
     /** Enfant du widget */
-    public List<Widget> children;
+    public List<WidgetGui> children;
     /** Parent du widget */
-    public Widget parent;
+    public WidgetGui parent;
 
     /**
      * Constructeur d'un widget
@@ -28,12 +28,12 @@ public abstract class Widget {
      * @param width Largeur du widget
      * @param height Hauteur du widget
      */
-    public Widget(int x, int y, int width, int height){
+    public WidgetGui(int x, int y, int width, int height){
         this.x = x;
         this.y = y;
         this.width = width;
         this.height = height;
-        this.children = new ArrayList<Widget>();
+        this.children = new ArrayList<WidgetGui>();
     }
     
     /**
@@ -54,7 +54,7 @@ public abstract class Widget {
      */
     public void updateAll(float mouseX, float mouseY, boolean mousePressed){
         this.update(mouseX, mouseY, mousePressed);
-        for (Widget child : this.children){
+        for (WidgetGui child : this.children){
             child.updateAll(mouseX, mouseY, mousePressed);
         }
     }
@@ -62,19 +62,19 @@ public abstract class Widget {
     /** Mise à jour du widget (graphique), ce que fait OpenGL à chaque frame, et des enfants du widget de façon récursive */
     public void renderAll(){
         this.render();
-        for (Widget child : this.children){
+        for (WidgetGui child : this.children){
             child.renderAll();
         }
     }
 
     /** Ajoute un enfant au widget et définit son parent, qui est le widget actuel */
-    public void addChild(Widget child){
+    public void addChild(WidgetGui child){
         child.parent = this;
         this.children.add(child);
     }
 
     /** Retire un enfant au widget et supprime ce widget de la variable « parent » de l'enfant */
-    public void removeChild(Widget child){
+    public void removeChild(WidgetGui child){
         child.parent = null;
         this.children.remove(child);
     }

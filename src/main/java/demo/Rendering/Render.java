@@ -14,11 +14,12 @@ import demo.Annotations.OpenGLThread;
 import demo.Events.KeyboardInput;
 import demo.Events.MouseInput;
 import demo.Game.GameLoop;
+import demo.Game.GameSession;
 import demo.Geometry.Chunk;
 import demo.Geometry.SubChunk;
 import demo.Gui.GuiFactory;
 import demo.Gui.GuiRenderer;
-import demo.Gui.Button;
+import demo.Gui.ButtonGui;
 import demo.Managers.AudioManager;
 import demo.Managers.BenchmarkManager;
 import demo.Managers.BlocksManager;
@@ -123,14 +124,22 @@ public class Render {
         Render.initialize3D(Window.width, Window.height);
         sceneGraph.setBackGroundColor(Color4f.SKY);
 
-        GameLoop.init();
-        GameLoop.startGameThread();
+        // Créer les Listeners clavier/souris
+        InputManager.create();
 
-        Button btn = GuiFactory.createButton("blue.button.rectangle.normal",
+        ButtonGui btn = GuiFactory.createButton("blue.button.rectangle.normal",
                         "blue.button.rectangle.hover",
                         "blue.button.rectangle.pressed",
                         150, 150, 192, 64,
-                        () -> System.out.println("CLIQUE"));
+                        () -> {
+                            if (GameSession.isRunning()) {
+                                GameSession.stop();
+                                System.out.println("Partie arrêtée");
+                            } else {
+                                GameSession.start();
+                                System.out.println("Partie démarrée");
+                            }
+                        });
 
         while ( !GLFW.glfwWindowShouldClose(Window.window) ) {  
             BenchmarkManager.getInstance().recordFrame();
@@ -144,123 +153,132 @@ public class Render {
             // Protection contre les gros sauts
             if (delta > 0.1) delta = 0.1; // 10FPS
 
-            // décharge les chunks hors range
-        Chunk toRemove;
-        while ((toRemove = Render.chunksToUnload.poll()) != null) {
-            ChunkSerializer.save(toRemove);
-            WorldManager.onChunkUnloaded(toRemove);
-            Render.sceneGraph.removeChunk(toRemove);
-            if (ChunksManager.getChunkAt(toRemove.x, toRemove.z) != null) {
-                ChunksManager.removeChunk(toRemove.x, toRemove.z);
+            InputManager.runOpenGL();
+
+            if (GameSession.isRunning()) {
+                // décharge les chunks hors range
+                Chunk toRemove;
+                while ((toRemove = Render.chunksToUnload.poll()) != null) {
+                    ChunkSerializer.save(toRemove);
+                    WorldManager.onChunkUnloaded(toRemove);
+                    Render.sceneGraph.removeChunk(toRemove);
+                    if (ChunksManager.getChunkAt(toRemove.x, toRemove.z) != null) {
+                        ChunksManager.removeChunk(toRemove.x, toRemove.z);
+                    }
+                }
+
+                Chunk chunk;
+                while((chunk = Render.chunkQueue.poll()) != null){
+                    Render.sceneGraph.root.addChild(chunk);
+                }
+
+                SubChunk sub;
+                while ((sub = dirtySubChunks.poll()) != null) {
+                    sub.setupSubChunkVBOVAO();
+                }
+
+                LightManager.flushDirtySubChunks();
+                LiquidManager.flushDirtySubChunks();
+                FrustumCulling.recalculateMatrix();        
+                PlayersManager.player.playerLoopRender();
+
+                // === PASSE 1 : dessiner la scène 3D dans le FBO ===
+                FrameBufferManager.bindForWriting();
+                GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
+
+                monitor.startTimer("render");
+                Render.drawScene();     
+                monitor.stopTimer("render");
+
+                monitor.setActiveVAOs(BuffersManager.activeVAOCount);
+
+                // === PASSE 2 : afficher le FBO à l'écran ===
+                FrameBufferManager.unbind();
+                GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
+
+                GL11.glDisable(GL11.GL_DEPTH_TEST);
+                GL11.glDisable(GL11.GL_CULL_FACE);
+
+                ShadersManager.usePostProcessShader();
+                GL13.glActiveTexture(GL13.GL_TEXTURE0);
+                GL11.glBindTexture(GL11.GL_TEXTURE_2D, FrameBufferManager.getColorTexture());
+                ShadersManager.runScreenTex(0);
+                ShadersManager.runSaturationAmountPostProcess(1.5f);
+
+                // force FILL le temps de dessiner le quad, peu importe l'état wireframe voulu
+                GL11.glPolygonMode(GL11.GL_FRONT_AND_BACK, GL11.GL_FILL);
+
+                FrameBufferManager.drawQuad();
+
+                if (KeyboardInput.isWireFrameMode) {
+                    GL11.glPolygonMode(GL11.GL_FRONT_AND_BACK, GL11.GL_LINE);
+                }
+
+                GL11.glEnable(GL11.GL_CULL_FACE);
+                GL11.glEnable(GL11.GL_DEPTH_TEST);
+            }else{
+                GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
             }
-        }
 
-        Chunk chunk;
-        while((chunk = Render.chunkQueue.poll()) != null){
-            Render.sceneGraph.root.addChild(chunk);
-        }
+            // === PASSE 3 : dessiner le texte/HUD par-dessus, hors FBO ===
+            GuiRenderer.beginFrame();
 
-        SubChunk sub;
-        while ((sub = dirtySubChunks.poll()) != null) {
-            sub.setupSubChunkVBOVAO();
-        }
+            btn.update(MouseInput.getAbsolutePos().x, MouseInput.getAbsolutePos().y, MouseInput.isLeftButtonPressed());
+            btn.render();
 
-        LightManager.flushDirtySubChunks();
-        LiquidManager.flushDirtySubChunks();
-        FrustumCulling.recalculateMatrix();        
-        InputManager.runOpenGL();
-        PlayersManager.player.playerLoopRender();
+            GuiRenderer.endFrame();
+            /*
+            ShadersManager.useTextShader();
+            FloatBuffer buffer = MemoryUtil.memAllocFloat(16);
+            ShadersManager.runTextOrtho(buffer, Window.width, Window.height);
+            GL11.glDisable(GL11.GL_DEPTH_TEST);
+            Render.calculateFPS(delta);
 
-        // === PASSE 1 : dessiner la scène 3D dans le FBO ===
-        FrameBufferManager.bindForWriting();
-        GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
+            Render.getTextRender().drawText("+", Window.width / 2, Window.height / 2, 30, Color4f.BLACK);
 
-        monitor.startTimer("render");
-        Render.drawScene();     
-        monitor.stopTimer("render");
-
-        monitor.setActiveVAOs(BuffersManager.activeVAOCount);
-
-        // === PASSE 2 : afficher le FBO à l'écran ===
-        FrameBufferManager.unbind();
-        GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
-
-        GL11.glDisable(GL11.GL_DEPTH_TEST);
-        GL11.glDisable(GL11.GL_CULL_FACE);
-
-        ShadersManager.usePostProcessShader();
-        GL13.glActiveTexture(GL13.GL_TEXTURE0);
-        GL11.glBindTexture(GL11.GL_TEXTURE_2D, FrameBufferManager.getColorTexture());
-        ShadersManager.runScreenTex(0);
-        ShadersManager.runSaturationAmountPostProcess(1.5f);
-
-        // force FILL le temps de dessiner le quad, peu importe l'état wireframe voulu
-        GL11.glPolygonMode(GL11.GL_FRONT_AND_BACK, GL11.GL_FILL);
-
-        FrameBufferManager.drawQuad();
-
-        if (KeyboardInput.isWireFrameMode) {
-            GL11.glPolygonMode(GL11.GL_FRONT_AND_BACK, GL11.GL_LINE);
-        }
-
-        GL11.glEnable(GL11.GL_CULL_FACE);
-        GL11.glEnable(GL11.GL_DEPTH_TEST);
-
-        // === PASSE 3 : dessiner le texte/HUD par-dessus, hors FBO ===
-        GuiRenderer.beginFrame();
-
-        btn.update(MouseInput.getAbsolutePos().x, MouseInput.getAbsolutePos().y, MouseInput.isLeftButtonPressed());
-        btn.render();
-
-        GuiRenderer.endFrame();
-        /*
-        ShadersManager.useTextShader();
-        FloatBuffer buffer = MemoryUtil.memAllocFloat(16);
-        ShadersManager.runTextOrtho(buffer, Window.width, Window.height);
-        GL11.glDisable(GL11.GL_DEPTH_TEST);
-        Render.calculateFPS(delta);
-
-        Render.getTextRender().drawText("+", Window.width / 2, Window.height / 2, 30, Color4f.BLACK);
-
-        if (Render.hudFrameCounter % HUD_UPDATE_INTERVAL == 0) {
+            if (Render.hudFrameCounter % HUD_UPDATE_INTERVAL == 0) {
+                Render.hudFrameCounter++;
+                Vector3f pos = PlayersManager.player.getPosition();
+                Render.display1 = String.format("Position: (%.2f, %.2f, %.2f)%n", pos.x, pos.y - 1.5f, pos.z);
+                Render.display2 = String.format("Sky Light: %d , Block Light: %d %n", Render.monitor.getSkyLightRayCast(), Render.monitor.getBlockLightRayCast());                
+            }
+            Render.getTextRender().drawText(Render.display1, Window.width / 2,20, 15, Color4f.RED); 
+            Render.getTextRender().drawText(Render.display2, Window.width / 2,40, 15, Color4f.RED); 
             Render.hudFrameCounter++;
-            Vector3f pos = PlayersManager.player.getPosition();
-            Render.display1 = String.format("Position: (%.2f, %.2f, %.2f)%n", pos.x, pos.y - 1.5f, pos.z);
-            Render.display2 = String.format("Sky Light: %d , Block Light: %d %n", Render.monitor.getSkyLightRayCast(), Render.monitor.getBlockLightRayCast());                
-        }
-        Render.getTextRender().drawText(Render.display1, Window.width / 2,20, 15, Color4f.RED); 
-        Render.getTextRender().drawText(Render.display2, Window.width / 2,40, 15, Color4f.RED); 
-        Render.hudFrameCounter++;
 
-        String[] lines = monitor.getDisplayLines();
-        for(int i = 0; i < lines.length; i++){
-            if(lines[i] != null){
-                Render.getTextRender().drawText(lines[i], 0, 20 + i * 20, 15, Color4f.PURPLE);
+            String[] lines = monitor.getDisplayLines();
+            for(int i = 0; i < lines.length; i++){
+                if(lines[i] != null){
+                    Render.getTextRender().drawText(lines[i], 0, 20 + i * 20, 15, Color4f.PURPLE);
+                }
+            }    
+
+            GL11.glEnable(GL11.GL_DEPTH_TEST);        
+            MemoryUtil.memFree(buffer);
+            */
+            ShadersManager.useShader();    
+
+            AudioManager.cleanupTempSources();
+            
+            double elapsed = GLFW.glfwGetTime() - frameStartTime;
+            double remaining = TARGET_FRAME_TIME - elapsed;
+
+            if (remaining > 0.002) {
+                try { Thread.sleep((long)((remaining - 0.001) * 1000)); }
+                catch (InterruptedException ignored) {}
             }
-        }    
+            while (GLFW.glfwGetTime() - frameStartTime < TARGET_FRAME_TIME) {
+                Thread.onSpinWait();
+            }
 
-        GL11.glEnable(GL11.GL_DEPTH_TEST);        
-        MemoryUtil.memFree(buffer);
-        */
-        ShadersManager.useShader();    
-
-        AudioManager.cleanupTempSources();
-        
-        double elapsed = GLFW.glfwGetTime() - frameStartTime;
-        double remaining = TARGET_FRAME_TIME - elapsed;
-
-        if (remaining > 0.002) {
-            try { Thread.sleep((long)((remaining - 0.001) * 1000)); }
-            catch (InterruptedException ignored) {}
-        }
-        while (GLFW.glfwGetTime() - frameStartTime < TARGET_FRAME_TIME) {
-            Thread.onSpinWait();
-        }
-
-        GLFW.glfwSwapBuffers(Window.window);		
-        GLFW.glfwPollEvents();
-        monitor.endFrame(); 
+            GLFW.glfwSwapBuffers(Window.window);		
+            GLFW.glfwPollEvents();
+            monitor.endFrame(); 
 		}
+
+        if (GameSession.isRunning()) {
+            GameSession.stop(); // sauvegarde propre si le joueur ferme la fenêtre en pleine partie
+        }
         
         // ferme le fenêtre quand la boucle de rendu est fini
         GameLoop.stopGameThread();

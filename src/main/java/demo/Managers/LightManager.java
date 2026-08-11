@@ -8,6 +8,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import demo.Annotations.OpenGLThread;
+import demo.Game.GameSession;
 import demo.Geometry.Chunk;
 import demo.Geometry.SubChunk;
 import demo.Others.ChunkGenerationPool;
@@ -347,14 +348,17 @@ public class LightManager {
      * Reconstruit (rebuild) tous les sous-chunks marqués "dirty" suite à un changement de lumière.
      * A appeler uniquement depuis la render loop OpenGL ; soumet chaque reconstruction au pool de threads.
      */
-    // Rebuild mesh : OpenGL uniquement, appelé depuis la render loop
     @OpenGLThread
     public static void flushDirtySubChunks() {
         SubChunk s;
         while ((s = dirtySubChunks.poll()) != null) {
             s.dirty.set(false);
             final SubChunk sub = s;
-            ChunkGenerationPool.submit(() -> sub.rebuildSubChunk()); // async sur pool
+            final int epoch = GameSession.currentEpoch();
+            ChunkGenerationPool.submit(() -> {
+                if (epoch != GameSession.currentEpoch()) return; // partie arrêtée entre-temps
+                sub.rebuildSubChunk();
+            });
         }
     }
 
