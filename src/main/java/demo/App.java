@@ -12,6 +12,7 @@ import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import javax.imageio.ImageIO;
 
+import demo.Gui.GuiRenderer;
 import demo.Managers.BenchmarkManager;
 import demo.Others.ChunkSerializer;
 import demo.Rendering.SceneGraph;
@@ -45,11 +46,11 @@ public class App
     {   
         /*
         Lancer les 3 lignes ci-dessous seulement si de nouvelles textures ont été ajoutées.
-        Les 2 premières ne servent pas au jeu, mais seulement pour savoir à quoi ressemble telle texture.
+        Les 2 premières ne servent pas au jeu, mais seulement pour savoir à quoi ressemble les textures.
         */
         //List<GuiImageEntry> entries = listAllGuiFiles("src/main/resources/Textures/GUI");
         //mergeFilesGrid(entries, "atlas_GUI.png");
-        //GuiRenderer.createImagesAtlasAndJson(); 
+        GuiRenderer.createImagesAtlasAndJson(); 
         
         // création de la fenêtre 
         new Window(1200,800);

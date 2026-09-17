@@ -19,6 +19,7 @@ import demo.Managers.BenchmarkManager;
 import demo.Managers.ShadersManager;
 import demo.Managers.ChunksManager;
 import demo.Managers.FrameBufferManager;
+import demo.Managers.GuiManager;
 import demo.Managers.InputManager;
 
 /**
@@ -129,6 +130,9 @@ public class Window {
                 Window.width =  width; // pour modifier la largeur de la fenêtre dans la classe
                 GL11.glViewport(0, 0, width, height); // Redimensionne le glViewPort
                 FrameBufferManager.resize(width, height);
+                if (GuiManager.currentScreenCallBack != null) {
+                    GuiManager.currentScreen = GuiManager.currentScreenCallBack.get(); // reconstruit ET réassigne
+                }
             }
         });  
 

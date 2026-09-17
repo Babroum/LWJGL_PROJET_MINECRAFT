@@ -2,6 +2,9 @@ package demo.Game;
 
 import org.joml.Vector3f;
 
+import demo.Events.KeyboardInput;
+import demo.Gui.GuiFactory;
+import demo.Managers.GuiManager;
 import demo.Managers.InputManager;
 import demo.Managers.LightManager;
 import demo.Managers.LiquidManager;
@@ -44,17 +47,19 @@ public class GameLoop {
                 lastTime   = now;
                 lag       += delta;
 
-                int maxTicksPerFrame = 5;
-                while (lag >= NS_PER_TICK && maxTicksPerFrame-- > 0) {
-                    GameLoop.lastTickTime = System.nanoTime();
-                    GameLoop.run(NS_PER_TICK / 1_000_000f); // en ms pour la physique
-                    lag -= NS_PER_TICK;
-                }
+                if (!KeyboardInput.isPauseMenu) { // ne tick QUE si pas en pause
+                    int maxTicksPerFrame = 5;
+                    while (lag >= NS_PER_TICK && maxTicksPerFrame-- > 0) {
+                        GameLoop.lastTickTime = System.nanoTime();
+                        GameLoop.run(NS_PER_TICK / 1_000_000f); // en ms pour la physique
+                        lag -= NS_PER_TICK;
+                    }
 
-                long sleepNs = (long)(NS_PER_TICK - lag);
-                if (sleepNs > 1_000_000L) { // seulement si > 1ms
-                    try { Thread.sleep(sleepNs / 1_000_000L); }
-                    catch (InterruptedException e) { Thread.currentThread().interrupt(); break; }
+                    long sleepNs = (long)(NS_PER_TICK - lag);
+                    if (sleepNs > 1_000_000L) { // seulement si > 1ms
+                        try { Thread.sleep(sleepNs / 1_000_000L); }
+                        catch (InterruptedException e) { Thread.currentThread().interrupt(); break; }
+                    }
                 }
             }
         }, "GameLoop Thread");

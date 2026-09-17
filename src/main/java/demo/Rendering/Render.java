@@ -30,6 +30,7 @@ import demo.Managers.LightManager;
 import demo.Managers.LiquidManager;
 import demo.Managers.ShadersManager;
 import demo.Managers.FrameBufferManager;
+import demo.Managers.GuiManager;
 import demo.Managers.TextureManager;
 import demo.Managers.WorldManager;
 import demo.Others.ChunkSerializer;
@@ -127,19 +128,7 @@ public class Render {
         // Créer les Listeners clavier/souris
         InputManager.create();
 
-        ButtonGui btn = GuiFactory.createButton("blue.button.rectangle.normal",
-                        "blue.button.rectangle.hover",
-                        "blue.button.rectangle.pressed",
-                        150, 150, 192, 64,
-                        () -> {
-                            if (GameSession.isRunning()) {
-                                GameSession.stop();
-                                System.out.println("Partie arrêtée");
-                            } else {
-                                GameSession.start();
-                                System.out.println("Partie démarrée");
-                            }
-                        });
+        GuiManager.openScreen(() -> GuiFactory.createHomeMenu());
 
         while ( !GLFW.glfwWindowShouldClose(Window.window) ) {  
             BenchmarkManager.getInstance().recordFrame();
@@ -156,6 +145,17 @@ public class Render {
             InputManager.runOpenGL();
 
             if (GameSession.isRunning()) {
+                if (KeyboardInput.isPauseMenu && !GuiManager.hasScreen() ) {
+                    KeyboardInput.isMouseLock = false;
+                    KeyboardInput.isCursorHidden = false;
+                    GuiManager.openScreen(() -> GuiFactory.createPauseMenu()); 
+                    continue;
+                }else if (!KeyboardInput.isPauseMenu && GuiManager.hasScreen()) {
+                    KeyboardInput.isMouseLock = true;
+                    KeyboardInput.isCursorHidden = true;
+                    GuiManager.closeScreen();
+                }
+
                 // décharge les chunks hors range
                 Chunk toRemove;
                 while ((toRemove = Render.chunksToUnload.poll()) != null) {
@@ -220,41 +220,25 @@ public class Render {
                 GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
             }
 
-            // === PASSE 3 : dessiner le texte/HUD par-dessus, hors FBO ===
+            // === PASSE 3 : dessiner le Gui par-dessus, hors FBO ===
             GuiRenderer.beginFrame();
 
-            btn.update(MouseInput.getAbsolutePos().x, MouseInput.getAbsolutePos().y, MouseInput.isLeftButtonPressed());
-            btn.render();
+            GuiManager.update(MouseInput.getAbsolutePos().x, MouseInput.getAbsolutePos().y, MouseInput.isLeftButtonPressed());
+            GuiManager.render();
 
             GuiRenderer.endFrame();
             /*
-            ShadersManager.useTextShader();
-            FloatBuffer buffer = MemoryUtil.memAllocFloat(16);
-            ShadersManager.runTextOrtho(buffer, Window.width, Window.height);
-            GL11.glDisable(GL11.GL_DEPTH_TEST);
-            Render.calculateFPS(delta);
-
-            Render.getTextRender().drawText("+", Window.width / 2, Window.height / 2, 30, Color4f.BLACK);
-
             if (Render.hudFrameCounter % HUD_UPDATE_INTERVAL == 0) {
-                Render.hudFrameCounter++;
                 Vector3f pos = PlayersManager.player.getPosition();
                 Render.display1 = String.format("Position: (%.2f, %.2f, %.2f)%n", pos.x, pos.y - 1.5f, pos.z);
                 Render.display2 = String.format("Sky Light: %d , Block Light: %d %n", Render.monitor.getSkyLightRayCast(), Render.monitor.getBlockLightRayCast());                
-            }
-            Render.getTextRender().drawText(Render.display1, Window.width / 2,20, 15, Color4f.RED); 
-            Render.getTextRender().drawText(Render.display2, Window.width / 2,40, 15, Color4f.RED); 
-            Render.hudFrameCounter++;
-
+            }           
             String[] lines = monitor.getDisplayLines();
             for(int i = 0; i < lines.length; i++){
                 if(lines[i] != null){
                     Render.getTextRender().drawText(lines[i], 0, 20 + i * 20, 15, Color4f.PURPLE);
                 }
             }    
-
-            GL11.glEnable(GL11.GL_DEPTH_TEST);        
-            MemoryUtil.memFree(buffer);
             */
             ShadersManager.useShader();    
 
@@ -279,6 +263,8 @@ public class Render {
         if (GameSession.isRunning()) {
             GameSession.stop(); // sauvegarde propre si le joueur ferme la fenêtre en pleine partie
         }
+
+        GuiManager.closeScreen();
         
         // ferme le fenêtre quand la boucle de rendu est fini
         GameLoop.stopGameThread();

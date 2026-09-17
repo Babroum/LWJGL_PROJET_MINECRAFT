@@ -34,6 +34,11 @@ public class Player {
      * Sensibilité de la souris.
      */
     public static final float MOUSESENS = 0.1f;
+    
+    /**
+     * FOV de la caméra
+     */
+    public static final float FOV = 80f;
 
     /**
      * Hauteur maximale d'un obstacle que le joueur peut monter automatiquement (auto-step).

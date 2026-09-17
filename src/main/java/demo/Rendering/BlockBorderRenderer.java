@@ -5,6 +5,7 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
 import org.lwjgl.system.MemoryUtil;
 
+import demo.Game.Player;
 import demo.Managers.BuffersManager;
 import demo.Managers.PlayersManager;
 import demo.Managers.ShadersManager;
@@ -68,7 +69,7 @@ public class BlockBorderRenderer {
 
         ShadersManager.useBlockBorderShader();
         ShadersManager.runProjectionBlockBorder(
-            Render.calculateProjection(45.0f, (float) Window.width / Window.height, 0.1f, 5000.f)
+            Render.calculateProjection(Player.FOV, (float) Window.width / Window.height, 0.1f, 5000.f)
         );
         ShadersManager.runViewBlockBorder(
             PlayersManager.player.getCamera().getViewMatrixBuffer()

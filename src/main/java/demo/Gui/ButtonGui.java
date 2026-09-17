@@ -13,6 +13,8 @@ public class ButtonGui extends WidgetGui {
     public String imageAliasClick;
     /** L'alias de l'image à affiché dans "imageAlias.json" */
     public String imageAliasNow;
+    /** Texte sur le bouton */
+    public String text;
     /** CallBack à effectué au moment du click */
     public Runnable onClick;
     /** Etat du bouton */
@@ -23,18 +25,20 @@ public class ButtonGui extends WidgetGui {
      * @param imageAliasNormal Alias de l'image quand le bouton n'est pas affecté
      * @param imageAliasHover Alias de l'image quand le bouton est survolé
      * @param imageAliasClick Alias de l'image quand le bouton est cliqué
+     * @param text Texte sur le bouton
      * @param x Position relative en x du bouton
      * @param y Position relative en y du bouton
      * @param width Largeur du bouton
      * @param height Hauteur du bouton
      * @param onClick CallBack du bouton
      */
-    public ButtonGui(String imageAliasNormal, String imageAliasHover, String imageAliasClick, int x, int y, int width, int height, Runnable onClick){
+    public ButtonGui(String imageAliasNormal, String imageAliasHover, String imageAliasClick, String text, int x, int y, int width, int height, Runnable onClick){
         super(x, y, width, height);
         this.imageAliasNormal = imageAliasNormal;
         this.imageAliasHover = imageAliasHover;
         this.imageAliasClick = imageAliasClick;
         this.imageAliasNow = imageAliasNormal;
+        this.text = text;
         this.onClick = onClick;
     }
 

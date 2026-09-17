@@ -2,6 +2,7 @@ package demo.Game;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+import demo.Events.KeyboardInput;
 import demo.Managers.ChunksManager;
 import demo.Managers.LightManager;
 import demo.Managers.LiquidManager;
@@ -31,6 +32,9 @@ public class GameSession {
 
         epoch.incrementAndGet();
 
+        KeyboardInput.isMouseLock = true;
+        KeyboardInput.isCursorHidden = true;
+
         Render.sceneGraph.root.removeAllChildren();
         ChunkSerializer.init();
         
@@ -46,6 +50,9 @@ public class GameSession {
         if (!running) return;
 
         epoch.incrementAndGet();
+
+        KeyboardInput.isMouseLock = false;
+        KeyboardInput.isCursorHidden = false;
 
         GameLoop.stopGameThread();
         PlayersManager.player.stopActionThread();

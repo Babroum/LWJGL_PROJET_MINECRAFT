@@ -1,5 +1,11 @@
 {
     "blue.button.rectangle.pressed" : "Blue_button_rectangle_flat.png",
     "blue.button.rectangle.hover" : "Blue_button_rectangle_gloss.png",
-    "blue.button.rectangle.normal" : "Blue_button_rectangle_gradient.png"      
+    "blue.button.rectangle.normal" : "Blue_button_rectangle_gradient.png",
+    "gray.button.rectangle.pressed" : "Grey_button_rectangle_flat.png",
+    "gray.button.rectangle.hover" : "Grey_button_rectangle_line.png",
+    "gray.button.rectangle.normal" : "Grey_button_rectangle_depth_line.png",
+
+    
+    "background.home" : "Background_home_menu.png"
 }

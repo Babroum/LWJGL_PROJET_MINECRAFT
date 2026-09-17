@@ -26,7 +26,7 @@ public class WorldManager {
     private static final int MAX_CHUNKS_PER_TICK = 4;
 
     /** Distance de rendu, en chunks. */
-    public static final int RENDER_DISTANCE = 3;
+    public static final int RENDER_DISTANCE = 5;
     /** Distance de déchargement des chunks, en chunks. */
     public static final int UNLOAD_DISTANCE = RENDER_DISTANCE + 2;
 

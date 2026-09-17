@@ -37,7 +37,7 @@ public class GuiRenderer {
     /** Chemin relatif de l'atlas */
     private static final String ATLASPATH = "/Textures/GUI/atlas.png";
     /** Largeur maximale de l'atlas, taille arbitraire */
-    private static final int ATLASMAXWIDTH = 1024;
+    private static final int ATLASMAXWIDTH = 2048;
     /** Capacité max */
     private static final int BUFFERSIZE = 1024;
     /** Variable contenant l'atlas final */
@@ -399,7 +399,7 @@ public class GuiRenderer {
             float v0 = yImg / (float) GuiRenderer.atlasData.atlasHeight;
             float v1 = (yImg + heightImg) / (float) GuiRenderer.atlasData.atlasHeight;
 
-            GuiRenderer.pushQuad(x, y, widthImg, heightImg, u0, u1, v0, v1, null);
+            GuiRenderer.pushQuad(x, y, width, height, u0, u1, v0, v1, null);
         }catch(Exception e){
             e.printStackTrace();
             return;

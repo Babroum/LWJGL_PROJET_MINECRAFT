@@ -14,6 +14,7 @@ import demo.Managers.ChunksManager;
 import demo.Managers.PlayersManager;
 import demo.Managers.ShadersManager;
 import demo.Types.Color4f;
+import demo.Game.Player;
 
 /**
  *La scène.
@@ -113,7 +114,7 @@ public class SceneGraph {
         // Couleur du background de la scène
         GL11.glClearColor(this.backGroundColor.red, this.backGroundColor.green, this.backGroundColor.blue, 1f);
 
-        FloatBuffer projBuffer = Render.calculateProjection(45.0f, (float) Window.width / Window.height, 0.1f, 5000.f);
+        FloatBuffer projBuffer = Render.calculateProjection(Player.FOV, (float) Window.width / Window.height, 0.1f, 5000.f);
         FloatBuffer viewBuffer = PlayersManager.player.getCamera().getViewMatrixBuffer();
         float time = (float) GLFW.glfwGetTime();
         

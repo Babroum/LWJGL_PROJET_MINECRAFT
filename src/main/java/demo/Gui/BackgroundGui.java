@@ -23,9 +23,7 @@ public class BackgroundGui extends WidgetGui{
      * Ne fait rien, l'image n'a pas de mise à jour
      */
     @Override
-    public void update(float mouseX, float mouseY, boolean mousePressed){
-
-    }
+    public void update(float mouseX, float mouseY, boolean mousePressed){}
 
     @Override
     public void render(){

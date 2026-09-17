@@ -24,6 +24,8 @@ public class KeyboardInput {
     public static volatile boolean isWireFrameMode;
     /** Indique si une demande de fermeture de la fenêtre a été faite. */
     public static volatile boolean isCloseWindow;
+    /** Indique si le jeu est en pause */
+    public static volatile boolean isPauseMenu = false;
     /** Indique si le curseur de la souris est caché. */
     public static volatile boolean isCursorHidden = false;
     /** Indique si la souris est verrouillée/capturée par la fenêtre. */
@@ -75,7 +77,7 @@ public class KeyboardInput {
                     break;
                 
                 case GLFW.GLFW_KEY_ESCAPE:
-                    KeyboardInput.isCloseWindow = true;
+                    KeyboardInput.isPauseMenu = !KeyboardInput.isPauseMenu;
                     break;
                 
                 case GLFW.GLFW_KEY_F2:
