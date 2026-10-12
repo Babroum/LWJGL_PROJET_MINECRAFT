@@ -7,7 +7,7 @@ Référentielle :
 
 ## Prérequis
 
-- **Java JDK 11 (pas 25) ou supérieur** - [Télécharger Java](https://www.oracle.com/java/technologies/downloads/)
+- **Java JDK 21** - [Télécharger Java](https://www.oracle.com/java/technologies/downloads/)
 - **Git** - Pour cloner le projet
 
 ⚠️ **Maven n'est pas obligatoire !** Le projet inclut Maven Wrapper (`mvnw.cmd` pour Windows), qui télécharge et utilise Maven automatiquement.
